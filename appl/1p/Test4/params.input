@@ -1,0 +1,44 @@
+[TimeLoop]
+DtInitial = 1000                   # [s] initial timestep size
+TEnd = 55               # [d] simulation end time 
+[Grid]
+LowerLeft = 0.2 0 
+UpperRight = 1000.2 60        # [m] grid dimension
+Cells = 333 20               # [-] number of cells in dimension
+
+[Problem]
+Name = CH4 # name passed to the output routines
+EnableGravity = true
+UseNitscheTypeBc = true
+DispersionMode = 1
+InitialTemperature = 333.15
+
+[BoundaryConditions]
+Pressure_TOP = 60e5
+CyclesDev = 1   		  # [-] number of cycles during development period
+InjectionDurationDev = 0	  # [days] injection time during development period
+IdleDurationDev = 0		  # [day] idle time during development period
+InjectionDurationOp = 2.5	  # [day] injection time during operational period
+ExtractionDurationOp = 2.5	  # [day] production time during operational period
+IdleDurationOp = 0.0	  # [day] idle time during operational period
+CushionGasType = CH4
+InjectionRateDev = -75.4	  # [mol.m-2.s] injection rate during development period
+InjectionRateOp = -75.4 # [mol.m-2.s] injection rate during operational period
+ProductionRate = 75.4  # [mol.m-2.s] production rate during operational period
+Well_Height = 10		  # [m] Height of the injection/withdrawal interval
+
+[SpatialParams]
+ReferencePorosity = 0.3
+ReferencePermeability = 4.9346165e-13
+
+[Newton]
+MaxRelativeShift = 1e-6
+MaxSteps = 6
+MaxTimeStepDivisions = 20
+UseLineSearch = true
+
+[Assembly]
+Multithreading = false 
+
+[Vtk]
+AddVelocity = true

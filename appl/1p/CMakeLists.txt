@@ -1,0 +1,9 @@
+add_subdirectory(CH4)
+add_subdirectory(H2)
+add_subdirectory(N2)
+add_subdirectory(CO2)
+add_subdirectory(Test1)
+add_subdirectory(Test2)
+add_subdirectory(Test3)
+add_subdirectory(Test4)
+

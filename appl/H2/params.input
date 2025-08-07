@@ -1,0 +1,62 @@
+[TimeLoop]
+DtInitial = 250                    # [s] initial timestep size
+TEnd = 21600000                # [s] simulation end time 
+MaxTimeStepSize = 172800          # [s] maximum timestep size
+VTK_dt = 0  
+PostFun_dt = 0
+
+[Grid]
+LowerLeft = 0.2 0 
+UpperRight = 1000.2 22         # [m] grid dimension
+Cells = 1000 22                  # [-] number of cells in dimension
+
+#Positions0 = 0.2 300.2
+#Positions1 = 0 25 
+#Cells0 = 300
+#Cells1 = 10
+#Grading0 = 1.05
+
+[Problem]
+Name = H2              # [-] the name of the output files
+EnableGravity = false                # Activate/deactivate gravity
+InitialTemperature = 313.15        # [K] 80 initial temperature in the reservoir
+DepthBOR = 1200                     # [m] depth below ground surface
+DispersionMode = 1    # 0 = No Dispersion -- 1 = dx dispersion -- 2 = Farzaneh's equation
+
+[BoundaryConditions]
+CyclesDev = 0   		  # [-] number of cycles during development period
+InjectionDurationDev = 0	  # [days] injection time during development period
+IdleDurationDev = 0		  # [day] idle time during development period
+InjectionDurationOp = 100	  # [day] injection time during operational period
+ExtractionDurationOp = 150	  # [day] production time during operational period
+IdleDurationOp = 0.0	  # [day] idle time during operational period
+HydrogenInjectionConcentration = 1
+InjectionRateDev = 0	  # [mol.m-2.s] injection rate during development period
+InjectionRateOp = -47.2  # [mol.m-2.s] injection rate during operational period
+ProductionRate = 47.2   # [mol.m-2.s] production rate during operational period
+Well_Height = 22		  # [m] Height of the injection/withdrawal interval
+
+[SpatialParams]
+Material.Swr = 0.26                  # connate water saturation
+Material.Snr = 0.0                  # residual gas saturation
+Material.BrooksCoreyPcEntry = 5e3     # Brooks Corey entry pressure
+Material.BrooksCoreyLambda = 2.0    # Brooks Corey lambda
+ReferencePorosity = 0.3
+ReferencePermeability = 1e-12
+
+[Initialization]
+PressureGWC = 60e5
+DepthGWC = -10
+
+
+[Newton]
+MaxRelativeShift = 1e-11
+MaxSteps = 6
+MaxTimeStepDivisions = 20
+
+[Assembly]
+Multithreading = true #activate this
+
+[Vtk]
+AddVelocity = true
+

@@ -1,0 +1,12 @@
+################################
+# Dune module information file #
+################################
+
+# Name of the module
+Module: dumux-Mixing
+Version: 0.1
+Maintainer: 
+# Required build dependencies
+Depends: dumux
+# Optional build dependencies
+#Suggests:

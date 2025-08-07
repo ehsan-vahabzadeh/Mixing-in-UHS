@@ -1,0 +1,262 @@
+// -*- mode: C++; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4 -*-
+// vi: set et ts=4 sw=4 sts=4:
+/*****************************************************************************
+ *   See the file COPYING for full copying permissions.                      *
+ *                                                                           *
+ *   This program is free software: you can redistribute it and/or modify    *
+ *   it under the terms of the GNU General Public License as published by    *
+ *   the Free Software Foundation, either version 3 of the License, or       *
+ *   (at your option) any later version.                                     *
+ *                                                                           *
+ *   This program is distributed in the hope that it will be useful,         *
+ *   but WITHOUT ANY WARRANTY; without even the implied warranty of          *
+ *   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the            *
+ *   GNU General Public License for more details.                            *
+ *                                                                           *
+ *   You should have received a copy of the GNU General Public License       *
+ *   along with this program.  If not, see <http://www.gnu.org/licenses/>.   *
+ *****************************************************************************/
+/*!
+ * \file
+ * \ingroup TwoPNCBioGeoTest
+ * \brief Test for the two-phase n-component CC model.
+ */
+
+
+#include <config.h>
+
+#include <iostream>
+#include <cmath>
+#include <dune/common/parallel/mpihelper.hh>
+#include <dune/common/timer.hh>
+#include <cstdio>
+#include <dumux/common/properties.hh>
+#include <dumux/common/parameters.hh>
+#include <dumux/common/dumuxmessage.hh>
+
+// #include <dune/istl/bcrsmatrix.hh>
+// #include <dune/istl/bvector.hh>
+// #include <dune/istl/matrixmarket.hh>
+// #include <dune/istl/preconditioner.hh>
+// #include <dune/istl/solvers.hh>
+// #include <dune/istl/paamg/amg.hh>
+#include <dumux/linear/istlsolvers.hh>
+#include <dumux/linear/istlsolverfactorybackend.hh>
+#include <dumux/linear/amgbackend.hh>
+#include <dumux/linear/linearsolvertraits.hh>
+#include <dumux/nonlinear/newtonsolver.hh>
+
+#include <dumux/assembly/fvassembler.hh>
+
+#include <dumux/io/vtkoutputmodule.hh>
+#include <dumux/io/grid/gridmanager_yasp.hh>
+// #include <dumux/io/grid/gridmanager_sub.hh>
+#include <dumux/io/loadsolution.hh>
+
+#include "properties.hh"
+// #include <Reaktoro/Reaktoro.hpp>
+// #include <PhreeqcRM.h>
+void AdvectCpp(std::vector<double> &c, std::vector<double> bc_conc, int ncomps, int nxyz, int dim);
+int main(int argc, char** argv)
+{
+    using namespace Dumux;
+    const char* filename = "average_concentration.json";
+
+    // Attempt to delete the file
+    if (remove(filename) != 0) 
+        perror("Error deleting file");
+    // define the type tag for this problem
+    using TypeTag = Properties::TTag::TYPETAG;
+    using Scalar = GetPropType<TypeTag, Properties::Scalar>;
+    using Dimension_vector = Dune::FieldVector<Scalar, 2>;
+    // using TypeTag = Properties::TTag::BiogeochemicalBox;
+    // initialize MPI, finalize is done automatically on exit
+    const auto& mpiHelper = Dune::MPIHelper::instance(argc, argv);
+
+    // print dumux start message
+    if (mpiHelper.rank() == 0){
+        DumuxMessage::print(/*firstCall=*/true);
+    }
+    // parse command line arguments and input file
+    Parameters::init(argc, argv);
+    GridManager<GetPropType<TypeTag, Properties::Grid>> gridManager;
+    gridManager.init();
+
+    ////////////////////////////////////////////////////////////
+    // run instationary non-linear problem on this grid
+    ////////////////////////////////////////////////////////////
+
+    // we compute on the leaf grid view
+    const auto& leafGridView = gridManager.grid().leafGridView();
+
+    // create the finite volume grid geometry
+    using GridGeometry = GetPropType<TypeTag, Properties::GridGeometry>;
+    auto gridGeometry = std::make_shared<GridGeometry>(leafGridView);
+
+    // the problem (initial and boundary conditions)
+    using Problem = GetPropType<TypeTag, Properties::Problem>;
+    auto problem = std::make_shared<Problem>(gridGeometry);
+
+    // get some time loop parameters
+    using Scalar = GetPropType<TypeTag, Properties::Scalar>;
+    // const auto tEnd = getParam<Scalar>("TimeLoop.TEnd")*2592000;
+    const auto tEnd = getParam<Scalar>("TimeLoop.TEnd");
+    const auto maxDt = getParam<Scalar>("TimeLoop.MaxTimeStepSize");
+    auto dt = getParam<Scalar>("TimeLoop.DtInitial");
+    Scalar VTK_dt = getParam<Scalar>("TimeLoop.VTK_dt");
+    Scalar PostFun_dt = getParam<Scalar>("TimeLoop.PostFun_dt");
+    Scalar checkpoint = getParam<Scalar>("BoundaryConditions.InjectionDurationOp") * 86400;
+    int qq = 1, kk = 1, tt = 1;
+
+    // check if we are about to restart a previously interrupted simulation
+    Scalar restartTime = getParam<Scalar>("Restart.Time", 0);
+
+
+    // the solution vector
+    using SolutionVector = GetPropType<TypeTag, Properties::SolutionVector>;
+    SolutionVector x(gridGeometry->numDofs());
+    if (restartTime > 0)
+    {
+        using IOFields = GetPropType<TypeTag, Properties::IOFields>;
+        using PrimaryVariables = GetPropType<TypeTag, Properties::PrimaryVariables>;
+        using ModelTraits = GetPropType<TypeTag, Properties::ModelTraits>;
+        using FluidSystem = GetPropType<TypeTag, Properties::FluidSystem>;
+        using SolidSystem = GetPropType<TypeTag, Properties::SolidSystem>;
+        const auto fileName = getParam<std::string>("Restart.File");
+        const auto pvName = createPVNameFunction<IOFields, PrimaryVariables, ModelTraits, FluidSystem,SolidSystem>();
+        loadSolution(x, fileName, pvName, *gridGeometry);
+    }
+    else
+        problem->applyInitialSolution(x);
+    auto xOld = x;
+
+    // the grid variables
+    using GridVariables = GetPropType<TypeTag, Properties::GridVariables>;
+    auto gridVariables = std::make_shared<GridVariables>(problem, gridGeometry);
+    gridVariables->init(x);
+
+    // instantiate time loop
+    auto timeLoop = std::make_shared<TimeLoop<Scalar>>(/*start time*/0.0, dt, tEnd);
+    timeLoop->setMaxTimeStepSize(maxDt);
+    problem->setTimeLoop(timeLoop);
+    
+    // intialize the vtk output module
+    // using IOFields = GetPropType<TypeTag, Properties::IOFields>;
+    VtkOutputModule<GridVariables, SolutionVector> vtkWriter(*gridVariables, x, problem->name());
+    using VelocityOutput = GetPropType<TypeTag, Properties::VelocityOutput>;
+    vtkWriter.addVelocityOutput(std::make_shared<VelocityOutput>(*gridVariables));
+    GetPropType<TypeTag, Properties::IOFields>::initOutputModule(vtkWriter); //!< Add model specific output fields
+    vtkWriter.addField(problem->getPermeability(), "permeability");
+    
+    problem->updateVtkOutput(x);
+    vtkWriter.write(restartTime);
+
+    
+
+    // the assembler with time loop for instationary problem
+    using Assembler = FVAssembler<TypeTag, DiffMethod::numeric>;
+    auto assembler = std::make_shared<Assembler>(problem, gridGeometry, gridVariables, timeLoop, xOld);
+
+    // the linear solver
+    using LinearSolver = AMGBiCGSTABIstlSolver<LinearSolverTraits<GridGeometry>, LinearAlgebraTraitsFromAssembler<Assembler>>;
+    auto linearSolver = std::make_shared<LinearSolver>(gridGeometry->gridView(), gridGeometry->dofMapper());
+
+
+    // the linear solver
+    // using LinearSolver = AMGBiCGSTABBackend<LinearSolverTraits<GridGeometry>>;
+    // auto linearSolver = std::make_shared<LinearSolver>(leafGridView, gridGeometry->dofMapper());
+
+    // using LinearSolver = AMGBiCGSTABIstlSolver<LinearSolverTraits<GridGeometry>,
+    //                                            LinearAlgebraTraitsFromAssembler<Assembler>>;
+    // auto linearSolver =  std::make_shared<LinearSolver>(leafGridView, gridGeometry->dofMapper());
+
+    // the non-linear solver
+    using NewtonSolver = NewtonSolver<Assembler, LinearSolver>;
+    NewtonSolver nonLinearSolver(assembler, linearSolver);
+
+    // const Scalar outputTimeInterval = getParam<Scalar>("TimeLoop.OutputTimeInterval");
+    // timeLoop->setPeriodicCheckPoint(outputTimeInterval);
+    // time loop
+    timeLoop->start(); do
+    {
+        // post time step
+        // problem->preTimeStep(x, *gridVariables, timeLoop->timeStepSize(),gridGeometry);
+
+        // solve the non-linear system with time step control
+        nonLinearSolver.solve(x, *timeLoop);
+
+        
+         problem->updateVtkOutput(x);
+        if (timeLoop->time()- kk * VTK_dt >= 0.0){
+            vtkWriter.write(timeLoop->time());
+            kk++;
+        }
+            
+        // problem->postTimeStep(x, xOld, *gridVariables, timeLoop->timeStepSize(),gridGeometry);
+        if (timeLoop->time()- qq * PostFun_dt >= 0.0)
+        {
+            // post time step
+            problem->postTimeStep(x, xOld, *gridVariables, timeLoop->timeStepSize(),gridGeometry);
+            qq++;
+        }
+        // make the new solution the old solution
+        xOld = x;
+        gridVariables->advanceTimeStep();
+
+        // advance to the time loop to the next step
+        timeLoop->advanceTimeStep();
+
+        // report statistics of this time step
+        timeLoop->reportTimeStep();
+
+        // if (timeLoop->isCheckPoint())
+        // {
+        //     timeLoop->setTimeStepSize(dt);
+        // }   
+        // else{// set new dt as suggested by the newton solver
+        //     timeLoop->setTimeStepSize(nonLinearSolver.suggestTimeStepSize(timeLoop->timeStepSize()));
+        // }
+        
+        // write vtk output
+        // update the output fields before write
+       
+        timeLoop->setTimeStepSize(nonLinearSolver.suggestTimeStepSize(timeLoop->timeStepSize()));
+        // if (timeLoop->time() + timeLoop->timeStepSize()  > tt * checkpoint){
+        //     Scalar new_dt = tt * checkpoint - timeLoop->time() - 1e-6;
+        //     timeLoop->setTimeStepSize(new_dt);
+        //     tt++;
+        // }
+
+    } while (!timeLoop->finished());
+
+    timeLoop->finalize(leafGridView.comm());
+
+    ////////////////////////////////////////////////////////////
+    // finalize, print dumux message to say goodbye
+    ////////////////////////////////////////////////////////////
+
+    // print dumux end message
+    if (mpiHelper.rank() == 0)
+    {
+        Parameters::print();
+        DumuxMessage::print(/*firstCall=*/false);
+    }
+
+    return 0;
+} // end main
+void
+AdvectCpp(std::vector<double> &c, std::vector<double> bc_conc, int ncomps, int nxyz, int dim)
+{
+	for (int i = nxyz/2 - 1 ; i > 0; i--)
+	{
+		for (int j = 0; j < ncomps; j++)
+		{
+			c[j * nxyz + i] = c[j * nxyz + i - 1];                 // component j
+		}
+	}
+	// Cell zero gets boundary condition
+	for (int j = 0; j < ncomps; j++)
+	{
+		c[j * nxyz] = bc_conc[j * dim];                                // component j
+	}
+}
