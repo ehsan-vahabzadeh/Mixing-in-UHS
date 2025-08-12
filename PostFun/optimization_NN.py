@@ -93,13 +93,13 @@ def train_and_evaluate_model_kfold(X, Y, trial=None):
         y_scaler = MinMaxScaler()
         X_train = scaler.fit_transform(X_split)
         X_test = scaler.transform(X_test)
-        y_train = y_scaler.fit_transform(Y_split.reshape(-1, 1))
-        y_test   = y_scaler.transform(y_test.reshape(-1, 1))
+        # y_train = y_scaler.fit_transform(Y_split.reshape(-1, 1))
+        # y_test   = y_scaler.transform(y_test.reshape(-1, 1))
         
         X_train_t = torch.tensor(X_train, dtype=torch.float32)
-        y_train_t = torch.tensor(y_train, dtype=torch.float32)
+        y_train_t = torch.tensor(Y_split, dtype=torch.float32).unsqueeze(1)
         X_test_t = torch.tensor(X_test, dtype=torch.float32)
-        y_test_t = torch.tensor(y_test, dtype=torch.float32)
+        y_test_t = torch.tensor(y_test, dtype=torch.float32).unsqueeze(1)
 
         # Without Dropout
         # lr = 0.0026929845041663582
@@ -142,14 +142,12 @@ def train_and_evaluate_model_kfold(X, Y, trial=None):
             y_scaler = MinMaxScaler()
             X_train = scaler.fit_transform(X_train)
             X_val = scaler.transform( X_val)
-            y_train = y_scaler.fit_transform(y_train.reshape(-1, 1))
-            y_val   = y_scaler.transform(y_val.reshape(-1, 1))
-            
+            # y_train = y_scaler.fit_transform(y_train.reshape(-1, 1))
+            # y_val   = y_scaler.transform(y_val.reshape(-1, 1))
             X_train_t = torch.tensor(X_train, dtype=torch.float32)
-            y_train_t = torch.tensor(y_train, dtype=torch.float32)
+            y_train_t = torch.tensor(y_train, dtype=torch.float32).unsqueeze(1)
             X_val_t = torch.tensor(X_val, dtype=torch.float32)
-            y_val_t = torch.tensor(y_val, dtype=torch.float32)
-
+            y_val_t = torch.tensor(y_val, dtype=torch.float32).unsqueeze(1)
             train_ds = TensorDataset(X_train_t, y_train_t)
             train_loader = DataLoader(train_ds, batch_size=batch_size, shuffle=True)
 
@@ -203,11 +201,11 @@ def train_and_evaluate_model_kfold(X, Y, trial=None):
             y_pred_train = model(X_train_t).cpu().numpy().flatten()
             y_true_train =   y_train_t.cpu().numpy().flatten()
 
-            y_pred_train = y_scaler.inverse_transform(y_pred_train.reshape(-1, 1)).ravel()
-            y_true_train = y_scaler.inverse_transform(y_true_train.reshape(-1, 1)).ravel()
-            y_pred_test = y_scaler.inverse_transform(y_pred_test.reshape(-1, 1)).ravel()
-            y_true_test = y_scaler.inverse_transform(y_true_test.reshape(-1, 1)).ravel()
-            
+            # y_pred_train = y_scaler.inverse_transform(y_pred_train.reshape(-1, 1)).ravel()
+            # y_true_train = y_scaler.inverse_transform(y_true_train.reshape(-1, 1)).ravel()
+            # y_pred_test = y_scaler.inverse_transform(y_pred_test.reshape(-1, 1)).ravel()
+            # y_true_test = y_scaler.inverse_transform(y_true_test.reshape(-1, 1)).ravel()
+            print('y_pred_scaled min/max:', y_pred_test.min(), y_pred_test.max())
             r2_train = r2_score(y_true_train, y_pred_train)
             r2_test = r2_score(y_true_test, y_pred_test)
             mse_train = mean_squared_error(y_true_train, y_pred_train)
@@ -287,8 +285,8 @@ def build_model(input_dim, hidden_sizes, activations):
         layers.append(get_activation(act_name))
         # layers.append(nn.Dropout(0.2))  # Add dropout for regularization
         in_dim = out_dim
-
-    layers.append(nn.Linear(in_dim, 1))  # Output layer
+    layers += [nn.Linear(in_dim, 1), nn.Sigmoid()]   # <- bound to (0,1)
+    layers.append(nn.Linear(1, 1))  # Output layer
     return nn.Sequential(*layers)
 
     

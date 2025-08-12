@@ -8,35 +8,49 @@ import torch.nn as nn
 import os
 import matplotlib.pyplot as plt
 
-def build_model(input_dim, hidden_sizes, activation_fn):
+def get_activation(name):
+    if name == "relu":
+        return nn.ReLU()
+    elif name == "tanh":
+        return nn.Tanh()
+    elif name == "sigmoid":
+        return nn.Sigmoid()
+    else:
+        raise ValueError(f"Unknown activation function: {name}")  
+def build_model(input_dim, hidden_sizes, activations):
     layers = []
-    current_dim = input_dim
-    for h in hidden_sizes:
-        layers.append(nn.Linear(current_dim, h))
-        if activation_fn == 'relu':
-            layers.append(nn.ReLU())
-        elif activation_fn == 'tanh':
-            layers.append(nn.Tanh())
-        current_dim = h
-    layers.append(nn.Linear(current_dim, 1))
+    in_dim = input_dim
+
+    for out_dim, act_name in zip(hidden_sizes, activations):
+        layers.append(nn.Linear(in_dim, out_dim))
+        layers.append(get_activation(act_name))
+        # layers.append(nn.Dropout(0.2))  # Add dropout for regularization
+        in_dim = out_dim
+
+    layers.append(nn.Linear(in_dim, 1))  # Output layer
     return nn.Sequential(*layers)
-os.chdir("Y:\\Mixing Results\\New May")  # Change to the directory containing your simulation files
+os.chdir("Y:\\Mixing Results\\July")  # Change to the directory containing your simulation files
 # os.chdir("Y:\\Mixing Results\\May\\NewCH4")  # Change to the directory containing your simulation files
 # os.chdir("Z:\\Mixing Results\\Feb\\Results\\30 Meter Height Reservoir")  # Change to the directory containing your simulation files
 input_directory = os.getcwd()
 # --- Load trained model and scaler ---
-model = build_model(input_dim=5, hidden_sizes=[57, 28], activation_fn="relu")
-model.load_state_dict(torch.load("optimized_model.pt"))
+activation = ["relu", "tanh"]
+model = build_model(input_dim=8, hidden_sizes=[32, 22], activations=activation)
+model.load_state_dict(torch.load("trained_ann_model.pt"))
 model.eval()
-scaler = joblib.load("input_scaler.pkl")
-
+scalers = joblib.load("scalers.pkl")
+scaler = scalers["X_scaler"]
+y_scaler = scalers["y_scaler"]
 # --- 1. Define Input Ranges ---
 input_ranges = {
     'FlowRate': (1e5, 1.5e6),
     'CycleLength': (14, 180),
-    'Pressure': (60, 400),         # in bar or MPa based on your model
-    'Permeability': (10, 1000),   # in mD
-    'DensityDiff': (0, 600)       # kg/m³, adjust based on physical limits
+    'Pressure': (76, 447),         # in bar or MPa based on your model
+    'Permeability': (3, 1497),   # in mD
+    'DensityDiff': (0, 846),       # kg/m³, adjust based on physical limits
+    'Porosity': (0.06, 0.28),      # dimensionless
+    'Temperature': (282.15, 412),  # Kelvin, adjust based on physical limits
+    'CushionGasRatio': (1, 5)      # dimensionless, adjust based on physical limits
 }
 
 # --- 2. Generate LHS Samples ---
@@ -56,6 +70,7 @@ X_tensor = torch.tensor(X_scaled, dtype=torch.float32)
 # --- 5. Predict with Neural Network ---
 with torch.no_grad():
     rf_preds = model(X_tensor).numpy().flatten()
+    rf_preds = y_scaler.inverse_transform([[rf_preds]]).ravel()[0]
 
 # --- 6. Combine Inputs + Outputs into a DataFrame ---
 df_results = pd.DataFrame(X_raw, columns=list(input_ranges.keys()))

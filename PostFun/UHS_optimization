@@ -28,8 +28,8 @@ def build_model(input_dim, hidden_sizes, activations):
         layers.append(get_activation(act_name))
         # layers.append(nn.Dropout(0.2))  # Add dropout for regularization
         in_dim = out_dim
-
-    layers.append(nn.Linear(in_dim, 1))  # Output layer
+    layers += [nn.Linear(in_dim, 1), nn.Sigmoid()]   # <- bound to (0,1)
+    layers.append(nn.Linear(1, 1))  # Output layer
     return nn.Sequential(*layers)
 
 def build_objective(permeability, porosity, pressure, temperature, delta_rho, model, scalers):
@@ -46,8 +46,11 @@ def build_objective(permeability, porosity, pressure, temperature, delta_rho, mo
         input_tensor = torch.tensor(scaled, dtype=torch.float32)
         with torch.no_grad():
             rf = model(input_tensor).item()
-            rf_original = y_scaler.inverse_transform([[rf]]).ravel()[0]
-        return -rf_original  # because we're maximizing
+            if rf > 1:
+                print("Warning: RF exceeds 1.0, capping to 1.0")
+                rf = 1.0  # Cap RF at 1.0
+            # rf_original = y_scaler.inverse_transform([[rf]]).ravel()[0]
+        return -rf  # because we're maximizing
     return objective
 
 def main(input_directory):
