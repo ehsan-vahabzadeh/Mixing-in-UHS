@@ -28,8 +28,8 @@ def build_model(input_dim, hidden_sizes, activations):
         layers.append(get_activation(act_name))
         # layers.append(nn.Dropout(0.2))  # Add dropout for regularization
         in_dim = out_dim
-    layers += [nn.Linear(in_dim, 1), nn.Sigmoid()]   # <- bound to (0,1)
-    layers.append(nn.Linear(1, 1))  # Output layer
+    layers += [nn.Linear(in_dim, 1)]   # <- bound to (0,1)
+    layers.append(nn.Sigmoid())  # Output layer
     return nn.Sequential(*layers)
 
 def build_objective(permeability, porosity, pressure, temperature, delta_rho, model, scalers):
@@ -129,7 +129,7 @@ def main(input_directory):
             # with torch.no_grad():
             # rf = model(input_tensor).item()
             objective = build_objective(X_const[0], X_const[1], X_const[2], X_const[3], X_const[4], model, scalers)
-            xopt, fopt = pso(objective, lb, ub, swarmsize=100, maxiter=500, minstep=1e-8, minfunc=1e-8)
+            xopt, fopt = pso(objective, lb, ub, swarmsize=100, maxiter=300, minstep=1e-8, minfunc=1e-8)
             results.append({
             "Field Name": df_clean['Field Name'].iloc[ii],
             "Porosity [-]": X_const[1],

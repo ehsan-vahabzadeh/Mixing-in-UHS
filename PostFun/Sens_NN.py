@@ -26,8 +26,8 @@ def build_model(input_dim, hidden_sizes, activations):
         layers.append(get_activation(act_name))
         # layers.append(nn.Dropout(0.2))  # Add dropout for regularization
         in_dim = out_dim
-
     layers.append(nn.Linear(in_dim, 1))  # Output layer
+    layers.append(nn.Sigmoid())   # <- bound to (0,1)
     return nn.Sequential(*layers)
 os.chdir("Y:\\Mixing Results\\July")  # Change to the directory containing your simulation files
 # os.chdir("Y:\\Mixing Results\\May\\NewCH4")  # Change to the directory containing your simulation files
@@ -70,7 +70,7 @@ X_tensor = torch.tensor(X_scaled, dtype=torch.float32)
 # --- 5. Predict with Neural Network ---
 with torch.no_grad():
     rf_preds = model(X_tensor).numpy().flatten()
-    rf_preds = y_scaler.inverse_transform([[rf_preds]]).ravel()[0]
+    # rf_preds = y_scaler.inverse_transform([[rf_preds]]).ravel()[0]
 
 # --- 6. Combine Inputs + Outputs into a DataFrame ---
 df_results = pd.DataFrame(X_raw, columns=list(input_ranges.keys()))
@@ -100,49 +100,93 @@ df_results["RF"] = rf_preds
 #     })
 # df_results = pd.DataFrame(df_results)
 
-
-plt.figure(figsize=(8, 6))
-plt.hexbin(df_results["FlowRate"],  df_results["RF"], gridsize=50, cmap='viridis')
-plt.colorbar(label='Point Density')
-plt.xlabel("Flow Rate")
-plt.ylabel("Predicted RF")
-plt.title("Flow Rate vs Predicted RF (200k samples)")
+fig, ax = plt.subplots(1, 2, figsize=(12, 6))
+fig.subplots_adjust(wspace=0.1)
+ax[0].hexbin(df_results["FlowRate"],  df_results["RF"], gridsize=50, cmap='viridis')
+ax[0].set_xlabel("Flow Rate", fontsize=14)
+ax[0].set_ylabel("Predicted RF", fontsize=14)
+ax[1].scatter(
+    df_results["FlowRate"],
+    df_results["RF"],
+    edgecolor='k'
+)
+ax[1].set_xlabel("Flow Rate", fontsize=14)
+ax[1].set_ylabel("Predicted RF", fontsize=14)
 plt.tight_layout()
 plt.show()
 
-plt.figure(figsize=(8, 6))
-plt.hexbin(df_results["CycleLength"], df_results["RF"], gridsize=50, cmap='viridis')
-plt.colorbar(label='Point Density')
-plt.xlabel("CycleLength")
-plt.ylabel("Predicted RF")
-plt.title("CycleLength vs Predicted RF (200k samples)")
+fig, ax = plt.subplots(1, 2, figsize=(12, 6))
+fig.subplots_adjust(wspace=0.1)
+ax[0].hexbin(df_results["CycleLength"],  df_results["RF"], gridsize=50, cmap='viridis')
+ax[0].set_xlabel("CycleLength")
+ax[0].set_ylabel("Predicted RF")
+ax[1].scatter(
+    df_results["CycleLength"],
+    df_results["RF"],
+    edgecolor='k'
+)
+ax[1].set_xlabel("CycleLength")
+ax[1].set_ylabel("Predicted RF")
 plt.tight_layout()
 plt.show()
 
-plt.figure(figsize=(8, 6))
-plt.hexbin(df_results["DensityDiff"], df_results["RF"], gridsize=50, cmap='viridis')
-plt.colorbar(label='Point Density')
-plt.xlabel("DensityDiff")
-plt.ylabel("Predicted RF")
-plt.title("DensityDiff vs Predicted RF (200k samples)")
+fig, ax = plt.subplots(1, 2, figsize=(12, 6))
+fig.subplots_adjust(wspace=0.1)
+ax[0].hexbin(df_results["Pressure"],  df_results["RF"], gridsize=50, cmap='viridis')
+ax[0].set_xlabel("Pressure")
+ax[0].set_ylabel("Predicted RF")
+ax[1].scatter(
+    df_results["Pressure"],
+    df_results["RF"],
+    edgecolor='k'
+)
+ax[1].set_xlabel("Pressure")
+ax[1].set_ylabel("Predicted RF")
 plt.tight_layout()
 plt.show()
 
-plt.figure(figsize=(8, 6))
-plt.hexbin(df_results["Pressure"], df_results["RF"], gridsize=50, cmap='viridis')
-plt.colorbar(label='Point Density')
-plt.xlabel("Pressure")
-plt.ylabel("Predicted RF")
-plt.title("Pressure vs Predicted RF (200k samples)")
+fig, ax = plt.subplots(1, 2, figsize=(12, 6))
+fig.subplots_adjust(wspace=0.1)
+ax[0].hexbin(df_results["Permeability"],  df_results["RF"], gridsize=50, cmap='viridis')
+ax[0].set_xlabel("Permeability")
+ax[0].set_ylabel("Predicted RF")
+ax[1].scatter(
+    df_results["Permeability"],
+    df_results["RF"],
+    edgecolor='k'
+)
+ax[1].set_xlabel("Permeability")
+ax[1].set_ylabel("Predicted RF")
 plt.tight_layout()
 plt.show()
 
-plt.figure(figsize=(8, 6))
-plt.hexbin(df_results["Permeability"], df_results["RF"], gridsize=50, cmap='viridis')
-plt.colorbar(label='Point Density')
-plt.xlabel("Permeability")
-plt.ylabel("Predicted RF")
-plt.title("Permeability vs Predicted RF (200k samples)")
+fig, ax = plt.subplots(1, 2, figsize=(12, 6))
+fig.subplots_adjust(wspace=0.1)
+ax[0].hexbin(df_results["DensityDiff"],  df_results["RF"], gridsize=50, cmap='viridis')
+ax[0].set_xlabel("DensityDiff")
+ax[0].set_ylabel("Predicted RF")
+ax[1].scatter(
+    df_results["DensityDiff"],
+    df_results["RF"],
+    edgecolor='k'
+)
+ax[1].set_xlabel("DensityDiff")
+ax[1].set_ylabel("Predicted RF")
+plt.tight_layout()
+plt.show()
+
+fig, ax = plt.subplots(1, 2, figsize=(12, 6))
+fig.subplots_adjust(wspace=0.1)
+ax[0].hexbin(df_results["Porosity"],  df_results["RF"], gridsize=50, cmap='viridis')
+ax[0].set_xlabel("Porosity")
+ax[0].set_ylabel("Predicted RF")
+ax[1].scatter(
+    df_results["Porosity"],
+    df_results["RF"],
+    edgecolor='k'
+)
+ax[1].set_xlabel("Porosity")
+ax[1].set_ylabel("Predicted RF")
 plt.tight_layout()
 plt.show()
 # --- 7. Save or Use Results ---

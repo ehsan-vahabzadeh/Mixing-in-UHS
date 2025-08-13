@@ -19,6 +19,7 @@ from sklearn.model_selection import KFold
 import joblib
 torch.manual_seed(42)
 np.random.seed(42)
+DOF_LIMIT = 1600
 def train_and_evaluate_model_kfold(X, Y, trial=None):
     # === Optuna hyperparameters ===
     if trial:
@@ -31,7 +32,10 @@ def train_and_evaluate_model_kfold(X, Y, trial=None):
         for i in range(n_layers):
             hidden_sizes.append(trial.suggest_int(f"n_units_l{i}", 1, 32))
             activations.append(trial.suggest_categorical(f"activation_l{i}", ["relu", "tanh", "sigmoid"]))
-
+        total_params = count_params(X.shape[1], hidden_sizes)
+        trial.set_user_attr("constraint", total_params - DOF_LIMIT)
+        if total_params > DOF_LIMIT:
+            return float("inf")
         batch_size = 8
         epochs = 200  # Reduce for optimization speed
 
@@ -267,6 +271,17 @@ def train_and_evaluate_model_kfold(X, Y, trial=None):
             torch.save(model.state_dict(), "trained_ann_model.pt")
             joblib.dump({"X_scaler": scaler, "y_scaler": y_scaler}, "scalers.pkl")
         return model, scaler
+def constraints(trial):
+    """Return positive if violating constraint."""
+    return (trial.user_attrs["constraint"],)
+def count_params(input_dim, hidden_sizes):
+    params = 0
+    in_dim = input_dim
+    for h in hidden_sizes:
+        params += in_dim * h + h  # weights + bias
+        in_dim = h
+    params += in_dim * 1 + 1  # output layer
+    return params
 def get_activation(name):
     if name == "relu":
         return nn.ReLU()
@@ -285,8 +300,8 @@ def build_model(input_dim, hidden_sizes, activations):
         layers.append(get_activation(act_name))
         # layers.append(nn.Dropout(0.2))  # Add dropout for regularization
         in_dim = out_dim
-    layers += [nn.Linear(in_dim, 1), nn.Sigmoid()]   # <- bound to (0,1)
-    layers.append(nn.Linear(1, 1))  # Output layer
+    layers.append(nn.Linear(in_dim, 1))  # Output layer
+    layers.append(nn.Sigmoid())          # Constrain output to (0,1)
     return nn.Sequential(*layers)
 
     
@@ -295,7 +310,12 @@ def optimize_hyperparameters(X, Y, n_trials=30):
         # return train_and_evaluate_model(X, Y, trial)
         return train_and_evaluate_model_kfold(X, Y, trial)
     # === Optuna study setup ===
-    study = optuna.create_study(direction="minimize")
+    if __name__ == "__main__":
+        sampler = optuna.integration.BoTorchSampler(
+        constraints_func=constraints,
+        n_startup_trials=10,
+    )
+    study = optuna.create_study(direction="minimize", sampler=sampler)
     study.optimize(objective, n_trials=n_trials)
     print("\n✅ Best Trial:")
     print(study.best_trial.params)
@@ -309,7 +329,7 @@ def NN_Model(X, Y, use_optimization=False):
         url="sqlite:///optuna_optimization_history.db",
         engine_kwargs={"pool_size": 20, "connect_args": {"timeout": 10}},)
         study = optuna.create_study(storage=storage)
-        best_params = optimize_hyperparameters(X, Y, n_trials=250)
+        best_params = optimize_hyperparameters(X, Y, n_trials=150)
         print("✅ Re-training model with best parameters...")
         train_and_evaluate_model_kfold(X, Y, trial=optuna.trial.FixedTrial(best_params))
     else:
@@ -320,6 +340,7 @@ def NN_Model(X, Y, use_optimization=False):
 
 
 def main(input_directory):
+    
     rf_values = []
     labels = []
     inputs = []
@@ -367,8 +388,8 @@ def main(input_directory):
     # print(df.head())    # verify ordering and contents
     X = df[["FlowRate", "CycleLength", "Permeability", "Pressure", "delta_rho", 'porosity', 'Temperature','CG Ratio']].values
     Y = df["RF_final"].values
-    # NN_Model(X, Y, use_optimization=True) 
-    NN_Model(X, Y)  
+    NN_Model(X, Y, use_optimization=True) 
+    # NN_Model(X, Y)  
     
 os.chdir("Y:\\Mixing Results\\July")  # Change to the directory containing your simulation files
 # os.chdir("Y:\\Mixing Results\\May\\NewCH4")  # Change to the directory containing your simulation files
