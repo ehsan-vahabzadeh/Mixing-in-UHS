@@ -120,17 +120,23 @@ def train_and_evaluate_model_kfold(X, Y, trial=None):
         # epochs = 300
         
         # With Dropout No CG Ratio
-        lr = 0.0008706836102150319
-        hidden_sizes = [32, 22]
-        activation = ["relu", "tanh"]
-        batch_size = 8
-        epochs = 300
+        # lr = 0.0008706836102150319
+        # hidden_sizes = [32, 22]
+        # activation = ["relu", "tanh"]
+        # batch_size = 8
+        # epochs = 300
         
         # lr = 0.002259448865481174
         # hidden_sizes = [58, 112, 36]
         # activation = ["tanh", "sigmoid", "tanh"]
         # batch_size = 8
         # epochs = 1000
+        
+        lr = 0.001758847622831082
+        hidden_sizes = [19, 18]
+        activation = ["relu", "tanh"]
+        batch_size = 8
+        epochs = 300
 
         kf = KFold(n_splits=5, shuffle=True, random_state=42)
         mse_list = []
@@ -268,8 +274,8 @@ def train_and_evaluate_model_kfold(X, Y, trial=None):
             plt.tight_layout()
             plt.show()
             
-            torch.save(model.state_dict(), "trained_ann_model.pt")
-            joblib.dump({"X_scaler": scaler, "y_scaler": y_scaler}, "scalers.pkl")
+            torch.save(model.state_dict(), "ann_model_H2withoutCG.pt")
+            joblib.dump({"X_scaler": scaler, "y_scaler": y_scaler}, "scalers_H2withoutCG.pkl")
         return model, scaler
 def constraints(trial):
     """Return positive if violating constraint."""

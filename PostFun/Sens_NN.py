@@ -35,7 +35,7 @@ os.chdir("Y:\\Mixing Results\\July")  # Change to the directory containing your 
 input_directory = os.getcwd()
 # --- Load trained model and scaler ---
 activation = ["relu", "tanh"]
-model = build_model(input_dim=8, hidden_sizes=[32, 22], activations=activation)
+model = build_model(input_dim=8, hidden_sizes=[19, 18], activations=activation)
 model.load_state_dict(torch.load("trained_ann_model.pt"))
 model.eval()
 scalers = joblib.load("scalers.pkl")

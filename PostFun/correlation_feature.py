@@ -12,17 +12,16 @@ font = {'family' : 'sans-serif',
         'size'   : 20}
 plt.rc('font', **font)
 def pysr_fun(X):
-    y = X["RF_final"]
-    X = X.drop(columns=['RF_1','RF_5','RF_final', 'Nusselt_number', 'Raileigh_number', 'theta', 'FlowRate', 'CycleLength', 'Permeability', 'Pressure', 'delta_rho'])
+    y = X["RF"]
+    X = X[["Pe", "Ng"]]
     X = X.values
     y = y.values    
     model = PySRRegressor(
     model_selection="best",  # selects best equation based on loss and complexity
-    niterations=100,         # increase for more thorough search
+    niterations=30,         # increase for more thorough search
     population_size=100,
     maxdepth=10,
-    binary_operators=["+", "-", "*", "/"],
-    unary_operators=["exp", "log", "sqrt"],
+    binary_operators=["*","^"],
     extra_sympy_mappings={"inv": lambda x: 1/x},
     loss="loss(x, y) = (x - y)^2",  # standard MSE
     maxsize=20,             # controls complexity of expressions
@@ -32,6 +31,7 @@ def pysr_fun(X):
     model.fit(X, y)
     print(model) 
     print(model.get_best())
+    print(model.get_best()["equation"]) 
     y_pred = model.predict(X)
     print("R²:", r2_score(y, y_pred))
     print("MSE:", mean_squared_error(y, y_pred))
@@ -102,9 +102,10 @@ def main(input_directory):
     labels = []
     inputs = []
     df_list = []
-    file_path = os.path.join(input_directory, 'mixing_results_new.xlsx')
+    # file_path = os.path.join(input_directory, 'mixing_results_new.xlsx')
+    file_path = os.path.join(input_directory, 'mixing_results_plot.xlsx')
     df = pd.read_excel(file_path)
-    df = df.drop(columns=['label','CushionGas','theta','CG Ratio','Nusselt_number','Raileigh_number', 'Pe', 'Ng'])
+    df = df.drop(columns=['label','CushionGas','theta','CG Ratio','Nusselt_number','Raileigh_number'])
     df = df.dropna()  # Drop rows with NaN values
     df = df.rename(columns = {
         'FlowRate': 'Flow Rate',
@@ -112,6 +113,7 @@ def main(input_directory):
         'RF_final': 'RF',
         'delta_rho': 'Density',
         })
+    
     df_list.append(df)
     if df_list:
         df = pd.concat(df_list, ignore_index=True)
@@ -119,8 +121,8 @@ def main(input_directory):
         df = pd.DataFrame()
         
     # Pearson(df)
-    pairwise(df)
-    # pysr_fun(df)
+    # pairwise(df)
+    pysr_fun(df)
       
     
 os.chdir("Y:\\Mixing Results\\July")  # Change to the directory containing your simulation files
