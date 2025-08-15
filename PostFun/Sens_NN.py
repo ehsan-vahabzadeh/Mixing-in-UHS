@@ -7,7 +7,7 @@ import torch
 import torch.nn as nn
 import os
 import matplotlib.pyplot as plt
-
+from CoolProp.CoolProp import PropsSI
 def get_activation(name):
     if name == "relu":
         return nn.ReLU()
@@ -35,47 +35,73 @@ os.chdir("Y:\\Mixing Results\\July")  # Change to the directory containing your 
 input_directory = os.getcwd()
 # --- Load trained model and scaler ---
 activation = ["relu", "tanh"]
-model = build_model(input_dim=8, hidden_sizes=[19, 18], activations=activation)
-model.load_state_dict(torch.load("trained_ann_model.pt"))
+model = build_model(input_dim=8, hidden_sizes=[15, 30], activations=activation)
+model.load_state_dict(torch.load("ann_model_withCG.pt"))
 model.eval()
-scalers = joblib.load("scalers.pkl")
+scalers = joblib.load("scalers_withCG.pkl")
 scaler = scalers["X_scaler"]
 y_scaler = scalers["y_scaler"]
-# --- 1. Define Input Ranges ---
-input_ranges = {
-    'FlowRate': (1e5, 1.5e6),
-    'CycleLength': (14, 180),
-    'Pressure': (76, 447),         # in bar or MPa based on your model
-    'Permeability': (3, 1497),   # in mD
-    'DensityDiff': (0, 846),       # kg/m³, adjust based on physical limits
-    'Porosity': (0.06, 0.28),      # dimensionless
-    'Temperature': (282.15, 412),  # Kelvin, adjust based on physical limits
-    'CushionGasRatio': (1, 5)      # dimensionless, adjust based on physical limits
-}
+# Path to your consolidated CSV
+csv_path = r"Y:\Mixing Results\Field Data\consolidated_output - Final.csv"
 
-# --- 2. Generate LHS Samples ---
-n_samples = 200000
-n_features = len(input_ranges)
-lhs_samples = lhs(n_features, samples=n_samples)
+# Read the CSV file
+df = pd.read_csv(csv_path)
 
-# --- 3. Scale to Real Input Ranges ---
-X_raw = np.zeros((n_samples, n_features))
-for i, (key, (low, high)) in enumerate(input_ranges.items()):
-    X_raw[:, i] = lhs_samples[:, i] * (high - low) + low
+# Select and convert the necessary columns to numeric
+columns = [
+    "Field Name",
+    "Porosity [-]",
+    "Permeability [mD]",
+    "Reservoir Pressure[MPa]",
+    "Reservoir Temp [C]",
+]
+df[columns[1:]] = df[columns[1:]].apply(pd.to_numeric, errors='coerce')
 
-# --- 4. Normalize Inputs with Trained Scaler ---
-X_scaled = scaler.transform(X_raw)
-X_tensor = torch.tensor(X_scaled, dtype=torch.float32)
+df_clean = df.dropna(subset=columns).reset_index(drop=True)
+df_clean['Reservoir Pressure[MPa]'] = df_clean['Reservoir Pressure[MPa]'] * 10
+df_clean['Reservoir Temp [C]'] = df_clean['Reservoir Temp [C]'] + 273.15  # Convert to Kelvin
+df_clean = df_clean.rename(columns={"Reservoir Pressure[MPa]": "Pressure","Reservoir Temp [C]": "Temperature","Porosity [-]": "Porosity","Permeability [mD]": "Permeability"})
+activation = ["tanh", "sigmoid"]
+model = build_model(input_dim=8, hidden_sizes=[15, 30], activations=activation)
+model.load_state_dict(torch.load("ann_model_withCG.pt"))
+model.eval()
+scalers = joblib.load("scalers_withCG.pkl")
 
-# --- 5. Predict with Neural Network ---
-with torch.no_grad():
-    rf_preds = model(X_tensor).numpy().flatten()
-    # rf_preds = y_scaler.inverse_transform([[rf_preds]]).ravel()[0]
 
-# --- 6. Combine Inputs + Outputs into a DataFrame ---
-df_results = pd.DataFrame(X_raw, columns=list(input_ranges.keys()))
-df_results["RF"] = rf_preds
 
+CG_types = ['H2', 'CO2', 'CH4', 'N2']
+results =[]
+flow = 1500000
+cl = 14
+for ii in range(len(df_clean)):
+    for cg_type in CG_types:
+        H2_density = PropsSI("D", "P", df_clean['Pressure'].iloc[ii] * 1e5, "T", df_clean['Temperature'].iloc[ii], "Hydrogen")
+        CG_density = PropsSI("D", "P", df_clean['Pressure'].iloc[ii] * 1e5, "T", df_clean['Temperature'].iloc[ii] , cg_type)
+        X_const = np.array([df_clean['Permeability'].iloc[ii], df_clean['Porosity'].iloc[ii], df_clean['Pressure'].iloc[ii], df_clean['Temperature'].iloc[ii], CG_density - H2_density])
+        if cg_type != 'H2':
+            CG_ratio = 0.0
+        else:
+            CG_ratio = 0.0
+        full_input = np.array([[flow, cl, X_const[0], X_const[2], X_const[4], X_const[1], X_const[3], CG_ratio]])
+        scaled = scaler.transform(full_input)
+        input_tensor = torch.tensor(scaled, dtype=torch.float32)
+        with torch.no_grad():
+            rf = model(input_tensor).item()
+        results.append({
+        "Field Name": df_clean['Field Name'].iloc[ii],
+        "Porosity [-]": X_const[1],
+        "Permeability [mD]": X_const[0],
+        "Reservoir Pressure[bar]": X_const[2],
+        "Reservoir Temp [K]": X_const[3],
+        "Cushion Gas": cg_type,
+        "Density Difference [kg/m3]": CG_density - H2_density,
+        "Optimized Flow Rate [sm3/d]": flow,
+        "Optimized Cycle Length [d]": cl,
+        "Optimized CG Ratio": (CG_ratio),
+        "Max Predicted RF [-]": rf
+        })
+df_results = pd.DataFrame(results)
+df_results.to_csv(os.path.join(input_directory, 'sens_results.csv'), index=False)
 
 
 # labels = []

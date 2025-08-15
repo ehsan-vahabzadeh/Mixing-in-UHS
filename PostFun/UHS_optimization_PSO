@@ -58,7 +58,8 @@ def main(input_directory):
     labels = []
     inputs = []
     df_list = []
-    file_path = os.path.join(input_directory, 'mixing_results_new.xlsx')
+    # file_path = os.path.join(input_directory, 'mixing_results_withCG.xlsx')
+    file_path = os.path.join(input_directory, 'mixing_results_withoutCG.xlsx')
     df = pd.read_excel(file_path)
     
     valid = []
@@ -102,11 +103,11 @@ def main(input_directory):
     df_clean['Reservoir Pressure[MPa]'] = df_clean['Reservoir Pressure[MPa]'] * 10
     df_clean['Reservoir Temp [C]'] = df_clean['Reservoir Temp [C]'] + 273.15  # Convert to Kelvin
     df_clean = df_clean.rename(columns={"Reservoir Pressure[MPa]": "Pressure","Reservoir Temp [C]": "Temperature","Porosity [-]": "Porosity","Permeability [mD]": "Permeability"})
-    activation = ["relu", "tanh"]
-    model = build_model(input_dim=8, hidden_sizes=[19, 18], activations=activation)
-    model.load_state_dict(torch.load("trained_ann_model.pt"))
+    activation = ["tanh", "sigmoid"]
+    model = build_model(input_dim=8, hidden_sizes=[15, 30], activations=activation)
+    model.load_state_dict(torch.load("ann_model_withCG.pt"))
     model.eval()
-    scalers = joblib.load("scalers.pkl")
+    scalers = joblib.load("scalers_withCG.pkl")
     
 
 
@@ -121,15 +122,15 @@ def main(input_directory):
                 lb = [1e5, 14]  
                 ub = [1.5e6, 180]
             else:
-                lb = [1e5, 14, 1]  
-                ub = [1.5e6, 180, 5] 
+                lb = [1e5, 14, 0.0]  
+                ub = [1.5e6, 180, 5.0] 
             # full_input = np.array([[flow, cl, X_const[0], X_const[2], X_const[4], X_const[1], X_const[3], 0.0]])
             # scaled = scaler.transform(full_input)
             # input_tensor = torch.tensor(scaled, dtype=torch.float32)
             # with torch.no_grad():
             # rf = model(input_tensor).item()
             objective = build_objective(X_const[0], X_const[1], X_const[2], X_const[3], X_const[4], model, scalers)
-            xopt, fopt = pso(objective, lb, ub, swarmsize=100, maxiter=300, minstep=1e-8, minfunc=1e-8)
+            xopt, fopt = pso(objective, lb, ub, swarmsize=100, maxiter=400, minstep=1e-8, minfunc=1e-8)
             results.append({
             "Field Name": df_clean['Field Name'].iloc[ii],
             "Porosity [-]": X_const[1],

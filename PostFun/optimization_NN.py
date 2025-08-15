@@ -104,37 +104,10 @@ def train_and_evaluate_model_kfold(X, Y, trial=None):
         y_train_t = torch.tensor(Y_split, dtype=torch.float32).unsqueeze(1)
         X_test_t = torch.tensor(X_test, dtype=torch.float32)
         y_test_t = torch.tensor(y_test, dtype=torch.float32).unsqueeze(1)
-
-        # Without Dropout
-        # lr = 0.0026929845041663582
-        # hidden_sizes = [20, 6]
-        # activation = ["tanh", "sigmoid"]
-        # batch_size = 8
-        # epochs = 300
-        
-        # With Dropout
-        # lr = 0.0009484883180943276
-        # hidden_sizes = [30]
-        # activation = ["relu"]
-        # batch_size = 8
-        # epochs = 300
-        
-        # With Dropout No CG Ratio
-        # lr = 0.0008706836102150319
-        # hidden_sizes = [32, 22]
-        # activation = ["relu", "tanh"]
-        # batch_size = 8
-        # epochs = 300
-        
-        # lr = 0.002259448865481174
-        # hidden_sizes = [58, 112, 36]
-        # activation = ["tanh", "sigmoid", "tanh"]
-        # batch_size = 8
-        # epochs = 1000
-        
-        lr = 0.001758847622831082
-        hidden_sizes = [19, 18]
-        activation = ["relu", "tanh"]
+        # with consideration of CG in RF
+        lr = 0.0025381224482731576
+        hidden_sizes = [15, 30]
+        activation = ["tanh", "sigmoid"]
         batch_size = 8
         epochs = 300
 
@@ -274,8 +247,8 @@ def train_and_evaluate_model_kfold(X, Y, trial=None):
             plt.tight_layout()
             plt.show()
             
-            torch.save(model.state_dict(), "ann_model_H2withoutCG.pt")
-            joblib.dump({"X_scaler": scaler, "y_scaler": y_scaler}, "scalers_H2withoutCG.pkl")
+            torch.save(model.state_dict(), "ann_model_withoutCG.pt")
+            joblib.dump({"X_scaler": scaler, "y_scaler": y_scaler}, "scalers_withoutCG.pkl")
         return model, scaler
 def constraints(trial):
     """Return positive if violating constraint."""
@@ -350,8 +323,8 @@ def main(input_directory):
     rf_values = []
     labels = []
     inputs = []
-    # file_path = os.path.join(input_directory, 'mixing_results_new.xlsx')
-    file_path = os.path.join(input_directory, 'mixing_results_H2withoutCG.xlsx')
+    file_path = os.path.join(input_directory, 'mixing_results_withoutCG.xlsx')
+    # file_path = os.path.join(input_directory, 'mixing_results_withCG.xlsx')
     df = pd.read_excel(file_path)
     ordered_data = []
     for i in range(len(df)):

@@ -106,7 +106,7 @@ def calculate_rf(values_inj_dt, values_prod_dt, cycle_data, End_of_CG):
     cumulative_inj = np.zeros(len(values_inj_dt) + 1)
     cumulative_prod = np.zeros(len(values_prod_dt) + 1)
     qq = 1
-    End_of_CG = 0
+    # End_of_CG = 0
     # Calculate the cumulative sum for injection and production values up to each time step
     for i in range(End_of_CG, len(values_inj_dt) + 1):  
         cumulative_inj[i] = np.sum(values_inj_dt[End_of_CG:i])
@@ -348,7 +348,7 @@ def save_results_to_excel(results, output_path='mixing_results.xlsx'):
 
 # base_input_dir = r"Y:\Mixing Results\New May"
 base_input_dir = r"Y:\Mixing Results\July"
-gas_types = ["H2-No CG","CO2","CH4", "N2"]
+gas_types = ["H2","CO2","CH4", "N2"]
 # gas_types = ["CO2"]
 # === Accumulate All Results Across Gases ===
 all_RF_List = []
@@ -371,7 +371,7 @@ for gas in gas_types:
 os.chdir(base_input_dir) 
 input_directory = os.getcwd() 
 all_RF_List.sort(key=lambda x: x['RF_final'])
-# save_results_to_excel(all_RF_List, input_directory + '\\mixing_results_plot.xlsx')
+save_results_to_excel(all_RF_List, input_directory + '\\mixing_results_withoutCG.xlsx')
 # === Extract Combined Parameters ===
 RF_values = []
 Pe_values = []
