@@ -49,6 +49,16 @@ class SingleObjRFProblem(ElementwiseProblem):
         if not np.isfinite(f):
             f = 1e12
         out["F"] = f
+def extract_best_from_pymoo(res):
+    # Ensure 2D
+    F = np.atleast_2d(res.F)
+    X = np.atleast_2d(res.X)
+
+    # Single objective → minimize column 0
+    idx = np.argmin(F[:, 0] if F.shape[1] >= 1 else F[:, 0])
+    xbest = X[idx]
+    fbest = F[idx, 0] if F.ndim == 2 else F[idx]
+    return xbest.astype(float), float(fbest)
 def ga_with_pymoo(objective, lb, ub, pop_size=80, n_gen=300, seed=42):
     problem = SingleObjRFProblem(objective, lb, ub)
 
@@ -61,8 +71,8 @@ def ga_with_pymoo(objective, lb, ub, pop_size=80, n_gen=300, seed=42):
 
     res = minimize(problem, alg, termination=term, seed=seed, verbose=False)
 
-    xopt = res.X.astype(float)
-    fopt = float(res.F)   # this is your minimized loss = -RF
+    xopt = res.X[0].astype(float)
+    xopt, fopt = extract_best_from_pymoo(res)  # <<— instead of float(res.F)
     return xopt, fopt
 def build_objective(permeability, porosity, pressure, temperature, delta_rho, model, scalers, clf):
     def objective(x):
@@ -161,7 +171,7 @@ def main(input_directory):
                 lb = [1e5, 14, 0.0]  
                 ub = [1.5e6, 180, 5.0] 
             objective = build_objective(X_const[0], X_const[1], X_const[2], X_const[3], X_const[4], model, scalers,clf)
-            xopt, fopt = ga_with_pymoo(objective, lb, ub, pop_size=80, n_gen=300, seed=42)
+            xopt, fopt = ga_with_pymoo(objective, lb, ub, pop_size=300, n_gen=300, seed=42)
             results.append({
             "Field Name": df_clean['Field Name'].iloc[ii],
             "Porosity [-]": X_const[1],

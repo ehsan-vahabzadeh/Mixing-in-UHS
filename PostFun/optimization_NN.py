@@ -105,12 +105,19 @@ def train_and_evaluate_model_kfold(X, Y, trial=None):
         X_test_t = torch.tensor(X_test, dtype=torch.float32)
         y_test_t = torch.tensor(y_test, dtype=torch.float32).unsqueeze(1)
         # with consideration of CG in RF
-        lr = 0.0025381224482731576
-        hidden_sizes = [15, 30]
-        activation = ["tanh", "sigmoid"]
+        # lr = 0.0025381224482731576
+        # hidden_sizes = [15, 30]
+        # activation = ["tanh", "sigmoid"]
+        # batch_size = 8
+        # epochs = 300
+
+        # without the consideration of CG in RF
+        lr = 0.005134627406023883
+        hidden_sizes = [17, 12, 29]
+        activation = ["sigmoid", "sigmoid", "tanh"]
         batch_size = 8
         epochs = 300
-
+        
         kf = KFold(n_splits=5, shuffle=True, random_state=42)
         mse_list = []
         patience = 50
@@ -367,8 +374,8 @@ def main(input_directory):
     # print(df.head())    # verify ordering and contents
     X = df[["FlowRate", "CycleLength", "Permeability", "Pressure", "delta_rho", 'porosity', 'Temperature','CG Ratio']].values
     Y = df["RF_final"].values
-    NN_Model(X, Y, use_optimization=True) 
-    # NN_Model(X, Y)  
+    # NN_Model(X, Y, use_optimization=True) 
+    NN_Model(X, Y)  
     
 os.chdir("Y:\\Mixing Results\\July")  # Change to the directory containing your simulation files
 # os.chdir("Y:\\Mixing Results\\May\\NewCH4")  # Change to the directory containing your simulation files

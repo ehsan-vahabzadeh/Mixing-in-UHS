@@ -8,6 +8,7 @@ import torch.nn as nn
 import os
 import matplotlib.pyplot as plt
 from CoolProp.CoolProp import PropsSI
+from sklearn.tree import DecisionTreeClassifier
 def get_activation(name):
     if name == "relu":
         return nn.ReLU()
@@ -34,11 +35,17 @@ os.chdir("Y:\\Mixing Results\\July")  # Change to the directory containing your 
 # os.chdir("Z:\\Mixing Results\\Feb\\Results\\30 Meter Height Reservoir")  # Change to the directory containing your simulation files
 input_directory = os.getcwd()
 # --- Load trained model and scaler ---
-activation = ["relu", "tanh"]
-model = build_model(input_dim=8, hidden_sizes=[15, 30], activations=activation)
-model.load_state_dict(torch.load("ann_model_withCG.pt"))
+# activation = ["tanh", "sigmoid"]
+# model = build_model(input_dim=8, hidden_sizes=[15, 30], activations=activation)
+# model.load_state_dict(torch.load("ann_model_withCG.pt"))
+# model.eval()
+# scalers = joblib.load("scalers_withCG.pkl")
+
+activation = ["sigmoid", "sigmoid", "tanh"]
+model = build_model(input_dim=8, hidden_sizes=[17, 12, 29], activations=activation)
+model.load_state_dict(torch.load("ann_model_withoutCG.pt"))
 model.eval()
-scalers = joblib.load("scalers_withCG.pkl")
+scalers = joblib.load("scalers_withoutCG.pkl")
 scaler = scalers["X_scaler"]
 y_scaler = scalers["y_scaler"]
 # Path to your consolidated CSV
@@ -61,17 +68,33 @@ df_clean = df.dropna(subset=columns).reset_index(drop=True)
 df_clean['Reservoir Pressure[MPa]'] = df_clean['Reservoir Pressure[MPa]'] * 10
 df_clean['Reservoir Temp [C]'] = df_clean['Reservoir Temp [C]'] + 273.15  # Convert to Kelvin
 df_clean = df_clean.rename(columns={"Reservoir Pressure[MPa]": "Pressure","Reservoir Temp [C]": "Temperature","Porosity [-]": "Porosity","Permeability [mD]": "Permeability"})
-activation = ["tanh", "sigmoid"]
-model = build_model(input_dim=8, hidden_sizes=[15, 30], activations=activation)
-model.load_state_dict(torch.load("ann_model_withCG.pt"))
-model.eval()
-scalers = joblib.load("scalers_withCG.pkl")
 
+file_path = os.path.join(input_directory, 'mixing_results_withoutCG.xlsx')
+df = pd.read_excel(file_path)
 
-
-CG_types = ['H2', 'CO2', 'CH4', 'N2']
+valid = []
+for i in range(len(df)):
+    if df['RF_final'].iloc[i] == 0:
+        valid.append(0)
+    else:
+        valid.append(1)
+# df = df.dropna()  # Drop rows with NaN values
+df = df.rename(columns = {
+    'FlowRate': 'Flow Rate',
+    'CycleLength': 'Cycle Length',
+    'RF_final': 'RF',
+    'delta_rho': 'Density',
+    })
+df['valid'] = valid
+df = df.drop(columns=['label','CushionGas','theta','CG Ratio','Nusselt_number','Raileigh_number', 'Pe', 'Ng','RF'])
+X = df[["Flow Rate", "Cycle Length", "Permeability", "Pressure", "Density", 'porosity', 'Temperature']].values
+y = df["valid"].values
+clf = DecisionTreeClassifier(max_depth=3, min_samples_leaf=10)
+clf.fit(X, y)
+# CG_types = ['H2', 'CO2', 'CH4', 'N2']
+CG_types = ['H2']
 results =[]
-flow = 1500000
+flow = 15e5
 cl = 14
 for ii in range(len(df_clean)):
     for cg_type in CG_types:
@@ -81,12 +104,16 @@ for ii in range(len(df_clean)):
         if cg_type != 'H2':
             CG_ratio = 0.0
         else:
-            CG_ratio = 0.0
+            CG_ratio = 5.0
         full_input = np.array([[flow, cl, X_const[0], X_const[2], X_const[4], X_const[1], X_const[3], CG_ratio]])
         scaled = scaler.transform(full_input)
         input_tensor = torch.tensor(scaled, dtype=torch.float32)
+        pred = clf.predict(np.array([[flow, cl, X_const[0], X_const[2], X_const[4], X_const[1], X_const[3]]]))
         with torch.no_grad():
             rf = model(input_tensor).item()
+        if pred == 0:
+            print(f"Not feasible input:'{flow}' - '{cl}'- '{X_const[0]}'- '{X_const[2]}'- '{X_const[4]}'.")
+            rf = 0.0
         results.append({
         "Field Name": df_clean['Field Name'].iloc[ii],
         "Porosity [-]": X_const[1],

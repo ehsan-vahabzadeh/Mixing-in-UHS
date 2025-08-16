@@ -32,25 +32,33 @@ def build_model(input_dim, hidden_sizes, activations):
     layers.append(nn.Sigmoid())  # Output layer
     return nn.Sequential(*layers)
 
-def build_objective(permeability, porosity, pressure, temperature, delta_rho, model, scalers):
+def build_objective(permeability, porosity, pressure, temperature, delta_rho, model, scalers, clf, lb, ub, lambdaa):
     def objective(x):
         scaler = scalers["X_scaler"]
         y_scaler = scalers["y_scaler"]
+        
         if len(x) == 3:
             flow, cl, cg_ratio = x
+            normalized_CG = (cg_ratio - lb[2]) / (ub[2] - lb[2])
             full_input = np.array([[flow, cl, permeability, pressure, delta_rho, porosity, temperature, cg_ratio]])
         else:
+            normalized_CG = 0.0
             flow, cl = x
             full_input = np.array([[flow, cl, permeability, pressure, delta_rho, porosity, temperature, 0.0]])
         scaled = scaler.transform(full_input)
         input_tensor = torch.tensor(scaled, dtype=torch.float32)
+        X = np.array([[flow, cl, permeability, pressure, delta_rho, porosity, temperature]])
+        pred = clf.predict(X)
+        if pred == 0:
+            print(f"Not feasible input:'{flow}' - '{cl}'- '{permeability}'- '{pressure}'- '{delta_rho}'.")
+            return 1e12
         with torch.no_grad():
             rf = model(input_tensor).item()
             if rf > 1:
                 print("Warning: RF exceeds 1.0, capping to 1.0")
                 rf = 1.0  # Cap RF at 1.0
             # rf_original = y_scaler.inverse_transform([[rf]]).ravel()[0]
-        return -rf  # because we're maximizing
+        return (1 - lambdaa) * -rf + lambdaa * (normalized_CG)
     return objective
 
 def main(input_directory):
@@ -77,8 +85,8 @@ def main(input_directory):
         })
     df['valid'] = valid
     df = df.drop(columns=['label','CushionGas','theta','CG Ratio','Nusselt_number','Raileigh_number', 'Pe', 'Ng','RF'])
-    X = df[["Flow Rate", "Cycle Length", "Permeability", "Pressure", "Density", 'porosity', 'Temperature']]
-    y = df["valid"]
+    X = df[["Flow Rate", "Cycle Length", "Permeability", "Pressure", "Density", 'porosity', 'Temperature']].values
+    y = df["valid"].values
     clf = DecisionTreeClassifier(max_depth=3, min_samples_leaf=10)
     clf.fit(X, y)
 
@@ -103,13 +111,18 @@ def main(input_directory):
     df_clean['Reservoir Pressure[MPa]'] = df_clean['Reservoir Pressure[MPa]'] * 10
     df_clean['Reservoir Temp [C]'] = df_clean['Reservoir Temp [C]'] + 273.15  # Convert to Kelvin
     df_clean = df_clean.rename(columns={"Reservoir Pressure[MPa]": "Pressure","Reservoir Temp [C]": "Temperature","Porosity [-]": "Porosity","Permeability [mD]": "Permeability"})
-    activation = ["tanh", "sigmoid"]
-    model = build_model(input_dim=8, hidden_sizes=[15, 30], activations=activation)
-    model.load_state_dict(torch.load("ann_model_withCG.pt"))
-    model.eval()
-    scalers = joblib.load("scalers_withCG.pkl")
     
+    # activation = ["tanh", "sigmoid"]
+    # model = build_model(input_dim=8, hidden_sizes=[15, 30], activations=activation)
+    # model.load_state_dict(torch.load("ann_model_withCG.pt"))
+    # model.eval()
+    # scalers = joblib.load("scalers_withCG.pkl")
 
+    activation = ["sigmoid", "sigmoid", "tanh"]
+    model = build_model(input_dim=8, hidden_sizes=[17, 12, 29], activations=activation)
+    model.load_state_dict(torch.load("ann_model_withoutCG.pt"))
+    model.eval()
+    scalers = joblib.load("scalers_withoutCG.pkl")
 
     CG_types = ['H2', 'CO2', 'CH4', 'N2']
     results =[]
@@ -124,13 +137,11 @@ def main(input_directory):
             else:
                 lb = [1e5, 14, 0.0]  
                 ub = [1.5e6, 180, 5.0] 
-            # full_input = np.array([[flow, cl, X_const[0], X_const[2], X_const[4], X_const[1], X_const[3], 0.0]])
-            # scaled = scaler.transform(full_input)
-            # input_tensor = torch.tensor(scaled, dtype=torch.float32)
-            # with torch.no_grad():
-            # rf = model(input_tensor).item()
-            objective = build_objective(X_const[0], X_const[1], X_const[2], X_const[3], X_const[4], model, scalers)
-            xopt, fopt = pso(objective, lb, ub, swarmsize=100, maxiter=400, minstep=1e-8, minfunc=1e-8)
+            lambdaa = 0.05
+            objective = build_objective(X_const[0], X_const[1], X_const[2], X_const[3], X_const[4], model, scalers,clf, lb, ub, lambdaa)
+            xopt, fopt = pso(objective, lb, ub, swarmsize=100, maxiter=300, omega=0.7, phip=1.5, phig=1.5, minstep=1e-8, minfunc=1e-8)
+            if cg_type == 'H2':
+                normalized_CG = (xopt[2] - lb[2]) / (ub[2] - lb[2])
             results.append({
             "Field Name": df_clean['Field Name'].iloc[ii],
             "Porosity [-]": X_const[1],
@@ -142,10 +153,11 @@ def main(input_directory):
             "Optimized Flow Rate [sm3/d]": xopt[0],
             "Optimized Cycle Length [d]": xopt[1],
             "Optimized CG Ratio": (xopt[2] if len(xopt) == 3 else 0),
-            "Max Predicted RF [-]": -fopt
+            "Max Predicted RF [-]": -(fopt - lambdaa * normalized_CG)/ (1 - lambdaa) 
             })
+            
     df_results = pd.DataFrame(results)
-    df_results.to_csv(os.path.join(input_directory, 'optimized_results_no_CG.csv'), index=False)
+    df_results.to_csv(os.path.join(input_directory, 'optimized_results_without_CG.csv'), index=False)
 os.chdir("Y:\\Mixing Results\\July")  # Change to the directory containing your simulation files
 # os.chdir("Y:\\Mixing Results\\May\\NewCH4")  # Change to the directory containing your simulation files
 # os.chdir("Z:\\Mixing Results\\Feb\\Results\\30 Meter Height Reservoir")  # Change to the directory containing your simulation files
