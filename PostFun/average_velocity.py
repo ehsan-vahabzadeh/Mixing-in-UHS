@@ -74,9 +74,7 @@ def average_velocity_at_all_injection_ends(base_directory, pvd_directory, h2_thr
         for idx in indices_of_interest:
             if idx >= len(vtu_files):
                 continue
-
             file_path = os.path.join(folder_path, vtu_files[idx])
-
             try:
                 mesh = pv.read(file_path)
                 if mesh.n_points == 0 or 'velocity_gas (m/s)' not in mesh.point_data:
@@ -94,7 +92,9 @@ def average_velocity_at_all_injection_ends(base_directory, pvd_directory, h2_thr
                     # min_x_idx = candidates[np.argmin(coords[candidates, 0])]
                     # target_point_index = min_x_idx
                 vx_current = float(mesh.point_data['velocity_gas (m/s)'][target_point_index, 0])
-
+                file_path_temp = os.path.join(folder_path, vtu_files[1])
+                mesh_temp = pv.read(file_path_temp)
+                p_max = float(mesh_temp.point_data['p'][target_point_index])
                 if 'x^H2_gas' in mesh.point_data:
                     mesh = mesh.point_data_to_cell_data()
                     coords = mesh.cell_centers().points
@@ -188,7 +188,8 @@ def average_velocity_at_all_injection_ends(base_directory, pvd_directory, h2_thr
                         "avg_vx_x_H2_rev": avg_vx_x_H2_rev,
                         "avg_mass_velocity": avg_mass_velocity,
                         "vx_inlet": vx_current,
-                        "height": y_in_filtered
+                        "height": y_in_filtered,
+                        "max_pressure": p_max,
                     })
 
             except Exception as e:
@@ -213,7 +214,7 @@ def average_velocity_at_all_injection_ends(base_directory, pvd_directory, h2_thr
 
 
 if __name__ == "__main__":
-    base_dir = "Y:\\Mixing Results\\July\\H2\\"
+    base_dir = "Y:\\Mixing Results\\July\\N2\\"
     # base_dir = "Y:\\Mixing Results\\New May\\N2"
     # base_dir = "Y:\\Mixing Results\\June\\N2"
     pvd_dir = base_dir   # since your PVD files are stored in CH4 folder
