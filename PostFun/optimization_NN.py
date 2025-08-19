@@ -315,7 +315,7 @@ def NN_Model(X, Y, use_optimization=False):
         url="sqlite:///optuna_optimization_history.db",
         engine_kwargs={"pool_size": 20, "connect_args": {"timeout": 10}},)
         study = optuna.create_study(storage=storage)
-        best_params = optimize_hyperparameters(X, Y, n_trials=150)
+        best_params = optimize_hyperparameters(X, Y, n_trials=250)
         print("✅ Re-training model with best parameters...")
         train_and_evaluate_model_kfold(X, Y, trial=optuna.trial.FixedTrial(best_params))
     else:
@@ -330,8 +330,8 @@ def main(input_directory):
     rf_values = []
     labels = []
     inputs = []
-    file_path = os.path.join(input_directory, 'mixing_results_withoutCG.xlsx')
-    # file_path = os.path.join(input_directory, 'mixing_results_withCG.xlsx')
+    # file_path = os.path.join(input_directory, 'mixing_results_withoutCG.xlsx')
+    file_path = os.path.join(input_directory, 'mixing_results_withCG.xlsx')
     df = pd.read_excel(file_path)
     ordered_data = []
     for i in range(len(df)):
@@ -340,18 +340,18 @@ def main(input_directory):
             row.append(df[label].iloc[i])
         ordered_data.append(row)
     for data in ordered_data:
-        rf_values.append(data[7])
+        rf_values.append(data[9])
         inputs.append({
             "label": data[0],
             "FlowRate": data[1],
             "CycleLength":data[2],
             "Permeability": data[3],
-            "Pressure": data[4],
-            "delta_rho": data[10],
-            "porosity": data[12],
-            "Temperature": data[13],
-            "CG Ratio": data[15],
-            "RF_final": data[7]
+            "Pressure": data[5],
+            "delta_rho": data[12],
+            "porosity": data[4],
+            "Temperature": data[6],
+            "CG Ratio": data[16],
+            "RF_final": data[9]
         })
         # inputs.append(params['FlowRate',1])
         # inputs.append(params['CycleLength',2])
@@ -374,8 +374,8 @@ def main(input_directory):
     # print(df.head())    # verify ordering and contents
     X = df[["FlowRate", "CycleLength", "Permeability", "Pressure", "delta_rho", 'porosity', 'Temperature','CG Ratio']].values
     Y = df["RF_final"].values
-    # NN_Model(X, Y, use_optimization=True) 
-    NN_Model(X, Y)  
+    NN_Model(X, Y, use_optimization=True) 
+    # NN_Model(X, Y)  
     
 os.chdir("Y:\\Mixing Results\\July")  # Change to the directory containing your simulation files
 # os.chdir("Y:\\Mixing Results\\May\\NewCH4")  # Change to the directory containing your simulation files

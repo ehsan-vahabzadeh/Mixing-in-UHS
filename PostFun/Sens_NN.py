@@ -94,7 +94,7 @@ clf.fit(X, y)
 # CG_types = ['H2', 'CO2', 'CH4', 'N2']
 CG_types = ['H2']
 results =[]
-flow = 15e5
+flow = 1e5
 cl = 14
 for ii in range(len(df_clean)):
     for cg_type in CG_types:

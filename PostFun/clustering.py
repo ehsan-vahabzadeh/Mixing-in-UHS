@@ -5,7 +5,7 @@ from sklearn.cluster import KMeans
 from pyDOE2 import lhs
 import matplotlib.pyplot as plt
 from sklearn.linear_model import LinearRegression
-np.random.seed(445566)
+np.random.seed(64184151)
 font = {'family' : 'sans-serif',
         'size'   : 18}
 plt.rc('font', **font)
@@ -47,9 +47,9 @@ plt.grid(True)
 plt.show()
 # === 4. LHS Sampling for Flow Rate and Cycle Length ===
 flow_min, flow_max = 1e5, 1.5e6
-cycle_min, cycle_max = 14, 180
-CG_min, CG_max = 0.0 , 1.0  # Example values for CG
-samples_per_cluster = 33
+cycle_min, cycle_max = 180, 360
+CG_min, CG_max = 0.0 , 5.0  # Example values for CG
+samples_per_cluster = 50
 
 sampled_data = []
 cluster_weights = {}
@@ -94,7 +94,7 @@ for cluster_id in range(n_clusters):
     flow_rates = lhs_samples[:, 0] * (flow_max - flow_min) + flow_min
     cycle_lengths = np.round(lhs_samples[:, 1] * (cycle_max - cycle_min) + cycle_min)
     # CG_values = lhs_samples[:, 2] * (CG_max - CG_min) + CG_min
-    CG_values = lhs_samples[:, 1]
+    CG_values = lhs_samples[:, 1] * 0
     # Combine with sampled perm–pressure
     perm_pressure_samples["Flow Rate [m³/d]"] = flow_rates
     perm_pressure_samples["Cycle Length [days]"] = cycle_lengths

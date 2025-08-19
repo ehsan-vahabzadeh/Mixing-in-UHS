@@ -11,7 +11,7 @@ fields = [
     "storagepermeabilityml", "irreducible_water_saturationml", "co2endpoint_relpermeabilityml",
     "ave_gross_prod_rate_per_wellml", "ave_water_prod_rate_per_wellml", "gassaturation",
     "gasgravity", "giip", "virgin_reservoir_pressure", "virgin_reservoir_temp",
-    "gas_compress_factor", "gas_viscosity_at_rev_cond", "porevolume", "temperaturegradient", "shallowestdepthmin"
+    "gas_compress_factor", "gas_viscosity_at_rev_cond", "porevolume", "temperaturegradient", "shallowestdepthmin", "lat", "lon"
 ]
 
 # Nicely formatted column names for output
@@ -20,14 +20,14 @@ pretty_fields = [
     "Permeability [D]", "Swr [-]", "CO2 Endpoint RelPerm",
     "Gross Prod Rate/Well [cm/d]", "Water Prod Rate/Well [cm/d]", "Gas Saturation [-]",
     "Gas Gravity", "GIIP [1e6 scm/d]", "Reservoir Pressure[MPa]", "Reservoir Temp [C]",
-    "Gas Comp. Factor", "Gas Viscosity [cp]", "Pore Volume", "Temp Gradient", "Depth [m]"
+    "Gas Comp. Factor", "Gas Viscosity [cp]", "Pore Volume", "Temp Gradient", "Depth [m]", "Latitude", "Longitude"
 ]
 
 all_data = []
 
 # Loop through all CSV files
 for file in os.listdir(folder_path):
-    if file.endswith("2025jun13175835.csv") and file != "consolidated_output.csv" and file != "consolidated_output - Final.csv":
+    if file != "consolidated_output.csv" and file != "consolidated_output - Final.csv":
         try:
             file_path = os.path.join(folder_path, file)
             df = pd.read_csv(file_path)
