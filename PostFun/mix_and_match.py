@@ -3,15 +3,15 @@ import re
 import pandas as pd
 from difflib import get_close_matches
 
-folder_path = r"Y:\Mixing Results\Field Data"
+folder_path = r"Y:\Mixing Results\July"
 os.chdir(folder_path)
 
-base_file  = "consolidated_output.csv"          # has the Lat/Lon you trust
-final_file = "consolidated_output - Final.csv"  # needs Lat/Lon filled
-out_file   = "consolidated_output - Final_WITH_COORDS.csv"
+base_file  = "consolidated_output - Final.csv"          # has the Lat/Lon you trust
+final_file = "optimized_results_with_CG.csv"  # needs Lat/Lon filled
+out_file   = "optimized_results_with_CG_1.csv"
 
 # ---- 1) Load files ----
-base  = pd.read_csv(base_file)
+base  = pd.read_csv(base_file, encoding='cp1252')
 final = pd.read_csv(final_file)
 
 # ---- 2) Ensure expected columns exist ----

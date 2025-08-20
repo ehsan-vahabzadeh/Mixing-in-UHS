@@ -95,7 +95,7 @@ def main(input_directory):
     csv_path = r"Y:\Mixing Results\Field Data\consolidated_output - Final.csv"
 
     # Read the CSV file
-    df = pd.read_csv(csv_path)
+    df = pd.read_csv(csv_path, encoding='cp1252')
 
     # Select and convert the necessary columns to numeric
     columns = [
@@ -137,9 +137,9 @@ def main(input_directory):
             else:
                 lb = [1e5, 14, 0.0]  
                 ub = [1.5e6, 180, 5.0] 
-            lambdaa = 0.05
+            lambdaa = 0.1
             objective = build_objective(X_const[0], X_const[1], X_const[2], X_const[3], X_const[4], model, scalers,clf, lb, ub, lambdaa)
-            xopt, fopt = pso(objective, lb, ub, swarmsize=300, maxiter=500, omega=0.7, phip=1.5, phig=1.5, minstep=1e-8, minfunc=1e-8)
+            xopt, fopt = pso(objective, lb, ub, swarmsize=300, maxiter=300, omega=0.7, phip=1.5, phig=1.5, minstep=1e-8, minfunc=1e-8)
             if cg_type == 'H2':
                 normalized_CG = (xopt[2] - lb[2]) / (ub[2] - lb[2])
             results.append({
@@ -157,7 +157,7 @@ def main(input_directory):
             })
             
     df_results = pd.DataFrame(results)
-    df_results.to_csv(os.path.join(input_directory, 'optimized_results_without_CG.csv'), index=False)
+    df_results.to_csv(os.path.join(input_directory, 'optimized_results_without_CG_0.1.csv'), index=False)
 os.chdir("Y:\\Mixing Results\\July")  # Change to the directory containing your simulation files
 # os.chdir("Y:\\Mixing Results\\May\\NewCH4")  # Change to the directory containing your simulation files
 # os.chdir("Z:\\Mixing Results\\Feb\\Results\\30 Meter Height Reservoir")  # Change to the directory containing your simulation files

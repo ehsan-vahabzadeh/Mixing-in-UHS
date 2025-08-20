@@ -6,7 +6,7 @@ import os
 # --- 1) Load and clean ---
 input_dir = r"Y:\Mixing Results\July"
 os.chdir(input_dir) 
-df = pd.read_csv("optimized_results_without_CG.csv")
+df = pd.read_csv("optimized_results_without_CG.csv", encoding='cp1252')
 
 # Ensure the needed columns exist and are numeric
 H2_val = []
@@ -99,9 +99,9 @@ for i, gas in enumerate(counts_FR.index):
 ax[1].set_xticks(x)
 ax[1].set_xticklabels(labels_FR)
 ax[1].tick_params(axis= 'both', which='major', labelsize=16)
-ax[1].set_xlabel("Flow Rate[$$]", fontsize=18)
+ax[1].set_xlabel("Flow Rate[sm3/d]", fontsize=18)
 ax[1].set_ylabel("Number of cases" , fontsize=18)
-ax[1].legend(title="Cushion Gas", fontsize=16)
+# ax[1].legend(title="Cushion Gas", fontsize=16)
 
 # Annotate counts on bars (optional)
 for i, gas in enumerate(counts_FR.index):
@@ -120,7 +120,7 @@ ax[2].set_xticklabels(labels_CL)
 ax[2].tick_params(axis= 'both', which='major', labelsize=16)
 ax[2].set_xlabel("Cycle Length [days]", fontsize=18)
 ax[2].set_ylabel("Number of cases" , fontsize=18)
-ax[2].legend(title="Cushion Gas", fontsize=16)
+# ax[2].legend(title="Cushion Gas", fontsize=16)
 
 # Annotate counts on bars (optional)
 for i, gas in enumerate(counts_CL.index):

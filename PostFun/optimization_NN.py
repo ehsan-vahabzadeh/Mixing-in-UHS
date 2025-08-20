@@ -24,7 +24,7 @@ def train_and_evaluate_model_kfold(X, Y, trial=None):
     # === Optuna hyperparameters ===
     if trial:
         X_split, X_test, Y_split, y_test = train_test_split(X, Y, test_size=0.2, random_state=42)
-        lr = trial.suggest_float('lr', 1e-5, 1e-2, log=True)
+        lr = trial.suggest_float('lr', 1e-5, 3e-3, log=True)
         n_layers = trial.suggest_int("n_layers", 1, 3)  # You can change range
         hidden_sizes = []
         activations = []
@@ -105,18 +105,18 @@ def train_and_evaluate_model_kfold(X, Y, trial=None):
         X_test_t = torch.tensor(X_test, dtype=torch.float32)
         y_test_t = torch.tensor(y_test, dtype=torch.float32).unsqueeze(1)
         # with consideration of CG in RF
-        # lr = 0.0025381224482731576
-        # hidden_sizes = [15, 30]
-        # activation = ["tanh", "sigmoid"]
-        # batch_size = 8
-        # epochs = 300
-
-        # without the consideration of CG in RF
-        lr = 0.005134627406023883
-        hidden_sizes = [17, 12, 29]
-        activation = ["sigmoid", "sigmoid", "tanh"]
+        lr = 0.002999999999999999
+        hidden_sizes = [22, 21]
+        activation = ["sigmoid", "sigmoid"]
         batch_size = 8
         epochs = 300
+
+        # without the consideration of CG in RF
+        # lr = 0.005134627406023883
+        # hidden_sizes = [17, 12, 29]
+        # activation = ["sigmoid", "sigmoid", "tanh"]
+        # batch_size = 8
+        # epochs = 300
         
         kf = KFold(n_splits=5, shuffle=True, random_state=42)
         mse_list = []
@@ -254,8 +254,11 @@ def train_and_evaluate_model_kfold(X, Y, trial=None):
             plt.tight_layout()
             plt.show()
             
-            torch.save(model.state_dict(), "ann_model_withoutCG.pt")
-            joblib.dump({"X_scaler": scaler, "y_scaler": y_scaler}, "scalers_withoutCG.pkl")
+            # torch.save(model.state_dict(), "ann_model_withoutCG.pt")
+            # joblib.dump({"X_scaler": scaler, "y_scaler": y_scaler}, "scalers_withoutCG.pkl")
+            
+            torch.save(model.state_dict(), "ann_model_withCG.pt")
+            joblib.dump({"X_scaler": scaler, "y_scaler": y_scaler}, "scalers_withCG.pkl")
         return model, scaler
 def constraints(trial):
     """Return positive if violating constraint."""
@@ -374,8 +377,8 @@ def main(input_directory):
     # print(df.head())    # verify ordering and contents
     X = df[["FlowRate", "CycleLength", "Permeability", "Pressure", "delta_rho", 'porosity', 'Temperature','CG Ratio']].values
     Y = df["RF_final"].values
-    NN_Model(X, Y, use_optimization=True) 
-    # NN_Model(X, Y)  
+    # NN_Model(X, Y, use_optimization=True) 
+    NN_Model(X, Y)  
     
 os.chdir("Y:\\Mixing Results\\July")  # Change to the directory containing your simulation files
 # os.chdir("Y:\\Mixing Results\\May\\NewCH4")  # Change to the directory containing your simulation files
