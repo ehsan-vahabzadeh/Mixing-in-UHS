@@ -7,7 +7,7 @@ import CoolProp.CoolProp as CP
 os.chdir("Y:\\Mixing Results\\Field Data")  # Change to the directory containing your simulation files
 # Load the sampled CSV file
 csv_path = r"Y:\Mixing Results\Field Data\sampled_doe_hybrid.csv"
-df = pd.read_csv(csv_path)
+df = pd.read_csv(csv_path, encoding='cp1252')
 # Convert permeability from mD to m²
 df["Permeability [m²]"] = df["Permeability [mD]"] * 9.8692e-16
 df["Reservoir Pressure[MPa]"] = df["Reservoir Pressure[MPa]"] * 10  # Convert MPa to Pa
@@ -34,14 +34,14 @@ def cycle_settings(cycle_len):
 
 # Generate test_cases
 test_cases = []
-fluid = "H2"
+fluid = "CH4"
 MaxTimeStepSize = 10000  # Fixed value for MaxTimeStepSize
 for i, row in df.iterrows():
     durations = cycle_settings(row["Cycle Length [days]"])
     # if (row['Reservoir Pressure[MPa]'] < 150):
     #     continue
     # if (row['Permeability [mD]'] > 200):
-    MaxTimeStepSize = min((row['Cycle Length [days]'] * 10)*86400/2200, 10000)
+    MaxTimeStepSize = min((row['Cycle Length [days]'] * 10)*86400/2200, 20000)
     mass_flow_rate = row['Flow Rate [m³/d]'] * 0.041e3 / 10  / 86400 / (2*np.pi*0.2)
     case = {
         "name": f"{fluid}-{int(row['Flow Rate [m³/d]'])}-{int(row['Cycle Length [days]'])}-{int(row['Permeability [mD]'])}-{int(row['Reservoir Pressure[MPa]'])}-{int(row['Reservoir Temp [C]'])}-{int(row['Porosity [-]'])}-{row['CG']}",

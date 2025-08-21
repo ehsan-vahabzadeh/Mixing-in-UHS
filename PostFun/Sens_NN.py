@@ -9,6 +9,7 @@ import os
 import matplotlib.pyplot as plt
 from CoolProp.CoolProp import PropsSI
 from sklearn.tree import DecisionTreeClassifier
+from sklearn.ensemble import RandomForestClassifier
 def get_activation(name):
     if name == "relu":
         return nn.ReLU()
@@ -52,7 +53,7 @@ y_scaler = scalers["y_scaler"]
 csv_path = r"Y:\Mixing Results\Field Data\consolidated_output - Final.csv"
 
 # Read the CSV file
-df = pd.read_csv(csv_path)
+df = pd.read_csv(csv_path, encoding='cp1252')
 
 # Select and convert the necessary columns to numeric
 columns = [
@@ -86,15 +87,16 @@ df = df.rename(columns = {
     'delta_rho': 'Density',
     })
 df['valid'] = valid
-df = df.drop(columns=['label','CushionGas','theta','CG Ratio','Nusselt_number','Raileigh_number', 'Pe', 'Ng','RF'])
-X = df[["Flow Rate", "Cycle Length", "Permeability", "Pressure", "Density", 'porosity', 'Temperature']].values
+df = df.drop(columns=['label','CushionGas','theta','CG Ratio','Nusselt_number','Raileigh_number', 'Pe', 'Ng','RF', 'porosity', 'Temperature'])
+X = df[["Flow Rate", "Cycle Length", "Permeability", "Pressure", "Density"]].values
 y = df["valid"].values
-clf = DecisionTreeClassifier(max_depth=3, min_samples_leaf=10)
+# clf = DecisionTreeClassifier(max_depth=10, min_samples_leaf=10, class_weight="balanced")
+clf = RandomForestClassifier( n_estimators=200, max_depth=None, min_samples_leaf=5, class_weight="balanced", random_state=42)
 clf.fit(X, y)
-# CG_types = ['H2', 'CO2', 'CH4', 'N2']
-CG_types = ['H2']
+CG_types = ['H2', 'CO2', 'CH4', 'N2']
+# CG_types = ['H2']
 results =[]
-flow = 1e5
+flow = 12e5
 cl = 14
 for ii in range(len(df_clean)):
     for cg_type in CG_types:
@@ -108,7 +110,7 @@ for ii in range(len(df_clean)):
         full_input = np.array([[flow, cl, X_const[0], X_const[2], X_const[4], X_const[1], X_const[3], CG_ratio]])
         scaled = scaler.transform(full_input)
         input_tensor = torch.tensor(scaled, dtype=torch.float32)
-        pred = clf.predict(np.array([[flow, cl, X_const[0], X_const[2], X_const[4], X_const[1], X_const[3]]]))
+        pred = clf.predict(np.array([[flow, cl, X_const[0], X_const[2], X_const[4]]]))
         with torch.no_grad():
             rf = model(input_tensor).item()
         if pred == 0:

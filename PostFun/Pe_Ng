@@ -106,7 +106,7 @@ def calculate_rf(values_inj_dt, values_prod_dt, cycle_data, End_of_CG):
     cumulative_inj = np.zeros(len(values_inj_dt) + 1)
     cumulative_prod = np.zeros(len(values_prod_dt) + 1)
     qq = 1
-    End_of_CG = 0
+    # End_of_CG = 0
     # Calculate the cumulative sum for injection and production values up to each time step
     for i in range(End_of_CG, len(values_inj_dt) + 1):  
         cumulative_inj[i] = np.sum(values_inj_dt[End_of_CG:i])
@@ -197,7 +197,10 @@ def get_velocity_from_json(json_files, target_label, input_directory,Cycle_No):
                         cycle_data.get("height"),
                         cycle_data.get("max_pressure")
                     ))
-                return all_cycle_data[Cycle_No]
+                if len(all_cycle_data) < Cycle_No:
+                    return all_cycle_data[len(all_cycle_data) - 1]  
+                else:
+                    return all_cycle_data[Cycle_No]
     
     return None  # If not found in any file
 
@@ -229,6 +232,24 @@ def extract_all_params_sorted(input_directory, Cycle_No):
                     break
             cycle_data = cycles(params, time_seconds)
             rf = calculate_rf(values_inj_dt, values_prod_dt, cycle_data, End_of_CG)
+            # Thermophysical properties
+            H2_density = PropsSI("D", "P", params['pressure'] * 1e5, "T", params['temperature'], "Hydrogen")
+            H2_viscosity = PropsSI("VISCOSITY", "P", params['pressure'] * 1e5, "T", params['temperature'], "Hydrogen")
+
+            CG_density = PropsSI("D", "P", params['pressure'] * 1e5, "T", params['temperature'], params['CushionGasType'])
+            CG_viscosity = PropsSI("VISCOSITY", "P", params['pressure'] * 1e5, "T", params['temperature'], params['CushionGasType'])
+            if params['CushionGasType'] == 'H2':
+                CG_density = H2_density
+                CG_viscosity = H2_viscosity
+            # Derived quantities
+            porosity = params['porosity']
+            
+            mass_rate = params['FlowRate'] * 0.041e3 / 86400
+            perm = params['Permeability'] * 9.869233e-16
+            folder_tag = os.path.basename(input_directory)
+            # filename = {f"{folder_tag}.json", f"{folder_tag}-June.json"}
+            filename = f"{folder_tag}.json"
+            velocity, Length, sigma_rz, tip_velocity, sigma_rr, avg_vx_z, avg_vx_z_rev, avg_vx_x_H2, avg_vx_x_H2_rev, avg_mass_velocity, vx_inlet, height, max_pressure = get_velocity_from_json(filename, json_file,input_directory,Cycle_No)
             if len(rf) < 10:
                 rf = np.zeros(10)  # Ensure rf has at least 10 elements
                 warnings.warn("RF too short, skipping: " + json_file)
@@ -250,24 +271,6 @@ def extract_all_params_sorted(input_directory, Cycle_No):
                 'max_pressure':max_pressure
                 })
                 continue
-            # Thermophysical properties
-            H2_density = PropsSI("D", "P", params['pressure'] * 1e5, "T", params['temperature'], "Hydrogen")
-            H2_viscosity = PropsSI("VISCOSITY", "P", params['pressure'] * 1e5, "T", params['temperature'], "Hydrogen")
-
-            CG_density = PropsSI("D", "P", params['pressure'] * 1e5, "T", params['temperature'], params['CushionGasType'])
-            CG_viscosity = PropsSI("VISCOSITY", "P", params['pressure'] * 1e5, "T", params['temperature'], params['CushionGasType'])
-            if params['CushionGasType'] == 'H2':
-                CG_density = H2_density
-                CG_viscosity = H2_viscosity
-            # Derived quantities
-            porosity = params['porosity']
-            
-            mass_rate = params['FlowRate'] * 0.041e3 / 86400
-            perm = params['Permeability'] * 9.869233e-16
-            folder_tag = os.path.basename(input_directory)
-            # filename = {f"{folder_tag}.json", f"{folder_tag}-June.json"}
-            filename = f"{folder_tag}.json"
-            velocity, Length, sigma_rz, tip_velocity, sigma_rr, avg_vx_z, avg_vx_z_rev, avg_vx_x_H2, avg_vx_x_H2_rev, avg_mass_velocity, vx_inlet, height, max_pressure = get_velocity_from_json(filename, json_file,input_directory,Cycle_No)
             # velocity = mass_rate / (H2_density / 2e-3)
             pore_velocity = velocity / porosity 
             if max_pressure/1e5 > 1.5 * params['pressure']:
@@ -397,8 +400,8 @@ for gas in gas_types:
 os.chdir(base_input_dir) 
 input_directory = os.getcwd() 
 all_RF_List.sort(key=lambda x: x['RF_final'])
-# save_results_to_excel(all_RF_List, input_directory + '\\mixing_results_withoutCG.xlsx')
-save_results_to_excel(all_RF_List, input_directory + '\\mixing_results_withCG.xlsx')
+save_results_to_excel(all_RF_List, input_directory + '\\mixing_results_withoutCG2.xlsx')
+# save_results_to_excel(all_RF_List, input_directory + '\\mixing_results_withCG.xlsx')
 # === Extract Combined Parameters ===
 RF_values = []
 Pe_values = []

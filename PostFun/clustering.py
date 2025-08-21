@@ -5,14 +5,14 @@ from sklearn.cluster import KMeans
 from pyDOE2 import lhs
 import matplotlib.pyplot as plt
 from sklearn.linear_model import LinearRegression
-np.random.seed(64184151)
+np.random.seed(656484)
 font = {'family' : 'sans-serif',
         'size'   : 18}
 plt.rc('font', **font)
 
 # === 1. Load Data ===
 csv_path = r"Y:\Mixing Results\Field Data\consolidated_output - Final.csv"
-df = pd.read_csv(csv_path)
+df = pd.read_csv(csv_path, encoding='cp1252')
 
 # === 2. Select and Convert Required Columns ===
 columns_needed = ["Permeability [mD]", "Reservoir Pressure[MPa]", "Reservoir Temp [C]", "Porosity [-]"]
