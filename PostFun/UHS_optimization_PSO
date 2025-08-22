@@ -48,7 +48,7 @@ def build_objective(permeability, porosity, pressure, temperature, delta_rho, mo
             full_input = np.array([[flow, cl, permeability, pressure, delta_rho, porosity, temperature, 0.0]])
         scaled = scaler.transform(full_input)
         input_tensor = torch.tensor(scaled, dtype=torch.float32)
-        X = np.array([[flow, cl, permeability, pressure, delta_rho]])
+        X = np.array([[flow, permeability, pressure, delta_rho]])
         pred = clf.predict(X)
         if pred == 0:
             print(f"Not feasible input:'{flow}' - '{cl}'- '{permeability}'- '{pressure}'- '{delta_rho}'.")
@@ -86,10 +86,10 @@ def main(input_directory):
         })
     df['valid'] = valid
     df = df.drop(columns=['label','CushionGas','theta','CG Ratio','Nusselt_number','Raileigh_number', 'Pe', 'Ng','RF'])
-    X = df[["Flow Rate", "Cycle Length", "Permeability", "Pressure", "Density"]].values
+    X = df[["Flow Rate", "Permeability", "Pressure", "Density"]].values
     y = df["valid"].values
     # clf = DecisionTreeClassifier(max_depth=3, min_samples_leaf=10)
-    clf = RandomForestClassifier( n_estimators=200, max_depth=None, min_samples_leaf=5, class_weight="balanced", random_state=42)
+    clf = RandomForestClassifier( n_estimators=150, max_depth=12, min_samples_leaf=5, class_weight="balanced", random_state=42)
 
     clf.fit(X, y)
 
@@ -142,7 +142,7 @@ def main(input_directory):
                 ub = [1.5e6, 180, 5.0] 
             lambdaa = 0.05
             objective = build_objective(X_const[0], X_const[1], X_const[2], X_const[3], X_const[4], model, scalers,clf, lb, ub, lambdaa)
-            xopt, fopt = pso(objective, lb, ub, swarmsize=300, maxiter=300, omega=0.7, phip=1.5, phig=1.5, minstep=1e-8, minfunc=1e-8)
+            xopt, fopt = pso(objective, lb, ub, swarmsize=120, maxiter=400, omega=0.7, phip=1.5, phig=1.5, minstep=1e-6, minfunc=1e-6)
             if cg_type == 'H2':
                 normalized_CG = (xopt[2] - lb[2]) / (ub[2] - lb[2])
             results.append({

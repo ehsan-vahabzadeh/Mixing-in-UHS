@@ -88,16 +88,17 @@ df = df.rename(columns = {
     })
 df['valid'] = valid
 df = df.drop(columns=['label','CushionGas','theta','CG Ratio','Nusselt_number','Raileigh_number', 'Pe', 'Ng','RF', 'porosity', 'Temperature'])
-X = df[["Flow Rate", "Cycle Length", "Permeability", "Pressure", "Density"]].values
+X = df[["Flow Rate", "Permeability", "Pressure", "Density"]].values
 y = df["valid"].values
 # clf = DecisionTreeClassifier(max_depth=10, min_samples_leaf=10, class_weight="balanced")
-clf = RandomForestClassifier( n_estimators=200, max_depth=None, min_samples_leaf=5, class_weight="balanced", random_state=42)
+clf = RandomForestClassifier( n_estimators=150, max_depth=12, min_samples_leaf=5, class_weight="balanced", random_state=42)
+# clf = RandomForestClassifier( n_estimators=150, max_depth=12, min_samples_leaf=10, class_weight="balanced", random_state=42)
 clf.fit(X, y)
 CG_types = ['H2', 'CO2', 'CH4', 'N2']
 # CG_types = ['H2']
 results =[]
-flow = 12e5
-cl = 14
+flow = 1e5
+cl = 89.09815974
 for ii in range(len(df_clean)):
     for cg_type in CG_types:
         H2_density = PropsSI("D", "P", df_clean['Pressure'].iloc[ii] * 1e5, "T", df_clean['Temperature'].iloc[ii], "Hydrogen")
@@ -106,11 +107,11 @@ for ii in range(len(df_clean)):
         if cg_type != 'H2':
             CG_ratio = 0.0
         else:
-            CG_ratio = 5.0
+            CG_ratio = 2.38
         full_input = np.array([[flow, cl, X_const[0], X_const[2], X_const[4], X_const[1], X_const[3], CG_ratio]])
         scaled = scaler.transform(full_input)
         input_tensor = torch.tensor(scaled, dtype=torch.float32)
-        pred = clf.predict(np.array([[flow, cl, X_const[0], X_const[2], X_const[4]]]))
+        pred = clf.predict(np.array([[flow, X_const[0], X_const[2], X_const[4]]]))
         with torch.no_grad():
             rf = model(input_tensor).item()
         if pred == 0:
