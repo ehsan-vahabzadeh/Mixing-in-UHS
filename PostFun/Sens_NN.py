@@ -10,6 +10,8 @@ import matplotlib.pyplot as plt
 from CoolProp.CoolProp import PropsSI
 from sklearn.tree import DecisionTreeClassifier
 from sklearn.ensemble import RandomForestClassifier
+import joblib
+from joblib import dump, load
 def get_activation(name):
     if name == "relu":
         return nn.ReLU()
@@ -73,32 +75,33 @@ df_clean = df_clean.rename(columns={"Reservoir Pressure[MPa]": "Pressure","Reser
 file_path = os.path.join(input_directory, 'mixing_results_withoutCG.xlsx')
 df = pd.read_excel(file_path)
 
-valid = []
-for i in range(len(df)):
-    if df['RF_final'].iloc[i] == 0:
-        valid.append(0)
-    else:
-        valid.append(1)
-# df = df.dropna()  # Drop rows with NaN values
-df = df.rename(columns = {
-    'FlowRate': 'Flow Rate',
-    'CycleLength': 'Cycle Length',
-    'RF_final': 'RF',
-    'delta_rho': 'Density',
-    })
-df['valid'] = valid
-df = df.drop(columns=['label','CushionGas','theta','CG Ratio','Nusselt_number','Raileigh_number', 'Pe', 'Ng','RF', 'porosity', 'Temperature'])
-X = df[["Flow Rate", "Permeability", "Pressure", "Density"]].values
-y = df["valid"].values
-# clf = DecisionTreeClassifier(max_depth=10, min_samples_leaf=10, class_weight="balanced")
-clf = RandomForestClassifier( n_estimators=150, max_depth=12, min_samples_leaf=5, class_weight="balanced", random_state=42)
-# clf = RandomForestClassifier( n_estimators=150, max_depth=12, min_samples_leaf=10, class_weight="balanced", random_state=42)
-clf.fit(X, y)
+# valid = []
+# for i in range(len(df)):
+#     if df['RF_final'].iloc[i] == 0:
+#         valid.append(0)
+#     else:
+#         valid.append(1)
+# # df = df.dropna()  # Drop rows with NaN values
+# df = df.rename(columns = {
+#     'FlowRate': 'Flow Rate',
+#     'CycleLength': 'Cycle Length',
+#     'RF_final': 'RF',
+#     'delta_rho': 'Density',
+#     })
+# df['valid'] = valid
+# df = df.drop(columns=['label','CushionGas','theta','CG Ratio','Nusselt_number','Raileigh_number', 'Pe', 'Ng','RF', 'porosity', 'Temperature'])
+# X = df[["Flow Rate", "Permeability", "Pressure", "Density"]].values
+# y = df["valid"].values
+# # clf = DecisionTreeClassifier(max_depth=10, min_samples_leaf=10, class_weight="balanced")
+# clf = RandomForestClassifier( n_estimators=150, max_depth=12, min_samples_leaf=5, class_weight="balanced", random_state=42)
+# # clf = RandomForestClassifier( n_estimators=150, max_depth=12, min_samples_leaf=10, class_weight="balanced", random_state=42)
+# clf.fit(X, y)
+clf = load("rf_validity.joblib")
 CG_types = ['H2', 'CO2', 'CH4', 'N2']
 # CG_types = ['H2']
 results =[]
 flow = 1e5
-cl = 89.09815974
+cl = 90
 for ii in range(len(df_clean)):
     for cg_type in CG_types:
         H2_density = PropsSI("D", "P", df_clean['Pressure'].iloc[ii] * 1e5, "T", df_clean['Temperature'].iloc[ii], "Hydrogen")

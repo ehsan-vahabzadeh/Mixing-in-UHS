@@ -10,6 +10,7 @@ from CoolProp.CoolProp import PropsSI
 from pyswarm import pso
 import torch
 import joblib
+from joblib import dump, load
 import torch.nn as nn
 def get_activation(name):
     if name == "relu":
@@ -51,7 +52,7 @@ def build_objective(permeability, porosity, pressure, temperature, delta_rho, mo
         X = np.array([[flow, permeability, pressure, delta_rho]])
         pred = clf.predict(X)
         if pred == 0:
-            print(f"Not feasible input:'{flow}' - '{cl}'- '{permeability}'- '{pressure}'- '{delta_rho}'.")
+            # print(f"Not feasible input:'{flow}' - '{cl}'- '{permeability}'- '{pressure}'- '{delta_rho}'.")
             return 1e12
         with torch.no_grad():
             rf = model(input_tensor).item()
@@ -71,31 +72,32 @@ def main(input_directory):
     file_path = os.path.join(input_directory, 'mixing_results_withoutCG.xlsx')
     df = pd.read_excel(file_path)
     
-    valid = []
-    for i in range(len(df)):
-        if df['RF_final'].iloc[i] == 0:
-            valid.append(0)
-        else:
-            valid.append(1)
-    # df = df.dropna()  # Drop rows with NaN values
-    df = df.rename(columns = {
-        'FlowRate': 'Flow Rate',
-        'CycleLength': 'Cycle Length',
-        'RF_final': 'RF',
-        'delta_rho': 'Density',
-        })
-    df['valid'] = valid
-    df = df.drop(columns=['label','CushionGas','theta','CG Ratio','Nusselt_number','Raileigh_number', 'Pe', 'Ng','RF'])
-    X = df[["Flow Rate", "Permeability", "Pressure", "Density"]].values
-    y = df["valid"].values
-    # clf = DecisionTreeClassifier(max_depth=3, min_samples_leaf=10)
-    clf = RandomForestClassifier( n_estimators=150, max_depth=12, min_samples_leaf=5, class_weight="balanced", random_state=42)
-
-    clf.fit(X, y)
-
+    # valid = []
+    # for i in range(len(df)):
+    #     if df['RF_final'].iloc[i] == 0:
+    #         valid.append(0)
+    #     else:
+    #         valid.append(1)
+    # # df = df.dropna()  # Drop rows with NaN values
+    # df = df.rename(columns = {
+    #     'FlowRate': 'Flow Rate',
+    #     'CycleLength': 'Cycle Length',
+    #     'RF_final': 'RF',
+    #     'delta_rho': 'Density',
+    #     })
+    # df['valid'] = valid
+    # df = df.drop(columns=['label','CushionGas','theta','CG Ratio','Nusselt_number','Raileigh_number', 'Pe', 'Ng','RF'])
+    # X = df[["Flow Rate", "Permeability", "Pressure", "Density"]].values
+    # y = df["valid"].values
+    # # clf = DecisionTreeClassifier(max_depth=3, min_samples_leaf=10)
+    # clf = RandomForestClassifier( n_estimators=150, max_depth=12, min_samples_leaf=5, class_weight="balanced", random_state=42)
+    # clf.fit(X, y)
+    # from joblib import dump, load
+    # dump(clf, "rf_validity.joblib")
+    clf = load("rf_validity.joblib")
     
     # Path to your consolidated CSV
-    csv_path = r"Y:\Mixing Results\Field Data\consolidated_output - Final.csv"
+    csv_path = r"Y:\Mixing Results\July\consolidated_output - Final.csv"
 
     # Read the CSV file
     df = pd.read_csv(csv_path, encoding='cp1252')
@@ -142,9 +144,12 @@ def main(input_directory):
                 ub = [1.5e6, 180, 5.0] 
             lambdaa = 0.05
             objective = build_objective(X_const[0], X_const[1], X_const[2], X_const[3], X_const[4], model, scalers,clf, lb, ub, lambdaa)
-            xopt, fopt = pso(objective, lb, ub, swarmsize=120, maxiter=400, omega=0.7, phip=1.5, phig=1.5, minstep=1e-6, minfunc=1e-6)
+            xopt, fopt = pso(objective, lb, ub, swarmsize=300, maxiter=500, omega=0.7, phip=1.5, phig=1.5, minstep=1e-6, minfunc=1e-6)
+            if df_clean['Field Name'].iloc[ii] == "Trent gas field":
+                AAA = 1
             if cg_type == 'H2':
                 normalized_CG = (xopt[2] - lb[2]) / (ub[2] - lb[2])
+            RF = -(fopt - lambdaa * normalized_CG)/ (1 - lambdaa)
             results.append({
             "Field Name": df_clean['Field Name'].iloc[ii],
             "Porosity [-]": X_const[1],
@@ -158,6 +163,7 @@ def main(input_directory):
             "Optimized CG Ratio": (xopt[2] if len(xopt) == 3 else 0),
             "Max Predicted RF [-]": -(fopt - lambdaa * normalized_CG)/ (1 - lambdaa) 
             })
+            print(f"Final result:'{xopt[0]}' - '{xopt[1]}'- '{RF}'- '{X_const[0]}'- '{CG_density - H2_density}'.")
             
     df_results = pd.DataFrame(results)
     df_results.to_csv(os.path.join(input_directory, 'optimized_results_without_CG.csv'), index=False)
