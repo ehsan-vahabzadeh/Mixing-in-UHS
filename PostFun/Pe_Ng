@@ -377,8 +377,8 @@ def save_results_to_excel(results, output_path='mixing_results.xlsx'):
 
 # base_input_dir = r"Y:\Mixing Results\New May"
 base_input_dir = r"Y:\Mixing Results\July"
-gas_types = ["H2","CO2","CH4", "N2"]
-# gas_types = ["CO2"]
+# gas_types = ["H2","CO2","CH4", "N2"]
+gas_types = ["H2-No CG","CO2","CH4", "N2"]
 # === Accumulate All Results Across Gases ===
 all_RF_List = []
 Cycle_No = 9
@@ -400,7 +400,7 @@ for gas in gas_types:
 os.chdir(base_input_dir) 
 input_directory = os.getcwd() 
 all_RF_List.sort(key=lambda x: x['RF_final'])
-save_results_to_excel(all_RF_List, input_directory + '\\mixing_results_withoutCG2.xlsx')
+# save_results_to_excel(all_RF_List, input_directory + '\\mixing_results_withoutCG2.xlsx')
 # save_results_to_excel(all_RF_List, input_directory + '\\mixing_results_withCG.xlsx')
 # === Extract Combined Parameters ===
 RF_values = []
@@ -450,7 +450,7 @@ plot = ax[0].tricontourf(
 ax[0].plot([], [], ' ', 
            label=rf'$RF = {Multipliers0[0]:.2f} \cdot Pe^{{{Multipliers0[1]:.2f}}} + {Multipliers0[2]:.2f} \cdot Ng^{{{Multipliers0[3]:.2f}}}$')
 ax[0].text(0.98, 0.02, f"$R^2$ = {r2:.2f}\nRMSE = {rmse:.2f}",
-            transform=ax[0].transAxes, ha='right', va='bottom',
+            transform=ax[0].transAxes, ha='right', va='bottom', fontsize = 12,
             bbox=dict(boxstyle='round,pad=0.3', facecolor='white', alpha=0.8))
 # plot = ax[0].scatter(
 #     Pe,
@@ -500,7 +500,7 @@ xs = np.linspace(Pe.min(), Pe.max(), 500)
 ax[1].plot(xs, exp_fun(xs, Multipliers), 'r-', lw=2,
             label=rf'$RF = {Multipliers[0]:.2f} \cdot exp({Multipliers[1]:.2f} \cdot Pe) + {Multipliers[2]:.2f}$')
 ax[1].text(0.98, 0.02, f"$R^2$ = {r2:.2f}\nRMSE = {rmse:.2f}",
-            transform=ax[1].transAxes, ha='right', va='bottom',
+            transform=ax[1].transAxes, ha='right', va='bottom', fontsize = 12,
             bbox=dict(boxstyle='round,pad=0.3', facecolor='white', alpha=0.8))
 ax[1].set_xlabel(r"Pe [-]", fontsize=18)
 ax[1].set_ylabel("RF [-]", fontsize=18)
@@ -526,9 +526,9 @@ ax[2].tick_params(axis='x', labelsize=18)
 ax[2].tick_params(axis='y', labelsize=18)
 xs = np.linspace(Ng.min()+1e-6, Ng.max(), 500)
 ax[2].plot(xs, ln_fun(xs, Multipliers2), 'r-', lw=2,
-            label=rf'$RF = {Multipliers2[0]:.2f} \cdot log({Multipliers2[1]:.2f}+1) + {Multipliers2[2]:.2f}$')
+            label=rf'$RF = {Multipliers2[0]:.2f} \cdot log({Multipliers2[1]:.2f}\cdot Ng + 1) + {Multipliers2[2]:.2f}$')
 ax[2].text(0.98, 0.02, f"$R^2$ = {r2:.2f}\nRMSE = {rmse:.2f}",
-            transform=ax[2].transAxes, ha='right', va='bottom',
+            transform=ax[2].transAxes, ha='right', va='bottom', fontsize = 12,
             bbox=dict(boxstyle='round,pad=0.3', facecolor='white', alpha=0.8))
 ax[2].legend(loc='best', frameon=True, fontsize=12)
 cbar = plt.colorbar(scatter, ax=ax[2])

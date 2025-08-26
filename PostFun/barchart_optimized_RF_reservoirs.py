@@ -132,3 +132,21 @@ for i, gas in enumerate(counts_CL.index):
 
 plt.tight_layout()
 plt.show()        
+
+
+
+fig, ax = plt.subplots(1,1, figsize=(4, 4))
+fig.subplots_adjust(wspace=0.1)
+
+for i, gas in enumerate(counts_CG.index):
+    ax.scatter(df_h2[rf_col], df_h2[CG_col],
+            edgecolor='black', alpha=0.8)
+
+ax.set_xticks(x)
+ax.tick_params(axis= 'both', which='major', labelsize=16)
+ax.set_xlabel("RF[-]", fontsize=18)
+ax.set_ylabel("CG Ratio" , fontsize=18)
+ax.set_xticks([0.7, 0.85, 1])
+ax.set_xlim(0.67, 1)
+plt.tight_layout()
+plt.show()         

@@ -5,7 +5,7 @@ from sklearn.cluster import KMeans
 from pyDOE2 import lhs
 import matplotlib.pyplot as plt
 from sklearn.linear_model import LinearRegression
-np.random.seed(656484)
+np.random.seed(4585032)
 font = {'family' : 'sans-serif',
         'size'   : 18}
 plt.rc('font', **font)
