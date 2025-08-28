@@ -311,7 +311,7 @@ def extract_all_params_sorted(input_directory, Cycle_No):
             Raileigh_number = (CG_density - H2_density) * 9.81 * height * (perm/10) / ((diffusion + 0.5 * sigma_rr/(params['CycleLength']*86400))  * H2_viscosity)
             Raileigh_number = Raileigh_number 
             Peclet_number = Peclet_number
-            Buoyancy_number = Buoyancy_number 
+            Buoyancy_number = Buoyancy_number / Peclet_number
             results.append({
                 'label': params['name'],
                 'FlowRate': params['FlowRate'],
@@ -401,7 +401,7 @@ os.chdir(base_input_dir)
 input_directory = os.getcwd() 
 all_RF_List.sort(key=lambda x: x['RF_final'])
 # save_results_to_excel(all_RF_List, input_directory + '\\mixing_results_withoutCG2.xlsx')
-# save_results_to_excel(all_RF_List, input_directory + '\\mixing_results_withCG.xlsx')
+save_results_to_excel(all_RF_List, input_directory + '\\mixing_results_plot.xlsx')
 # === Extract Combined Parameters ===
 RF_values = []
 Pe_values = []
@@ -433,12 +433,14 @@ fig, ax = plt.subplots(1, 3, figsize=(12, 6))
 fig.subplots_adjust(wspace=0.1)
 def RF_Ng_Pe(x,y, M):
     return M[0] * np.power(x, M[1]) + M[2] * np.power(y, M[3])
-Multipliers0 = [0.6069, 0.1270, -0.0404, 0.3488]
+# Multipliers0 = [0.6069, 0.1270, -0.0404, 0.3488] # For case with porosity in NG equation
+# Multipliers0 = [0.6211, 0.1184, -0.08, 0.3270] # For case without porosity in NG equation
+Multipliers0 = [0.6378, 0.1091, -0.1662, 0.2951] # For case without porosity Ng/Pe
 y_pred = RF_Ng_Pe(Pe,Ng, Multipliers0)
 r2 = r2_score(RF_values, y_pred)
 rmse = np.sqrt(mean_squared_error(RF_values, y_pred))
 # 1) Filled contour
-levels = 7
+levels = 10
 colors = plt.cm.get_cmap('Greys',levels)
 plot = ax[0].tricontourf(
     Pe,
@@ -516,7 +518,9 @@ scatter = ax[2].scatter(
 )
 def ln_fun(x, M):
     return M[0] * np.log((M[1] * x) + 1) + M[2]  
-Multipliers2 = [-0.0932,0.3556,0.8587]
+# Multipliers2 = [-0.0932,0.3556,0.8587] # For case with porosity in NG equation
+# Multipliers2 = [-0.0864,2.526,0.8568] # For case without porosity in NG equation
+Multipliers2 = [-0.0780,28.0083,0.8544] # For case without porosity Ng/Pe in NG equation
 y_pred = ln_fun(Ng, Multipliers2)
 r2 = r2_score(RF_values, y_pred)
 rmse = np.sqrt(mean_squared_error(RF_values, y_pred))

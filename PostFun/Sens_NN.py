@@ -38,17 +38,18 @@ os.chdir("Y:\\Mixing Results\\July")  # Change to the directory containing your 
 # os.chdir("Z:\\Mixing Results\\Feb\\Results\\30 Meter Height Reservoir")  # Change to the directory containing your simulation files
 input_directory = os.getcwd()
 # --- Load trained model and scaler ---
-# activation = ["tanh", "sigmoid"]
-# model = build_model(input_dim=8, hidden_sizes=[15, 30], activations=activation)
-# model.load_state_dict(torch.load("ann_model_withCG.pt"))
-# model.eval()
-# scalers = joblib.load("scalers_withCG.pkl")
-
-activation = ["sigmoid", "sigmoid", "tanh"]
-model = build_model(input_dim=8, hidden_sizes=[17, 12, 29], activations=activation)
-model.load_state_dict(torch.load("ann_model_withoutCG.pt"))
+activation = ["sigmoid", "sigmoid"]
+model = build_model(input_dim=8, hidden_sizes=[22, 21], activations=activation)
+model.load_state_dict(torch.load("ann_model_withCG.pt"))
 model.eval()
-scalers = joblib.load("scalers_withoutCG.pkl")
+scalers = joblib.load("scalers_withCG.pkl")
+
+# activation = ["sigmoid", "sigmoid", "tanh"]
+# model = build_model(input_dim=8, hidden_sizes=[17, 12, 29], activations=activation)
+# model.load_state_dict(torch.load("ann_model_withoutCG.pt"))
+# model.eval()
+# scalers = joblib.load("scalers_withoutCG.pkl")
+
 scaler = scalers["X_scaler"]
 y_scaler = scalers["y_scaler"]
 # Path to your consolidated CSV
@@ -73,6 +74,7 @@ df_clean['Reservoir Temp [C]'] = df_clean['Reservoir Temp [C]'] + 273.15  # Conv
 df_clean = df_clean.rename(columns={"Reservoir Pressure[MPa]": "Pressure","Reservoir Temp [C]": "Temperature","Porosity [-]": "Porosity","Permeability [mD]": "Permeability"})
 
 file_path = os.path.join(input_directory, 'mixing_results_withoutCG.xlsx')
+file_path = os.path.join(input_directory, 'mixing_results_withCG.xlsx')
 df = pd.read_excel(file_path)
 
 # valid = []
@@ -97,11 +99,11 @@ df = pd.read_excel(file_path)
 # # clf = RandomForestClassifier( n_estimators=150, max_depth=12, min_samples_leaf=10, class_weight="balanced", random_state=42)
 # clf.fit(X, y)
 clf = load("rf_validity.joblib")
-CG_types = ['H2', 'CO2', 'CH4', 'N2']
-# CG_types = ['H2']
+# CG_types = ['H2', 'CO2', 'CH4', 'N2']
+CG_types = ['H2']
 results =[]
 flow = 1e5
-cl = 90
+cl = 14
 for ii in range(len(df_clean)):
     for cg_type in CG_types:
         H2_density = PropsSI("D", "P", df_clean['Pressure'].iloc[ii] * 1e5, "T", df_clean['Temperature'].iloc[ii], "Hydrogen")
@@ -110,7 +112,7 @@ for ii in range(len(df_clean)):
         if cg_type != 'H2':
             CG_ratio = 0.0
         else:
-            CG_ratio = 2.38
+            CG_ratio = 5.0
         full_input = np.array([[flow, cl, X_const[0], X_const[2], X_const[4], X_const[1], X_const[3], CG_ratio]])
         scaled = scaler.transform(full_input)
         input_tensor = torch.tensor(scaled, dtype=torch.float32)

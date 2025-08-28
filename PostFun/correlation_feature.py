@@ -121,8 +121,8 @@ def main(input_directory):
         df = pd.DataFrame()
         
     # Pearson(df)
-    # pairwise(df)
-    pysr_fun(df)
+    pairwise(df)
+    # pysr_fun(df)
       
     
 os.chdir("Y:\\Mixing Results\\July")  # Change to the directory containing your simulation files
