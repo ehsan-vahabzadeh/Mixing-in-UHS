@@ -45,6 +45,28 @@ plt.title("KMeans Clustering")
 plt.legend(["K < 200", "200 < K < 1000", "1000 < K"])
 plt.grid(True)
 plt.show()
+
+
+bins = [-np.inf, 10, 100, np.inf]         # cover all values
+labels = ["<10 mD", "10–100 mD", ">100 mD"]
+
+df["Cluster"] = pd.cut(df["Permeability [mD]"], bins=bins, labels=labels, right=False)
+
+print(df["Permeability [mD]"].describe())      # sanity check
+print(df["Cluster"].value_counts(dropna=False)) # see counts
+
+colors = ['red', 'green', 'blue']
+for label, color in zip(labels, colors):
+    m = (df["Cluster"] == label)
+    plt.scatter(
+        df.loc[m, "Permeability [mD]"],
+        df.loc[m, "Reservoir Pressure[MPa]"],
+        color=color, label=label, alpha=0.7, edgecolor='k'
+    )
+plt.xlabel("Permeability [mD]")
+plt.ylabel("Reservoir Pressure [MPa]")
+plt.legend()
+plt.show()
 # === 4. LHS Sampling for Flow Rate and Cycle Length ===
 flow_min, flow_max = 1e5, 1.5e6
 cycle_min, cycle_max = 180, 360
@@ -67,6 +89,7 @@ for cluster_id in range(n_clusters):
     
     perm_min = cluster_data["Permeability [mD]"].min()
     perm_max = cluster_data["Permeability [mD]"].max()
+    
     if (cluster_id == 2):
         perm_max = 1000
     pressure_min = cluster_data["Reservoir Pressure[MPa]"].min()
