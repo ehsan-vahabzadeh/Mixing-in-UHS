@@ -6,7 +6,7 @@ import os
 # --- 1) Load and clean ---
 input_dir = r"Y:\Mixing Results\July"
 os.chdir(input_dir) 
-df = pd.read_csv("optimized_results_without_CG.csv", encoding='cp1252')
+df = pd.read_csv("optimized_results_without_CG_1.csv", encoding='cp1252')
 
 # Ensure the needed columns exist and are numeric
 H2_val = []
