@@ -34,7 +34,7 @@ from sklearn.linear_model import LinearRegression
 import numpy as np
 import pandas as pd
 
-samples_per_cluster = 80  # set how many you want
+samples_per_cluster = 100  # set how many you want
 lhs_xyz = lhs(3, samples=samples_per_cluster)
 
 perm_min, perm_max = low_perm["Permeability [mD]"].min(), low_perm["Permeability [mD]"].max()
@@ -55,10 +55,12 @@ temp_samples = temp_pred + np.random.normal(0, np.std(resid), size=temp_pred.sha
 # Flow & cycle LHS
 flow_min, flow_max = 1e5, 1.5e6
 cycle_min, cycle_max = 0, 360
-lhs_fc = lhs(2, samples=samples_per_cluster)
+CG_max, CG_min = 5.0, 0.0
+lhs_fc = lhs(3, samples=samples_per_cluster)
 flow_rates = lhs_fc[:,0]*(flow_max-flow_min) + flow_min
 cycle_lengths = np.round(lhs_fc[:,1]*(cycle_max-cycle_min) + cycle_min)
-CG_values = 0.0  # or array of zeros if needed
+CG_values = lhs_fc[:, 2] * (CG_max - CG_min) + CG_min
+# CG_values = 0.0  # or array of zeros if needed
 
 out = pd.DataFrame({
     "Permeability [mD]": perm_samples,
