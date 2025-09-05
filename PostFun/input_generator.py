@@ -65,7 +65,7 @@ for i, row in df.iterrows():
 
 # Optionally: write to file
 import json
-with open(f"generated_test_cases_{fluid}lowK.json", "w") as f:
+with open(f"generated_test_cases_{fluid}-NoCG-lowK.json", "w") as f:
     json.dump(test_cases, f, indent=4)
 
 print("✅ Generated test_cases list with permeability in m² and pressure in Pa.")
