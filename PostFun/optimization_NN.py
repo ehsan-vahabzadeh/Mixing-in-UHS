@@ -19,7 +19,7 @@ from sklearn.model_selection import KFold
 import joblib
 torch.manual_seed(42)
 np.random.seed(42)
-DOF_LIMIT = 1600
+DOF_LIMIT = 2400
 def train_and_evaluate_model_kfold(X, Y, trial=None):
     # === Optuna hyperparameters ===
     if trial:
@@ -333,8 +333,8 @@ def main(input_directory):
     rf_values = []
     labels = []
     inputs = []
-    # file_path = os.path.join(input_directory, 'mixing_results_withoutCG.xlsx')
-    file_path = os.path.join(input_directory, 'mixing_results_withCG.xlsx')
+    file_path = os.path.join(input_directory, 'mixing_results_withoutCG.xlsx')
+    # file_path = os.path.join(input_directory, 'mixing_results_withCG.xlsx')
     df = pd.read_excel(file_path)
     ordered_data = []
     for i in range(len(df)):
@@ -377,8 +377,8 @@ def main(input_directory):
     # print(df.head())    # verify ordering and contents
     X = df[["FlowRate", "CycleLength", "Permeability", "Pressure", "delta_rho", 'porosity', 'Temperature','CG Ratio']].values
     Y = df["RF_final"].values
-    # NN_Model(X, Y, use_optimization=True) 
-    NN_Model(X, Y)  
+    NN_Model(X, Y, use_optimization=True) 
+    # NN_Model(X, Y)  
     
 os.chdir("Y:\\Mixing Results\\July")  # Change to the directory containing your simulation files
 # os.chdir("Y:\\Mixing Results\\May\\NewCH4")  # Change to the directory containing your simulation files

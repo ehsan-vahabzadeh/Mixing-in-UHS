@@ -377,8 +377,8 @@ def save_results_to_excel(results, output_path='mixing_results.xlsx'):
 
 # base_input_dir = r"Y:\Mixing Results\New May"
 base_input_dir = r"Y:\Mixing Results\July"
-# gas_types = ["H2","CO2","CH4", "N2"]
-gas_types = ["H2-No CG","CO2","CH4", "N2"]
+gas_types = ["H2","CO2","CH4", "N2"]
+# gas_types = ["H2-No CG","CO2","CH4", "N2"]
 # === Accumulate All Results Across Gases ===
 all_RF_List = []
 Cycle_No = 9
@@ -400,8 +400,8 @@ for gas in gas_types:
 os.chdir(base_input_dir) 
 input_directory = os.getcwd() 
 all_RF_List.sort(key=lambda x: x['RF_final'])
-# save_results_to_excel(all_RF_List, input_directory + '\\mixing_results_withoutCG2.xlsx')
-save_results_to_excel(all_RF_List, input_directory + '\\mixing_results_plot.xlsx')
+save_results_to_excel(all_RF_List, input_directory + '\\mixing_results_withoutCG.xlsx')
+# save_results_to_excel(all_RF_List, input_directory + '\\mixing_results_plot.xlsx')
 # === Extract Combined Parameters ===
 RF_values = []
 Pe_values = []
