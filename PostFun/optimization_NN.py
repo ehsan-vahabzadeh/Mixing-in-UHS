@@ -105,11 +105,11 @@ def train_and_evaluate_model_kfold(X, Y, trial=None):
         X_test_t = torch.tensor(X_test, dtype=torch.float32)
         y_test_t = torch.tensor(y_test, dtype=torch.float32).unsqueeze(1)
         # with consideration of CG in RF
-        lr = 0.002999999999999999
-        hidden_sizes = [22, 21]
-        activation = ["sigmoid", "sigmoid"]
-        batch_size = 8
-        epochs = 300
+        # lr = 0.002999999999999999
+        # hidden_sizes = [22, 21]
+        # activation = ["sigmoid", "sigmoid"]
+        # batch_size = 8
+        # epochs = 300
 
         # without the consideration of CG in RF
         # lr = 0.005134627406023883
@@ -117,6 +117,11 @@ def train_and_evaluate_model_kfold(X, Y, trial=None):
         # activation = ["sigmoid", "sigmoid", "tanh"]
         # batch_size = 8
         # epochs = 300
+        lr = 0.0029999
+        hidden_sizes = [20,31]
+        activation = ["sigmoid", "sigmoid"]
+        batch_size = 8
+        epochs = 300
         
         kf = KFold(n_splits=5, shuffle=True, random_state=42)
         mse_list = []
@@ -257,8 +262,8 @@ def train_and_evaluate_model_kfold(X, Y, trial=None):
             # torch.save(model.state_dict(), "ann_model_withoutCG.pt")
             # joblib.dump({"X_scaler": scaler, "y_scaler": y_scaler}, "scalers_withoutCG.pkl")
             
-            torch.save(model.state_dict(), "ann_model_withCG.pt")
-            joblib.dump({"X_scaler": scaler, "y_scaler": y_scaler}, "scalers_withCG.pkl")
+            # torch.save(model.state_dict(), "ann_model_withCG.pt")
+            # joblib.dump({"X_scaler": scaler, "y_scaler": y_scaler}, "scalers_withCG.pkl")
         return model, scaler
 def constraints(trial):
     """Return positive if violating constraint."""
@@ -318,7 +323,7 @@ def NN_Model(X, Y, use_optimization=False):
         url="sqlite:///optuna_optimization_history.db",
         engine_kwargs={"pool_size": 20, "connect_args": {"timeout": 10}},)
         study = optuna.create_study(storage=storage)
-        best_params = optimize_hyperparameters(X, Y, n_trials=250)
+        best_params = optimize_hyperparameters(X, Y, n_trials=350)
         print("✅ Re-training model with best parameters...")
         train_and_evaluate_model_kfold(X, Y, trial=optuna.trial.FixedTrial(best_params))
     else:

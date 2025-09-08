@@ -214,7 +214,7 @@ def average_velocity_at_all_injection_ends(base_directory, pvd_directory, h2_thr
 
 
 if __name__ == "__main__":
-    base_dir = "Y:\\Mixing Results\\July\\H2\\"
+    base_dir = "Y:\\Mixing Results\\July\\H2-No CG\\"
     # base_dir = "Y:\\Mixing Results\\New May\\N2"
     # base_dir = "Y:\\Mixing Results\\June\\N2"
     pvd_dir = base_dir   # since your PVD files are stored in CH4 folder
