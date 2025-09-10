@@ -50,10 +50,11 @@ def build_objective(permeability, porosity, pressure, temperature, delta_rho, mo
         scaled = scaler.transform(full_input)
         input_tensor = torch.tensor(scaled, dtype=torch.float32)
         X = np.array([[flow, permeability, pressure, delta_rho]])
-        pred = clf.predict(X)
-        if pred == 0:
-            # print(f"Not feasible input:'{flow}' - '{cl}'- '{permeability}'- '{pressure}'- '{delta_rho}'.")
-            return 1e12
+        if permeability < 8:
+            pred = clf.predict(X)
+            if pred == 0:
+                # print(f"Not feasible input:'{flow}' - '{cl}'- '{permeability}'- '{pressure}'- '{delta_rho}'.")
+                return 1e12
         with torch.no_grad():
             rf = model(input_tensor).item()
             if rf > 1:
@@ -123,13 +124,13 @@ def main(input_directory):
     # model.eval()
     # scalers = joblib.load("scalers_withCG.pkl")
 
-    activation = ["sigmoid", "sigmoid", "tanh"]
-    model = build_model(input_dim=8, hidden_sizes=[17, 12, 29], activations=activation)
+    activation = ["relu", "tanh"]
+    model = build_model(input_dim=8, hidden_sizes=[22, 8], activations=activation)
     model.load_state_dict(torch.load("ann_model_withoutCG.pt"))
     model.eval()
     scalers = joblib.load("scalers_withoutCG.pkl")
 
-    CG_types = ['H2', 'CO2', 'CH4', 'N2']
+    CG_types = [ 'H2','CO2', 'CH4', 'N2']
     results =[]
     for ii in range(len(df_clean)):
         for cg_type in CG_types:
@@ -138,11 +139,11 @@ def main(input_directory):
             X_const = np.array([df_clean['Permeability'].iloc[ii], df_clean['Porosity'].iloc[ii], df_clean['Pressure'].iloc[ii], df_clean['Temperature'].iloc[ii], CG_density - H2_density])
             if cg_type != 'H2':
                 lb = [1e5, 14]  
-                ub = [1.5e6, 180]
+                ub = [1.5e6, 360]
             else:
                 lb = [1e5, 14, 0.0]  
-                ub = [1.5e6, 180, 5.0] 
-            lambdaa = 0.2
+                ub = [1.5e6, 360, 5.0] 
+            lambdaa = 0.1
             objective = build_objective(X_const[0], X_const[1], X_const[2], X_const[3], X_const[4], model, scalers,clf, lb, ub, lambdaa)
             xopt, fopt = pso(objective, lb, ub, swarmsize=300, maxiter=500, omega=0.7, phip=1.5, phig=1.5, minstep=1e-6, minfunc=1e-6)
             if df_clean['Field Name'].iloc[ii] == "Trent gas field":
@@ -166,7 +167,7 @@ def main(input_directory):
             print(f"Final result:'{xopt[0]}' - '{xopt[1]}'- '{RF}'- '{X_const[0]}'- '{CG_density - H2_density}'.")
             
     df_results = pd.DataFrame(results)
-    df_results.to_csv(os.path.join(input_directory, 'optimized_results_without_CG_2.csv'), index=False)
+    df_results.to_csv(os.path.join(input_directory, 'optimized_results_without_CG_1.csv'), index=False)
 os.chdir("Y:\\Mixing Results\\July")  # Change to the directory containing your simulation files
 # os.chdir("Y:\\Mixing Results\\May\\NewCH4")  # Change to the directory containing your simulation files
 # os.chdir("Z:\\Mixing Results\\Feb\\Results\\30 Meter Height Reservoir")  # Change to the directory containing your simulation files

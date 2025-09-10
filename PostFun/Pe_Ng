@@ -57,7 +57,7 @@ def extract_simulation_params_from_filename(filename):
     CushionGasType = parts[0]  # e.g., CO2
     FlowRate = float(parts[1])  # e.g., 1e5
     CycleLength = int(parts[2])  # e.g., 14
-    Permeability = int(parts[3])  # e.g., 100
+    Permeability = float(parts[3])  # e.g., 100
     pressure = int(parts[4])  # e.g., 100
     temperature = int(parts[5])  # e.g., 100
     porosity = float(parts[6]) / 100  # e.g., 100
@@ -215,7 +215,18 @@ def extract_all_params_sorted(input_directory, Cycle_No):
     json_files = [f for f in os.listdir(input_directory) if f.endswith('.json')]
     for json_file in json_files:
         try:
-            if (json_file == "CO2-549820-33-1314-77-304-17-0.0.json" ):
+            if (json_file == "N2-1303791-360-1329-79-307-17-0.0.json" or json_file == "CO2-1061584-337-1247-159-329-21-0.0.json" 
+                or json_file == "CO2-1314854-304-1260-126-314-25-0.0.json" or json_file == "CO2-1416192-250-1275-180-337-16-0.0.json"
+                or json_file == "CO2-1026081-346-401-121-305-15-0.0.json" or json_file == "CO2-1111641-327-1150-136-315-20-0.0.json"
+                or json_file == "CO2-958200-282-1363-87-306-20-0.0.json" or json_file == "CO2-1228931-219-971-125-317-14-0.0.json"
+                or json_file == "CO2-1367374-286-1388-182-324-15-0.0.json" or json_file == "CO2-1206093-248-1314-118-315-16-0.0.json"
+                or json_file == "CO2-1253017-301-1123-111-307-18-0.0.json" or json_file == "CO2-1086203-313-1234-104-332-23-0.0.json"
+                or json_file == "CO2-1161449-299-703-102-314-14-0.0.json" or json_file == "CO2-841540-356-1480-182-325-17-0.0.json"
+                or json_file == "CO2-1086203-313-1234-104-332-23-0.0.json" or json_file == "CO2-1471295-273-1376-153-326-16-0.0.json"
+                or json_file == "CH4-1269228-311-1113-81-306-17-0.0.json" or json_file == "CO2-1253017-301-1123-111-307-18-0.0.json"
+                or json_file == "CO2-1302378-334-1196-177-343-27-0.0.json" or json_file == "CO2-1395683-141-1129-122-314-15-0.0.json"
+                or json_file == "CO2-1322040-158-780-119-313-14-0.0.json"):
+                continue
                 check = 1
             # Extract parameters
             params = extract_simulation_params_from_filename(json_file)
@@ -311,7 +322,7 @@ def extract_all_params_sorted(input_directory, Cycle_No):
             Raileigh_number = (CG_density - H2_density) * 9.81 * height * (perm/10) / ((diffusion + 0.5 * sigma_rr/(params['CycleLength']*86400))  * H2_viscosity)
             Raileigh_number = Raileigh_number 
             Peclet_number = Peclet_number
-            Buoyancy_number = Buoyancy_number / Peclet_number
+            Buoyancy_number = Buoyancy_number 
             results.append({
                 'label': params['name'],
                 'FlowRate': params['FlowRate'],
@@ -377,8 +388,9 @@ def save_results_to_excel(results, output_path='mixing_results.xlsx'):
 
 # base_input_dir = r"Y:\Mixing Results\New May"
 base_input_dir = r"Y:\Mixing Results\July"
-gas_types = ["H2","CO2","CH4", "N2"]
-# gas_types = ["H2-No CG","CO2","CH4", "N2"]
+# gas_types = ["H2","CO2","CH4", "N2"]
+gas_types = ["H2-No CG","CO2","CH4", "N2"]
+# gas_types = ["CO2"]
 # === Accumulate All Results Across Gases ===
 all_RF_List = []
 Cycle_No = 9
@@ -400,8 +412,8 @@ for gas in gas_types:
 os.chdir(base_input_dir) 
 input_directory = os.getcwd() 
 all_RF_List.sort(key=lambda x: x['RF_final'])
-save_results_to_excel(all_RF_List, input_directory + '\\mixing_results_withoutCG.xlsx')
-# save_results_to_excel(all_RF_List, input_directory + '\\mixing_results_plot.xlsx')
+# save_results_to_excel(all_RF_List, input_directory + '\\mixing_results_withoutCG.xlsx')
+save_results_to_excel(all_RF_List, input_directory + '\\mixing_results_plot.xlsx')
 # === Extract Combined Parameters ===
 RF_values = []
 Pe_values = []
@@ -427,18 +439,137 @@ Ng_values = np.array(Ng_values)
 
 # Pe = np.log10(Pe_values)
 # Ng = np.log10(Ng_values)
+# Pe = Pe_values
+# Ng = Ng_values
+# fig, ax = plt.subplots(1, 3, figsize=(12, 6))
+# fig.subplots_adjust(wspace=0.1)
+# def RF_Ng_Pe(x,y, M):
+#     return M[0] * np.power(x, M[1]) + M[2] * np.power(y, M[3])
+# # Multipliers0 = [0.6069, 0.1270, -0.0404, 0.3488] # For case with porosity in NG equation
+# # Multipliers0 = [0.6211, 0.1184, -0.08, 0.3270] # For case without porosity in NG equation
+# Multipliers0 = [0.6378, 0.1091, -0.1662, 0.2951] # For case without porosity Ng/Pe
+# y_pred = RF_Ng_Pe(Pe,Ng, Multipliers0)
+# r2 = r2_score(RF_values, y_pred)
+# rmse = np.sqrt(mean_squared_error(RF_values, y_pred))
+# # 1) Filled contour
+# levels = 10
+# colors = plt.cm.get_cmap('Greys',levels)
+# plot = ax[0].tricontourf(
+#     Pe,
+#     Ng,
+#     RF_values,
+#     cmap='plasma',
+#     levels=levels,
+# )
+# ax[0].plot([], [], ' ', 
+#            label=rf'$RF = {Multipliers0[0]:.2f} \cdot Pe^{{{Multipliers0[1]:.2f}}} + {Multipliers0[2]:.2f} \cdot Ng^{{{Multipliers0[3]:.2f}}}$')
+# ax[0].text(0.98, 0.02, f"$R^2$ = {r2:.2f}\nRMSE = {rmse:.2f}",
+#             transform=ax[0].transAxes, ha='right', va='bottom', fontsize = 12,
+#             bbox=dict(boxstyle='round,pad=0.3', facecolor='white', alpha=0.8))
+# # plot = ax[0].scatter(
+# #     Pe,
+# #     Ng,
+# #     c=RF_values,
+# #     cmap='plasma',
+# #     edgecolor='k'
+# # )
+# # cbar = plt.colorbar(contour, ax=ax[0], pad = 0.3)
+# # cbar.set_label("RF", fontsize=12)
+# # ax[0].set_xlabel(r"$\theta \, Pe$ [-]", fontsize=18)
+# # ax[0].set_xscale('log')
+# # ax[0].set_yscale('log')
+# ax[0].set_xlabel(r"Pe [-]", fontsize=18)
+# ax[0].set_ylabel("Ng [-]", fontsize=18)
+# ax[0].tick_params(axis='x', labelsize=18)
+# ax[0].tick_params(axis='y', labelsize=18)
+# ax[0].legend(loc='best', frameon=True, fontsize=12)
+# # 2) Add contour lines at the same levels
+# #    You can supply the same 'levels' array or let matplotlib pick automatically.
+# # lines = ax[0].tricontour(
+# #     Pe,
+# #     Ng,
+# #     RF_values,
+# #     levels=levels,
+# #     colors='magenta',      # black lines
+# #     linewidths=1.5   # thinner lines for clarity
+# # )
+# # ax[0].clabel(lines, inline=True, manual=True, fontsize=14, fmt="%.2f")
+
+# # 3) Scatter plots
+# def exp_fun(x, M):
+#     return M[0] * np.exp( M[1] * x) + M[2]
+
+# Multipliers = [-1.0046, -0.2070, 0.8869]
+# y_pred = exp_fun(Pe, Multipliers)
+# r2 = r2_score(RF_values, y_pred)
+# rmse = np.sqrt(mean_squared_error(RF_values, y_pred))
+# scatter = ax[1].scatter(
+#     Pe,
+#     RF_values,
+#     c=RF_values,
+#     cmap='plasma',
+#     edgecolor='k'
+# )
+# xs = np.linspace(Pe.min(), Pe.max(), 500)
+# ax[1].plot(xs, exp_fun(xs, Multipliers), 'r-', lw=2,
+#             label=rf'$RF = {Multipliers[0]:.2f} \cdot exp({Multipliers[1]:.2f} \cdot Pe) + {Multipliers[2]:.2f}$')
+# ax[1].text(0.98, 0.02, f"$R^2$ = {r2:.2f}\nRMSE = {rmse:.2f}",
+#             transform=ax[1].transAxes, ha='right', va='bottom', fontsize = 12,
+#             bbox=dict(boxstyle='round,pad=0.3', facecolor='white', alpha=0.8))
+# ax[1].set_xlabel(r"Pe [-]", fontsize=18)
+# ax[1].set_ylabel("RF [-]", fontsize=18)
+# ax[1].tick_params(axis='x', labelsize=18)
+# ax[1].tick_params(axis='y', labelsize=18)
+# ax[1].legend(loc='best', frameon=True, fontsize=12)
+# scatter = ax[2].scatter(
+#     Ng,
+#     RF_values,
+#     c=RF_values,
+#     cmap='plasma',
+#     edgecolor='k'
+# )
+# def ln_fun(x, M):
+#     return M[0] * np.log((M[1] * x) + 1) + M[2]  
+# # Multipliers2 = [-0.0932,0.3556,0.8587] # For case with porosity in NG equation
+# # Multipliers2 = [-0.0864,2.526,0.8568] # For case without porosity in NG equation
+# Multipliers2 = [-0.0780,28.0083,0.8544] # For case without porosity Ng/Pe in NG equation
+# y_pred = ln_fun(Ng, Multipliers2)
+# r2 = r2_score(RF_values, y_pred)
+# rmse = np.sqrt(mean_squared_error(RF_values, y_pred))
+# ax[2].set_xlabel("Ng [-]", fontsize=18)
+# ax[2].set_ylabel("RF [-]", fontsize=18)
+# ax[2].tick_params(axis='x', labelsize=18)
+# ax[2].tick_params(axis='y', labelsize=18)
+# xs = np.linspace(Ng.min()+1e-6, Ng.max(), 500)
+# ax[2].plot(xs, ln_fun(xs, Multipliers2), 'r-', lw=2,
+#             label=rf'$RF = {Multipliers2[0]:.2f} \cdot log({Multipliers2[1]:.2f}\cdot Ng + 1) + {Multipliers2[2]:.2f}$')
+# ax[2].text(0.98, 0.02, f"$R^2$ = {r2:.2f}\nRMSE = {rmse:.2f}",
+#             transform=ax[2].transAxes, ha='right', va='bottom', fontsize = 12,
+#             bbox=dict(boxstyle='round,pad=0.3', facecolor='white', alpha=0.8))
+# ax[2].legend(loc='best', frameon=True, fontsize=12)
+# cbar = plt.colorbar(scatter, ax=ax[2])
+# cbar.ax.tick_params(labelsize=18)
+# cbar.set_label("Recovery Factor [-]", fontsize=18)
+# plt.tight_layout()
+# plt.show()
+
+
+
+
+
+
+
+
+################################################################################  Pe vs Ng
+
+
+# Pe = np.log10(Pe_values)
+# Ng = np.log10(Ng_values)
 Pe = Pe_values
 Ng = Ng_values
 fig, ax = plt.subplots(1, 3, figsize=(12, 6))
 fig.subplots_adjust(wspace=0.1)
-def RF_Ng_Pe(x,y, M):
-    return M[0] * np.power(x, M[1]) + M[2] * np.power(y, M[3])
-# Multipliers0 = [0.6069, 0.1270, -0.0404, 0.3488] # For case with porosity in NG equation
-# Multipliers0 = [0.6211, 0.1184, -0.08, 0.3270] # For case without porosity in NG equation
-Multipliers0 = [0.6378, 0.1091, -0.1662, 0.2951] # For case without porosity Ng/Pe
-y_pred = RF_Ng_Pe(Pe,Ng, Multipliers0)
-r2 = r2_score(RF_values, y_pred)
-rmse = np.sqrt(mean_squared_error(RF_values, y_pred))
+
 # 1) Filled contour
 levels = 10
 colors = plt.cm.get_cmap('Greys',levels)
@@ -449,11 +580,7 @@ plot = ax[0].tricontourf(
     cmap='plasma',
     levels=levels,
 )
-ax[0].plot([], [], ' ', 
-           label=rf'$RF = {Multipliers0[0]:.2f} \cdot Pe^{{{Multipliers0[1]:.2f}}} + {Multipliers0[2]:.2f} \cdot Ng^{{{Multipliers0[3]:.2f}}}$')
-ax[0].text(0.98, 0.02, f"$R^2$ = {r2:.2f}\nRMSE = {rmse:.2f}",
-            transform=ax[0].transAxes, ha='right', va='bottom', fontsize = 12,
-            bbox=dict(boxstyle='round,pad=0.3', facecolor='white', alpha=0.8))
+
 # plot = ax[0].scatter(
 #     Pe,
 #     Ng,
@@ -471,26 +598,9 @@ ax[0].set_ylabel("Ng [-]", fontsize=18)
 ax[0].tick_params(axis='x', labelsize=18)
 ax[0].tick_params(axis='y', labelsize=18)
 ax[0].legend(loc='best', frameon=True, fontsize=12)
-# 2) Add contour lines at the same levels
-#    You can supply the same 'levels' array or let matplotlib pick automatically.
-# lines = ax[0].tricontour(
-#     Pe,
-#     Ng,
-#     RF_values,
-#     levels=levels,
-#     colors='magenta',      # black lines
-#     linewidths=1.5   # thinner lines for clarity
-# )
-# ax[0].clabel(lines, inline=True, manual=True, fontsize=14, fmt="%.2f")
 
-# 3) Scatter plots
-def exp_fun(x, M):
-    return M[0] * np.exp( M[1] * x) + M[2]
 
-Multipliers = [-1.0046, -0.2070, 0.8869]
-y_pred = exp_fun(Pe, Multipliers)
-r2 = r2_score(RF_values, y_pred)
-rmse = np.sqrt(mean_squared_error(RF_values, y_pred))
+
 scatter = ax[1].scatter(
     Pe,
     RF_values,
@@ -498,12 +608,6 @@ scatter = ax[1].scatter(
     cmap='plasma',
     edgecolor='k'
 )
-xs = np.linspace(Pe.min(), Pe.max(), 500)
-ax[1].plot(xs, exp_fun(xs, Multipliers), 'r-', lw=2,
-            label=rf'$RF = {Multipliers[0]:.2f} \cdot exp({Multipliers[1]:.2f} \cdot Pe) + {Multipliers[2]:.2f}$')
-ax[1].text(0.98, 0.02, f"$R^2$ = {r2:.2f}\nRMSE = {rmse:.2f}",
-            transform=ax[1].transAxes, ha='right', va='bottom', fontsize = 12,
-            bbox=dict(boxstyle='round,pad=0.3', facecolor='white', alpha=0.8))
 ax[1].set_xlabel(r"Pe [-]", fontsize=18)
 ax[1].set_ylabel("RF [-]", fontsize=18)
 ax[1].tick_params(axis='x', labelsize=18)
@@ -516,24 +620,11 @@ scatter = ax[2].scatter(
     cmap='plasma',
     edgecolor='k'
 )
-def ln_fun(x, M):
-    return M[0] * np.log((M[1] * x) + 1) + M[2]  
-# Multipliers2 = [-0.0932,0.3556,0.8587] # For case with porosity in NG equation
-# Multipliers2 = [-0.0864,2.526,0.8568] # For case without porosity in NG equation
-Multipliers2 = [-0.0780,28.0083,0.8544] # For case without porosity Ng/Pe in NG equation
-y_pred = ln_fun(Ng, Multipliers2)
-r2 = r2_score(RF_values, y_pred)
-rmse = np.sqrt(mean_squared_error(RF_values, y_pred))
+
 ax[2].set_xlabel("Ng [-]", fontsize=18)
 ax[2].set_ylabel("RF [-]", fontsize=18)
 ax[2].tick_params(axis='x', labelsize=18)
 ax[2].tick_params(axis='y', labelsize=18)
-xs = np.linspace(Ng.min()+1e-6, Ng.max(), 500)
-ax[2].plot(xs, ln_fun(xs, Multipliers2), 'r-', lw=2,
-            label=rf'$RF = {Multipliers2[0]:.2f} \cdot log({Multipliers2[1]:.2f}\cdot Ng + 1) + {Multipliers2[2]:.2f}$')
-ax[2].text(0.98, 0.02, f"$R^2$ = {r2:.2f}\nRMSE = {rmse:.2f}",
-            transform=ax[2].transAxes, ha='right', va='bottom', fontsize = 12,
-            bbox=dict(boxstyle='round,pad=0.3', facecolor='white', alpha=0.8))
 ax[2].legend(loc='best', frameon=True, fontsize=12)
 cbar = plt.colorbar(scatter, ax=ax[2])
 cbar.ax.tick_params(labelsize=18)

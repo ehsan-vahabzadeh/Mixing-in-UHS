@@ -38,17 +38,17 @@ os.chdir("Y:\\Mixing Results\\July")  # Change to the directory containing your 
 # os.chdir("Z:\\Mixing Results\\Feb\\Results\\30 Meter Height Reservoir")  # Change to the directory containing your simulation files
 input_directory = os.getcwd()
 # --- Load trained model and scaler ---
-activation = ["sigmoid", "sigmoid"]
-model = build_model(input_dim=8, hidden_sizes=[22, 21], activations=activation)
-model.load_state_dict(torch.load("ann_model_withCG.pt"))
-model.eval()
-scalers = joblib.load("scalers_withCG.pkl")
-
-# activation = ["sigmoid", "sigmoid", "tanh"]
-# model = build_model(input_dim=8, hidden_sizes=[17, 12, 29], activations=activation)
-# model.load_state_dict(torch.load("ann_model_withoutCG.pt"))
+# activation = ["sigmoid", "sigmoid"]
+# model = build_model(input_dim=8, hidden_sizes=[22, 21], activations=activation)
+# model.load_state_dict(torch.load("ann_model_withCG.pt"))
 # model.eval()
-# scalers = joblib.load("scalers_withoutCG.pkl")
+# scalers = joblib.load("scalers_withCG.pkl")
+
+activation = ["relu", "tanh"]
+model = build_model(input_dim=8, hidden_sizes=[22, 8], activations=activation)
+model.load_state_dict(torch.load("ann_model_withoutCG.pt"))
+model.eval()
+scalers = joblib.load("scalers_withoutCG.pkl")
 
 scaler = scalers["X_scaler"]
 y_scaler = scalers["y_scaler"]
@@ -74,7 +74,7 @@ df_clean['Reservoir Temp [C]'] = df_clean['Reservoir Temp [C]'] + 273.15  # Conv
 df_clean = df_clean.rename(columns={"Reservoir Pressure[MPa]": "Pressure","Reservoir Temp [C]": "Temperature","Porosity [-]": "Porosity","Permeability [mD]": "Permeability"})
 
 file_path = os.path.join(input_directory, 'mixing_results_withoutCG.xlsx')
-file_path = os.path.join(input_directory, 'mixing_results_withCG.xlsx')
+# file_path = os.path.join(input_directory, 'mixing_results_withCG.xlsx')
 df = pd.read_excel(file_path)
 
 # valid = []
@@ -95,14 +95,16 @@ df = pd.read_excel(file_path)
 # X = df[["Flow Rate", "Permeability", "Pressure", "Density"]].values
 # y = df["valid"].values
 # # clf = DecisionTreeClassifier(max_depth=10, min_samples_leaf=10, class_weight="balanced")
-# clf = RandomForestClassifier( n_estimators=150, max_depth=12, min_samples_leaf=5, class_weight="balanced", random_state=42)
+# clf = RandomForestClassifier( n_estimators=150, max_depth=20, min_samples_leaf=5, class_weight="balanced", random_state=42)
 # # clf = RandomForestClassifier( n_estimators=150, max_depth=12, min_samples_leaf=10, class_weight="balanced", random_state=42)
 # clf.fit(X, y)
+# from joblib import dump, load
+# dump(clf, "rf_validity.joblib")
 clf = load("rf_validity.joblib")
-# CG_types = ['H2', 'CO2', 'CH4', 'N2']
-CG_types = ['H2']
+CG_types = ['H2', 'CO2', 'CH4', 'N2']
+# CG_types = ['H2']
 results =[]
-flow = 1e5
+flow = 2.5e5
 cl = 14
 for ii in range(len(df_clean)):
     for cg_type in CG_types:

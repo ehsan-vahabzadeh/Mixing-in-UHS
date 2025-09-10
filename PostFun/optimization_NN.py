@@ -117,9 +117,9 @@ def train_and_evaluate_model_kfold(X, Y, trial=None):
         # activation = ["sigmoid", "sigmoid", "tanh"]
         # batch_size = 8
         # epochs = 300
-        lr = 0.0029999
-        hidden_sizes = [20,31]
-        activation = ["sigmoid", "sigmoid"]
+        lr = 0.0019425918125583334
+        hidden_sizes = [22,8]
+        activation = ["relu", "tanh"]
         batch_size = 8
         epochs = 300
         
@@ -259,8 +259,8 @@ def train_and_evaluate_model_kfold(X, Y, trial=None):
             plt.tight_layout()
             plt.show()
             
-            # torch.save(model.state_dict(), "ann_model_withoutCG.pt")
-            # joblib.dump({"X_scaler": scaler, "y_scaler": y_scaler}, "scalers_withoutCG.pkl")
+            torch.save(model.state_dict(), "ann_model_withoutCG.pt")
+            joblib.dump({"X_scaler": scaler, "y_scaler": y_scaler}, "scalers_withoutCG.pkl")
             
             # torch.save(model.state_dict(), "ann_model_withCG.pt")
             # joblib.dump({"X_scaler": scaler, "y_scaler": y_scaler}, "scalers_withCG.pkl")
@@ -382,8 +382,8 @@ def main(input_directory):
     # print(df.head())    # verify ordering and contents
     X = df[["FlowRate", "CycleLength", "Permeability", "Pressure", "delta_rho", 'porosity', 'Temperature','CG Ratio']].values
     Y = df["RF_final"].values
-    NN_Model(X, Y, use_optimization=True) 
-    # NN_Model(X, Y)  
+    # NN_Model(X, Y, use_optimization=True) 
+    NN_Model(X, Y)  
     
 os.chdir("Y:\\Mixing Results\\July")  # Change to the directory containing your simulation files
 # os.chdir("Y:\\Mixing Results\\May\\NewCH4")  # Change to the directory containing your simulation files
