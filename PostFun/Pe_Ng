@@ -225,7 +225,9 @@ def extract_all_params_sorted(input_directory, Cycle_No):
                 or json_file == "CO2-1086203-313-1234-104-332-23-0.0.json" or json_file == "CO2-1471295-273-1376-153-326-16-0.0.json"
                 or json_file == "CH4-1269228-311-1113-81-306-17-0.0.json" or json_file == "CO2-1253017-301-1123-111-307-18-0.0.json"
                 or json_file == "CO2-1302378-334-1196-177-343-27-0.0.json" or json_file == "CO2-1395683-141-1129-122-314-15-0.0.json"
-                or json_file == "CO2-1322040-158-780-119-313-14-0.0.json"):
+                or json_file == "CO2-1322040-158-780-119-313-14-0.0.json" or json_file == "CO2-809334-280-1264-132-318-18-0.0.json"
+                or json_file == "CO2-1341719-220-1209-108-312-23-0.0.json" or json_file == "CO2-1437024-309-995-154-327-18-0.0.json"
+                or json_file == "CO2-1410720-307-1290-123-298-15-0.0.json" or json_file == "CO2-1158399-354-1109-121-312-18-0.0.json"):
                 continue
                 check = 1
             # Extract parameters
@@ -571,7 +573,7 @@ fig, ax = plt.subplots(1, 3, figsize=(12, 6))
 fig.subplots_adjust(wspace=0.1)
 
 # 1) Filled contour
-levels = 10
+levels = 5
 colors = plt.cm.get_cmap('Greys',levels)
 plot = ax[0].tricontourf(
     Pe,
