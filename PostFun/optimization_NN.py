@@ -119,6 +119,7 @@ def train_and_evaluate_model_kfold(X, Y, trial=None):
         # epochs = 300
         lr = 0.0019425918125583334
         hidden_sizes = [22,8]
+        # activation = ["relu", "tanh"]
         activation = ["relu", "tanh"]
         batch_size = 8
         epochs = 300
