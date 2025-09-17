@@ -298,6 +298,8 @@ def extract_all_params_sorted(input_directory, Cycle_No):
                 'Temperature': params['temperature'],
                 'Pe': 0.0,
                 'Ng': 0.0,
+                'theta': 0.0,
+                'Fo': 0.0,
                 'RF': rf,
                 'RF_final': rf[Cycle_No],
                 'Nusselt_number': 0.0,
@@ -321,6 +323,8 @@ def extract_all_params_sorted(input_directory, Cycle_No):
                 'Temperature': params['temperature'],
                 'Pe': 0.0,
                 'Ng': 0.0,
+                'theta': 0.0,
+                'Fo': 0.0,
                 'RF': rf,
                 'RF_final': rf[Cycle_No],
                 'Nusselt_number': 0.0,
@@ -358,6 +362,7 @@ def extract_all_params_sorted(input_directory, Cycle_No):
                 'Temperature': params['temperature'],
                 'delta_rho': CG_density - H2_density,
                 'theta': theta,
+                'Fo': Fourier_number,
                 'RF': rf,
                 'CG Ratio': params['CG'],
                 'Pe': Peclet_number,
@@ -378,6 +383,8 @@ def extract_all_params_sorted(input_directory, Cycle_No):
                 'delta_rho': CG_density - H2_density,
                 'Pe': 0.0,
                 'Ng': 0.0,
+                'theta': 0.0,
+                'Fo': 0.0,
                 })
                 continue
 
