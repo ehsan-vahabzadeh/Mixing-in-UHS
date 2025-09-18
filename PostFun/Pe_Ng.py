@@ -417,7 +417,9 @@ def save_results_to_excel(results, output_path='mixing_results.xlsx'):
 
     print(f"Results saved to '{output_path}' with sheets for each cushion gas.")
 
-
+if __name__ != "__main__":
+    import sys
+    sys.exit()
 # base_input_dir = r"Y:\Mixing Results\New May"
 base_input_dir = r"Y:\Mixing Results\July"
 # gas_types = ["H2","CO2","CH4", "N2"]

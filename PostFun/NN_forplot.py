@@ -117,13 +117,12 @@ def train_and_evaluate_model_kfold(X, Y, trial=None):
         # activation = ["sigmoid", "sigmoid", "tanh"]
         # batch_size = 8
         # epochs = 300
-        lr = 0.0019425918125583334
-        hidden_sizes = [22,8]
+        lr = 0.00020469703577854776
+        hidden_sizes = [23, 32, 12]
         # activation = ["relu", "tanh"]
-        activation = ["relu", "tanh"]
+        activation = ["relu", "tanh","relu"]
         batch_size = 8
         epochs = 300
-        
         kf = KFold(n_splits=5, shuffle=True, random_state=42)
         mse_list = []
         patience = 50
@@ -260,8 +259,8 @@ def train_and_evaluate_model_kfold(X, Y, trial=None):
             plt.tight_layout()
             plt.show()
             
-            torch.save(model.state_dict(), "ann_model_withoutCG.pt")
-            joblib.dump({"X_scaler": scaler, "y_scaler": y_scaler}, "scalers_withoutCG.pkl")
+            torch.save(model.state_dict(), "ann_model_plot.pt")
+            joblib.dump({"X_scaler": scaler, "y_scaler": y_scaler}, "scalers_plot.pkl")
             
             # torch.save(model.state_dict(), "ann_model_withCG.pt")
             # joblib.dump({"X_scaler": scaler, "y_scaler": y_scaler}, "scalers_withCG.pkl")
@@ -339,8 +338,7 @@ def main(input_directory):
     rf_values = []
     labels = []
     inputs = []
-    file_path = os.path.join(input_directory, 'mixing_results_withoutCG.xlsx')
-    # file_path = os.path.join(input_directory, 'mixing_results_withCG.xlsx')
+    file_path = os.path.join(input_directory, 'mixing_results_plot.xlsx')
     df = pd.read_excel(file_path)
     ordered_data = []
     for i in range(len(df)):
@@ -349,18 +347,18 @@ def main(input_directory):
             row.append(df[label].iloc[i])
         ordered_data.append(row)
     for data in ordered_data:
-        rf_values.append(data[9])
+        rf_values.append(data[11])
         inputs.append({
             "label": data[0],
             "FlowRate": data[1],
             "CycleLength":data[2],
             "Permeability": data[3],
             "Pressure": data[5],
-            "delta_rho": data[12],
+            "delta_rho": data[14],
             "porosity": data[4],
             "Temperature": data[6],
-            "CG Ratio": data[16],
-            "RF_final": data[9]
+            "CG Ratio": data[17],
+            "RF_final": data[11]
         })
         # inputs.append(params['FlowRate',1])
         # inputs.append(params['CycleLength',2])
@@ -379,12 +377,13 @@ def main(input_directory):
     "CG Ratio",
     "RF_final" 
     ])
-    df = df.dropna()  # Drop rows with NaN values
+    indexRF = df[ (df["RF_final"] == 0.0)].index
+    df = df.drop(indexRF)  # Drop rows with NaN values
     # print(df.head())    # verify ordering and contents
-    X = df[["FlowRate", "CycleLength", "Permeability", "Pressure", "delta_rho", 'porosity', 'Temperature','CG Ratio']].values
+    X = df[["FlowRate", "CycleLength", "Permeability", "Pressure", "delta_rho", 'porosity', 'Temperature']].values
     Y = df["RF_final"].values
-    NN_Model(X, Y, use_optimization=True) 
-    # NN_Model(X, Y)  
+    # NN_Model(X, Y, use_optimization=True) 
+    NN_Model(X, Y)  
     
 os.chdir("Y:\\Mixing Results\\July")  # Change to the directory containing your simulation files
 # os.chdir("Y:\\Mixing Results\\May\\NewCH4")  # Change to the directory containing your simulation files

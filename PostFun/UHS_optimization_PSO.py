@@ -168,6 +168,9 @@ def main(input_directory):
             
     df_results = pd.DataFrame(results)
     df_results.to_csv(os.path.join(input_directory, 'optimized_results_without_CG_1.csv'), index=False)
+if __name__ != "__main__":
+    import sys
+    sys.exit()
 os.chdir("Y:\\Mixing Results\\July")  # Change to the directory containing your simulation files
 # os.chdir("Y:\\Mixing Results\\May\\NewCH4")  # Change to the directory containing your simulation files
 # os.chdir("Z:\\Mixing Results\\Feb\\Results\\30 Meter Height Reservoir")  # Change to the directory containing your simulation files
