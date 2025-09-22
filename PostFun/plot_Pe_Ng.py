@@ -222,87 +222,21 @@ cbar = plt.colorbar(plot, ax=ax[2])
 cbar.ax.tick_params(labelsize=18)
 cbar.set_label("RF[-]", fontsize=18)
 plt.tight_layout()
-eq_txt = f"$RF = {Multipliers0[0]:.2f}\cdot Pe^{{{Multipliers0[1]:.2f}}} {Multipliers0[2]:.2f}\cdot Ng^{{{Multipliers0[3]:.2f}}}$\n$R^2$ = {r2:.2f}"
-ax[0].text(0.38, 0.98, eq_txt,
+eq_txt1 = f"$RF = {Multipliers0[0]:.2f}\cdot Pe^{{{Multipliers0[1]:.2f}}} {Multipliers0[2]:.2f}\cdot Ng^{{{Multipliers0[3]:.2f}}}$\n$R^2$ = {r2:.2f}"
+ax[0].text(0.38, 0.98, eq_txt1,
            transform=ax[0].transAxes,
            ha='left', va='top', fontsize=14,
            bbox=dict(fc='white', alpha=0.8, boxstyle='round,pad=0.2'))
-eq_txt = f"$RF = {Multipliers[0]:.2f} \cdot exp({Multipliers[1]:.2f} \cdot Pe) + {Multipliers[2]:.2f}$\n$R^2$ = {r2_1:.2f}"
+eq_txt2 = f"$RF = {Multipliers[0]:.2f} \cdot exp({Multipliers[1]:.2f} \cdot Pe) + {Multipliers[2]:.2f}$\n$R^2$ = {r2_1:.2f}"
 # eq_txt = f"$RF = {Multipliers_hb[0]:.2f} + \\frac{{(RF_{{max}}  {Multipliers_hb[0]:.2f}) \cdot Pe}}{{{Multipliers_hb[1]:.2f} + Pe}}$\n$R^2$ = {r2_1:.2f}"
-ax[1].text(1.65, 0.07, eq_txt,
+ax[1].text(1.65, 0.07, eq_txt2,
            transform=ax[0].transAxes,
            ha='left', va='top', fontsize=14,
            bbox=dict(fc='white', alpha=0.8, boxstyle='round,pad=0.2'))
-eq_txt = f"$RF = {Multipliers2[0]:.2f} \cdot log({Multipliers2[1]:.2f} \cdot Ng + 1) + {Multipliers2[2]:.2f}$\n$R^2$ = {r2_2:.2f}"
-ax[2].text(2.8, 0.982, eq_txt,
+eq_txt3 = f"$RF = {Multipliers2[0]:.2f} \cdot log({Multipliers2[1]:.2f} \cdot Ng + 1) + {Multipliers2[2]:.2f}$\n$R^2$ = {r2_2:.2f}"
+ax[2].text(2.8, 0.982, eq_txt3,
            transform=ax[0].transAxes,
            ha='left', va='top', fontsize=14,
            bbox=dict(fc='white', alpha=0.8, boxstyle='round,pad=0.2'))
 plt.show()
-
-
-
-
-# ---- 3) Plotly contour with built-in smoothing ----
-# Note: contours.smoothing ranges 0 → 1 (higher = smoother isolines)
-# fig = go.Figure(
-#     data=go.Contour(
-#         x=xi, y=yi, z=Zi,
-#         contours=dict(
-#             start=float(np.nanmin(Zi)),
-#             end=float(np.nanmax(Zi)),
-#             size=(np.nanmax(Zi)-np.nanmin(Zi))/8,
-#             coloring="fill",
-#             showlines=True,
-            
-#         ),
-#         colorbar=dict(title="Z"),
-#         # connectgaps=True,   # helps avoid breaks near former NaNs
-#         line_smoothing=1,  # smooth contour lines
-#         line=dict(width=1),  # contour line width
-#         contours_coloring='heatmap'
-#     )
-# )
-
-# fig.update_layout(
-#     title="Filled Contour (Plotly) with Smoothing",
-#     xaxis_title="Pe",
-#     yaxis_title="Ng",
-#     width=800,
-#     height=650
-# )
-
-# # ---- 4) Quick UI to tweak smoothing live ----
-# buttons = []
-# for s in [0.0, 0.35, 0.65, 0.9]:
-#     buttons.append(dict(
-#         label=f"smoothing={s}",
-#         method="restyle",
-#         args=[{"contours.smoothing": [s]}]
-#     ))
-
-# fig.update_layout(
-#     updatemenus=[dict(
-#         type="buttons",
-#         x=1.05, y=1.0,
-#         xanchor="left",
-#         buttons=buttons,
-#         showactive=True
-#     )]
-# )
-
-# fig.show()
-
-
-
-
-
-
-
-
-
-
-
-
-
 
