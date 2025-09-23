@@ -186,24 +186,24 @@ scatter = ax[2].scatter(
     edgecolor='k',
     alpha=0.3
 )
-def exp_fun(x, M):
-    return M[0] * np.exp( M[1] * x) + M[2]
+# def exp_fun(x, M):
+#     return M[0] * np.exp( M[1] * x) + M[2]
 
-Multipliers = [-0.9133, -0.1759, 0.8993]
-y_pred = exp_fun(Pe, Multipliers)
-r2_1 = r2_score(RF_values, y_pred)
-rmse = np.sqrt(mean_squared_error(RF_values, y_pred))
-xs = np.linspace(Pe.min(), Pe.max(), 500)
-ax[1].plot(xs, exp_fun(xs, Multipliers), 'k-', lw=2, alpha=0.5)
-
-# def hb_fun(x, M):
-#     return M[0] + ((0.94-M[0]) * x)/ (M[1] + x)
-# Multipliers_hb = [-3.2627, 0.5235]
-# y_pred = hb_fun(Pe, Multipliers_hb)
+# Multipliers = [-0.9133, -0.1759, 0.8993]
+# y_pred = exp_fun(Pe, Multipliers)
 # r2_1 = r2_score(RF_values, y_pred)
 # rmse = np.sqrt(mean_squared_error(RF_values, y_pred))
 # xs = np.linspace(Pe.min(), Pe.max(), 500)
-# ax[1].plot(xs, hb_fun(xs, Multipliers_hb), 'k-', lw=2, alpha=0.5)
+# ax[1].plot(xs, exp_fun(xs, Multipliers), 'k-', lw=2, alpha=0.5)
+
+def hb_fun(x, M):
+    return M[0] + ((0.94-M[0]) * x)/ (M[1] + x)
+Multipliers_hb = [-3.2627, 0.5235]
+y_pred = hb_fun(Pe, Multipliers_hb)
+r2_1 = r2_score(RF_values, y_pred)
+rmse = np.sqrt(mean_squared_error(RF_values, y_pred))
+xs = np.linspace(Pe.min(), Pe.max(), 500)
+ax[1].plot(xs, hb_fun(xs, Multipliers_hb), 'k-', lw=2, alpha=0.5)
 
 ax[2].set_xlabel("Ng [-]", fontsize=18)
 ax[2].set_ylabel("RF [-]", fontsize=18)
@@ -227,8 +227,8 @@ ax[0].text(0.38, 0.98, eq_txt1,
            transform=ax[0].transAxes,
            ha='left', va='top', fontsize=14,
            bbox=dict(fc='white', alpha=0.8, boxstyle='round,pad=0.2'))
-eq_txt2 = f"$RF = {Multipliers[0]:.2f} \cdot exp({Multipliers[1]:.2f} \cdot Pe) + {Multipliers[2]:.2f}$\n$R^2$ = {r2_1:.2f}"
-# eq_txt = f"$RF = {Multipliers_hb[0]:.2f} + \\frac{{(RF_{{max}}  {Multipliers_hb[0]:.2f}) \cdot Pe}}{{{Multipliers_hb[1]:.2f} + Pe}}$\n$R^2$ = {r2_1:.2f}"
+# eq_txt2 = f"$RF = {Multipliers[0]:.2f} \cdot exp({Multipliers[1]:.2f} \cdot Pe) + {Multipliers[2]:.2f}$\n$R^2$ = {r2_1:.2f}"
+eq_txt2 = f"$RF = {Multipliers_hb[0]:.2f} + \\frac{{(RF_{{max}}  {Multipliers_hb[0]:.2f}) \cdot Pe}}{{{Multipliers_hb[1]:.2f} + Pe}}$\n$R^2$ = {r2_1:.2f}"
 ax[1].text(1.65, 0.07, eq_txt2,
            transform=ax[0].transAxes,
            ha='left', va='top', fontsize=14,

@@ -44,11 +44,17 @@ input_directory = os.getcwd()
 # model.eval()
 # scalers = joblib.load("scalers_withCG.pkl")
 
-activation = ["relu", "tanh"]
+# activation = ["relu", "tanh"]
+# model = build_model(input_dim=8, hidden_sizes=[22, 8], activations=activation)
+# model.load_state_dict(torch.load("ann_model_withoutCG.pt"))
+# model.eval()
+# scalers = joblib.load("scalers_withoutCG.pkl")
+
+activation = ["relu", "relu"]
 model = build_model(input_dim=8, hidden_sizes=[22, 8], activations=activation)
-model.load_state_dict(torch.load("ann_model_withoutCG.pt"))
+model.load_state_dict(torch.load("ann_model_gurobi.pt"))
 model.eval()
-scalers = joblib.load("scalers_withoutCG.pkl")
+scalers = joblib.load("scalers_gurobi.pkl")
 
 scaler = scalers["X_scaler"]
 y_scaler = scalers["y_scaler"]
@@ -104,8 +110,8 @@ clf = load("rf_validity.joblib")
 CG_types = ['H2', 'CO2', 'CH4', 'N2']
 # CG_types = ['H2']
 results =[]
-flow = 2.5e5
-cl = 14
+flow = 1.5e6
+cl = 360
 for ii in range(len(df_clean)):
     for cg_type in CG_types:
         H2_density = PropsSI("D", "P", df_clean['Pressure'].iloc[ii] * 1e5, "T", df_clean['Temperature'].iloc[ii], "Hydrogen")

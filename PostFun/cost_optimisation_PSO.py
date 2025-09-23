@@ -175,7 +175,7 @@ def main(input_directory):
             print(f"Final result:'{xopt[0]}' - '{xopt[1]}'- '{fopt}'- '{X_const[0]}'- '{CG_density - H2_density}'.")
             
     df_results = pd.DataFrame(results)
-    df_results.to_csv(os.path.join(input_directory, 'optimized_results_without_CG_1.csv'), index=False)
+    df_results.to_csv(os.path.join(input_directory, 'optimized_costs.csv'), index=False)
 os.chdir("Y:\\Mixing Results\\July")  # Change to the directory containing your simulation files
 # os.chdir("Y:\\Mixing Results\\May\\NewCH4")  # Change to the directory containing your simulation files
 # os.chdir("Z:\\Mixing Results\\Feb\\Results\\30 Meter Height Reservoir")  # Change to the directory containing your simulation files

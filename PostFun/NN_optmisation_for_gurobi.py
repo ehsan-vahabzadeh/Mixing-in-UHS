@@ -1,3 +1,4 @@
+    
 import json
 import matplotlib.pyplot as plt
 import numpy as np
@@ -54,9 +55,9 @@ def train_and_evaluate_model_kfold(X, Y, trial=None):
             X_val = scaler.transform(X_val)
 
             X_train_t = torch.tensor(X_train, dtype=torch.float32)
-            y_train_t = torch.tensor(y_train, dtype=torch.float32).unsqueeze(1)
+            y_train_t = torch.tensor(y_train, dtype=torch.float32)
             X_val_t = torch.tensor(X_val, dtype=torch.float32)
-            y_val_t = torch.tensor(y_val, dtype=torch.float32).unsqueeze(1)
+            y_val_t = torch.tensor(y_val, dtype=torch.float32)
 
             train_ds = TensorDataset(X_train_t, y_train_t)
             train_loader = DataLoader(train_ds, batch_size=batch_size, shuffle=True)
@@ -99,13 +100,13 @@ def train_and_evaluate_model_kfold(X, Y, trial=None):
         y_scaler = MinMaxScaler()
         X_train = scaler.fit_transform(X_split)
         X_test = scaler.transform(X_test)
-        # y_train = y_scaler.fit_transform(Y_split.reshape(-1, 1))
-        # y_test   = y_scaler.transform(y_test.reshape(-1, 1))
+        y_train = scaler.fit_transform(Y_split.reshape(-1, 1))
+        y_test   = scaler.transform(y_test.reshape(-1, 1))
         
         X_train_t = torch.tensor(X_train, dtype=torch.float32)
-        y_train_t = torch.tensor(Y_split, dtype=torch.float32).unsqueeze(1)
+        y_train_t = torch.tensor(Y_split, dtype=torch.float32)
         X_test_t = torch.tensor(X_test, dtype=torch.float32)
-        y_test_t = torch.tensor(y_test, dtype=torch.float32).unsqueeze(1)
+        y_test_t = torch.tensor(y_test, dtype=torch.float32)
         # with consideration of CG in RF
         # lr = 0.002999999999999999
         # hidden_sizes = [22, 21]
@@ -121,8 +122,8 @@ def train_and_evaluate_model_kfold(X, Y, trial=None):
         # epochs = 300
         
         
-        lr = 0.0011499250279688534
-        hidden_sizes = [14,11]
+        lr = 0.0019425918125583334
+        hidden_sizes = [22,8]
         # activation = ["relu", "tanh"]
         activation = ["relu", "relu"]
         batch_size = 8
@@ -142,12 +143,12 @@ def train_and_evaluate_model_kfold(X, Y, trial=None):
             y_scaler = MinMaxScaler()
             X_train = scaler.fit_transform(X_train)
             X_val = scaler.transform( X_val)
-            # y_train = y_scaler.fit_transform(y_train.reshape(-1, 1))
-            # y_val   = y_scaler.transform(y_val.reshape(-1, 1))
+            y_train = scaler.fit_transform(y_train.reshape(-1, 1))
+            y_val   = scaler.transform(y_val.reshape(-1, 1))
             X_train_t = torch.tensor(X_train, dtype=torch.float32)
-            y_train_t = torch.tensor(y_train, dtype=torch.float32).unsqueeze(1)
+            y_train_t = torch.tensor(y_train, dtype=torch.float32)
             X_val_t = torch.tensor(X_val, dtype=torch.float32)
-            y_val_t = torch.tensor(y_val, dtype=torch.float32).unsqueeze(1)
+            y_val_t = torch.tensor(y_val, dtype=torch.float32)
             train_ds = TensorDataset(X_train_t, y_train_t)
             train_loader = DataLoader(train_ds, batch_size=batch_size, shuffle=True)
 
@@ -195,21 +196,31 @@ def train_and_evaluate_model_kfold(X, Y, trial=None):
         # 2. Gather predictions and truths
         with torch.no_grad():
             # Test set
-            y_pred_test  = model(X_test_t).cpu().numpy().flatten()
-            y_true_test  =   y_test_t.cpu().numpy().flatten()
-            # Train set
-            y_pred_train = model(X_train_t).cpu().numpy().flatten()
-            y_true_train =   y_train_t.cpu().numpy().flatten()
+            y_pred_test_norm  = model(X_test_t).cpu().numpy()
+            y_true_test_norm  = y_test_t.cpu().numpy()
+            y_pred_train_norm = model(X_train_t).cpu().numpy()
+            y_true_train_norm = y_train_t.cpu().numpy()
 
-            # y_pred_train = y_scaler.inverse_transform(y_pred_train.reshape(-1, 1)).ravel()
-            # y_true_train = y_scaler.inverse_transform(y_true_train.reshape(-1, 1)).ravel()
-            # y_pred_test = y_scaler.inverse_transform(y_pred_test.reshape(-1, 1)).ravel()
-            # y_true_test = y_scaler.inverse_transform(y_true_test.reshape(-1, 1)).ravel()
-            print('y_pred_scaled min/max:', y_pred_test.min(), y_pred_test.max())
-            r2_train = r2_score(y_true_train, y_pred_train)
-            r2_test = r2_score(y_true_test, y_pred_test)
-            mse_train = mean_squared_error(y_true_train, y_pred_train)
-            mse_test = mean_squared_error(y_true_test, y_pred_test)
+            # 1) inverse-transform with the *y* scaler, not X scaler
+            y_pred_train = y_scaler.inverse_transform(y_pred_train_norm).ravel()
+            y_pred_test  = y_scaler.inverse_transform(y_pred_test_norm).ravel()
+
+            # 2) compare against RAW truths
+            #    (best: save raw copies right after the train/test split *before* scaling)
+            #    e.g., right after split: Y_split_raw = Y_split.copy(); y_test_raw = y_test.copy()
+            #    then here:
+            # true_tr_raw = Y_split_raw.ravel()
+            # true_te_raw = y_test_raw.ravel()
+
+            # If you didn't keep raw copies, inverse-transform the truths too:
+            true_tr_raw = y_scaler.inverse_transform(y_true_train_norm).ravel()
+            true_te_raw = y_scaler.inverse_transform(y_true_test_norm).ravel()
+
+            print('y_pred_raw min/max:', y_pred_test.min(), y_pred_test.max())
+            r2_train = r2_score(true_tr_raw, y_pred_train)
+            r2_test  = r2_score(true_te_raw,  y_pred_test)
+            mse_train = mean_squared_error(true_tr_raw, y_pred_train)
+            mse_test  = mean_squared_error(true_te_raw,  y_pred_test)
         
             # Plotting
             plt.figure(figsize=(18, 6))
