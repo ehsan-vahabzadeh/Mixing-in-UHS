@@ -44,17 +44,17 @@ input_directory = os.getcwd()
 # model.eval()
 # scalers = joblib.load("scalers_withCG.pkl")
 
-# activation = ["relu", "tanh"]
-# model = build_model(input_dim=8, hidden_sizes=[22, 8], activations=activation)
-# model.load_state_dict(torch.load("ann_model_withoutCG.pt"))
-# model.eval()
-# scalers = joblib.load("scalers_withoutCG.pkl")
-
-activation = ["relu", "relu"]
+activation = ["relu", "tanh"]
 model = build_model(input_dim=8, hidden_sizes=[22, 8], activations=activation)
-model.load_state_dict(torch.load("ann_model_gurobi.pt"))
+model.load_state_dict(torch.load("ann_model_withoutCG.pt"))
 model.eval()
-scalers = joblib.load("scalers_gurobi.pkl")
+scalers = joblib.load("scalers_withoutCG.pkl")
+
+# activation = ["relu", "relu"]
+# model = build_model(input_dim=8, hidden_sizes=[14, 11], activations=activation)
+# model.load_state_dict(torch.load("ann_model_gurobi.pt"))
+# model.eval()
+# scalers = joblib.load("scalers_gurobi.pkl")
 
 scaler = scalers["X_scaler"]
 y_scaler = scalers["y_scaler"]

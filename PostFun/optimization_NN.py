@@ -303,7 +303,7 @@ def build_model(input_dim, hidden_sizes, activations):
         # layers.append(nn.Dropout(0.2))  # Add dropout for regularization
         in_dim = out_dim
     layers.append(nn.Linear(in_dim, 1))  # Output layer
-    # layers.append(nn.Sigmoid())          # Constrain output to (0,1)
+    layers.append(nn.Sigmoid())          # Constrain output to (0,1)
     
     return nn.Sequential(*layers)
 
