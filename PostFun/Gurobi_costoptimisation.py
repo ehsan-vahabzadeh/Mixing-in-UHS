@@ -1,75 +1,199 @@
-# pip install torch gurobipy gurobi-ml
-
-# ---------- 1) Build a tiny PyTorch model (or load yours) ----------
-import torch, torch.nn as nn
-import gurobipy as gp
-from gurobi_ml import add_predictor_constr
+import pandas as pd
+import matplotlib.pyplot as plt
 import numpy as np
 import os
-
-def fold_input_scaler_into_first_linear(model: nn.Module, scaler) -> None:
-    """
-    Modifies the first nn.Linear in-place to absorb an input scaler.
-    Supports StandardScaler (mean_, scale_) and MinMaxScaler (min_, scale_).
-    After this, give RAW inputs to the model.
-    """
-    # find first Linear
-    first_lin = None
-    for m in model.modules():
-        if isinstance(m, nn.Linear):
-            first_lin = m
-            break
-    if first_lin is None:
-        raise ValueError("No nn.Linear layer found to fold scaler into.")
-
-    W = first_lin.weight.detach().clone()   # (out, in)
-    b = first_lin.bias.detach().clone()     # (out,)
-
-    # derive a (per-feature gains) and c (per-feature offsets) for z = a ⊙ x + c
-    if hasattr(scaler, "mean_") and hasattr(scaler, "scale_"):  # StandardScaler
-        a = 1.0 / np.asarray(scaler.scale_, dtype=np.float64)
-        c = -np.asarray(scaler.mean_, dtype=np.float64) / np.asarray(scaler.scale_, dtype=np.float64)
-    elif hasattr(scaler, "min_") and hasattr(scaler, "scale_"):  # MinMaxScaler
-        a = np.asarray(scaler.scale_, dtype=np.float64)
-        c = np.asarray(scaler.min_, dtype=np.float64)
+import glob
+from sklearn.preprocessing import LabelEncoder
+from sklearn.tree import DecisionTreeClassifier
+from sklearn.ensemble import RandomForestClassifier
+from CoolProp.CoolProp import PropsSI
+from pyswarm import pso
+import torch
+import joblib
+from joblib import dump, load
+import torch.nn as nn
+def get_activation(name):
+    if name == "relu":
+        return nn.ReLU()
+    elif name == "tanh":
+        return nn.Tanh()
+    elif name == "sigmoid":
+        return nn.Sigmoid()
     else:
-        raise ValueError("Unsupported scaler: expected StandardScaler or MinMaxScaler attributes.")
+        raise ValueError(f"Unknown activation function: {name}")  
+def build_model(input_dim, hidden_sizes, activations):
+    layers = []
+    in_dim = input_dim
 
-    a_t = torch.as_tensor(a, dtype=W.dtype, device=W.device)         # (in,)
-    c_t = torch.as_tensor(c, dtype=W.dtype, device=W.device)         # (in,)
+    for out_dim, act_name in zip(hidden_sizes, activations):
+        layers.append(nn.Linear(in_dim, out_dim))
+        layers.append(get_activation(act_name))
+        # layers.append(nn.Dropout(0.2))  # Add dropout for regularization
+        in_dim = out_dim
+    layers += [nn.Linear(in_dim, 1)]   # <- bound to (0,1)
+    layers.append(nn.Sigmoid())  # Output layer
+    return nn.Sequential(*layers)
+def H2_capacity(df):
+    swr = 0.423
+    T_std = 293.15
+    P_std = 1.01325
+    rho_h2_std = PropsSI("D", "P", P_std * 1e5, "T", T_std, "Hydrogen")
+    rho_CH4 = PropsSI("Z", "P", 237 * 1e5, "T", 273.15+91, "CH4")
+    H2_cap = []
+    for ii in range(len(df)):
+        H2_compressibility = PropsSI("Z", "P", df["Pressure"].iloc[ii] * 1e5, "T", df["Temperature"].iloc[ii], "Hydrogen")
+        V_H2_std = df["Pore Volume"].iloc[ii] * 1e6 * (1 - swr) * df["Pressure"].iloc[ii]  * T_std / (H2_compressibility * P_std * df["Temperature"].iloc[ii])  # m3 at standard conditions
+        H2_HHV = V_H2_std * rho_h2_std * 39.41 / 1e9 # Twh
+        H2_cap.append(H2_HHV) 
+    return H2_cap
+def build_objective(permeability, porosity, pressure, temperature, delta_rho, model, scalers, clf, lb, ub, lambdaa, Number_of_cycles, H2_cost):
+    def objective(x):
+        scaler = scalers["X_scaler"]
+        y_scaler = scalers["y_scaler"]
+        CG_cost = 0
+        if len(x) == 3:
+            flow, cl, cg_ratio = x
+            CG_cost = cg_ratio * (cl / 2) * flow * H2_cost
+            normalized_CG = (cg_ratio - lb[2]) / (ub[2] - lb[2])
+            full_input = np.array([[flow, cl, permeability, pressure, delta_rho, porosity, temperature, cg_ratio]])
+        else:
+            normalized_CG = 0.0
+            flow, cl = x
+            full_input = np.array([[flow, cl, permeability, pressure, delta_rho, porosity, temperature, 0.0]])
+        scaled = scaler.transform(full_input)
+        input_tensor = torch.tensor(scaled, dtype=torch.float32)
+        X = np.array([[flow, permeability, pressure, delta_rho]])
+        if permeability < 8:
+            pred = clf.predict(X)
+            if pred == 0:
+                # print(f"Not feasible input:'{flow}' - '{cl}'- '{permeability}'- '{pressure}'- '{delta_rho}'.")
+                return 1e12
+        with torch.no_grad():
+            rf = model(input_tensor).item()
+            if rf > 1:
+                print("Warning: RF exceeds 1.0, capping to 1.0")
+                rf = 1.0  # Cap RF at 1.0
+            # rf_original = y_scaler.inverse_transform([[rf]]).ravel()[0]
+        WG_cost = (1 - rf) * ( (cl / 2) * flow * H2_cost)
+        # return (1 - lambdaa) * -rf + lambdaa * (normalized_CG)
+        return WG_cost * Number_of_cycles + CG_cost 
+    return objective
 
-    # W' = W * diag(a)  (scale columns),  b' = b + W @ c
-    with torch.no_grad():
-        W_new = W * a_t.unsqueeze(0)                # broadcast over columns
-        b_new = b + torch.mv(W, c_t)                # W @ c
+def main(input_directory):
+    rf_values = []
+    labels = []
+    inputs = []
+    df_list = []
+    # file_path = os.path.join(input_directory, 'mixing_results_withCG.xlsx')
+    file_path = os.path.join(input_directory, 'mixing_results_withoutCG.xlsx')
+    df = pd.read_excel(file_path)
+    
+    # valid = []
+    # for i in range(len(df)):
+    #     if df['RF_final'].iloc[i] == 0:
+    #         valid.append(0)
+    #     else:
+    #         valid.append(1)
+    # # df = df.dropna()  # Drop rows with NaN values
+    # df = df.rename(columns = {
+    #     'FlowRate': 'Flow Rate',
+    #     'CycleLength': 'Cycle Length',
+    #     'RF_final': 'RF',
+    #     'delta_rho': 'Density',
+    #     })
+    # df['valid'] = valid
+    # df = df.drop(columns=['label','CushionGas','theta','CG Ratio','Nusselt_number','Raileigh_number', 'Pe', 'Ng','RF'])
+    # X = df[["Flow Rate", "Permeability", "Pressure", "Density"]].values
+    # y = df["valid"].values
+    # # clf = DecisionTreeClassifier(max_depth=3, min_samples_leaf=10)
+    # clf = RandomForestClassifier( n_estimators=150, max_depth=12, min_samples_leaf=5, class_weight="balanced", random_state=42)
+    # clf.fit(X, y)
+    # from joblib import dump, load
+    # dump(clf, "rf_validity.joblib")
+    clf = load("rf_validity.joblib")
+    
+    # Path to your consolidated CSV
+    csv_path = r"Y:\Mixing Results\July\consolidated_output - Final.csv"
 
-        first_lin.weight.copy_(W_new)
-        first_lin.bias.copy_(b_new)
+    # Read the CSV file
+    df = pd.read_csv(csv_path, encoding='cp1252')
 
+    # Select and convert the necessary columns to numeric
+    columns = [
+        "Field Name",
+        "Porosity [-]",
+        "Permeability [mD]",
+        "Reservoir Pressure[MPa]",
+        "Reservoir Temp [C]",
+        "Number of Wells",
+        "Pore Volume",
+        "RGIIP",
+        "Cum",
+        "Gas Saturation [-]",
+    ]
+    check = ["Number of Wells"]
+    df[columns[1:]] = df[columns[1:]].apply(pd.to_numeric, errors='coerce')
+ 
+    df_clean = df.dropna(subset=check).reset_index(drop=True)
+    df_clean['Reservoir Pressure[MPa]'] = df_clean['Reservoir Pressure[MPa]'] * 10
+    df_clean['Reservoir Temp [C]'] = df_clean['Reservoir Temp [C]'] + 273.15  # Convert to Kelvin
+    df_clean = df_clean.rename(columns={"Reservoir Pressure[MPa]": "Pressure","Reservoir Temp [C]": "Temperature","Porosity [-]": "Porosity","Permeability [mD]": "Permeability"})
+    H2_cap = H2_capacity(df_clean)
+    # activation = ["tanh", "sigmoid"]
+    # model = build_model(input_dim=8, hidden_sizes=[15, 30], activations=activation)
+    # model.load_state_dict(torch.load("ann_model_withCG.pt"))
+    # model.eval()
+    # scalers = joblib.load("scalers_withCG.pkl")
 
-# ---------- 2) Put it into Gurobi and optimize through it ----------
-
+    activation = ["relu", "tanh"]
+    model = build_model(input_dim=8, hidden_sizes=[22, 8], activations=activation)
+    model.load_state_dict(torch.load("ann_model_withoutCG.pt"))
+    model.eval()
+    scalers = joblib.load("scalers_withoutCG.pkl")
+    H2_cost = 7.0 # £/kg
+    H2_cost = H2_cost * 0.08988 # £/m3
+    Number_of_cycles = 20
+    CG_types = [ 'H2','CO2', 'CH4', 'N2']
+    results =[]
+    for ii in range(len(df_clean)):
+        for cg_type in CG_types:
+            H2_density = PropsSI("D", "P", df_clean['Pressure'].iloc[ii] * 1e5, "T", df_clean['Temperature'].iloc[ii], "Hydrogen")
+            CG_density = PropsSI("D", "P", df_clean['Pressure'].iloc[ii] * 1e5, "T", df_clean['Temperature'].iloc[ii] , cg_type)
+            X_const = np.array([df_clean['Permeability'].iloc[ii], df_clean['Porosity'].iloc[ii], df_clean['Pressure'].iloc[ii], df_clean['Temperature'].iloc[ii], CG_density - H2_density])
+            if cg_type != 'H2':
+                lb = [1e5, 14]  
+                ub = [1.5e6, 360]
+            else:
+                lb = [1e5, 14, 0.0]  
+                ub = [1.5e6, 360, 5.0] 
+            lambdaa = 0.1
+            objective = build_objective(X_const[0], X_const[1], X_const[2], X_const[3], X_const[4], model, scalers,clf, lb, ub, lambdaa, Number_of_cycles, H2_cost)
+            xopt, fopt = pso(objective, lb, ub, swarmsize=300, maxiter=500, omega=0.7, phip=1.5, phig=1.5, minstep=1e-6, minfunc=1e-6)
+            if df_clean['Field Name'].iloc[ii] == "Trent gas field":
+                AAA = 1
+            if cg_type == 'H2':
+                normalized_CG = (xopt[2] - lb[2]) / (ub[2] - lb[2])
+            # RF = -(fopt - lambdaa * normalized_CG)/ (1 - lambdaa)
+            results.append({
+            "Field Name": df_clean['Field Name'].iloc[ii],
+            "Porosity [-]": X_const[1],
+            "Permeability [mD]": X_const[0],
+            "Reservoir Pressure[bar]": X_const[2],
+            "Reservoir Temp [K]": X_const[3],
+            "Cushion Gas": cg_type,
+            "Density Difference [kg/m3]": CG_density - H2_density,
+            "Optimized Flow Rate [sm3/d]": xopt[0],
+            "Optimized Cycle Length [d]": xopt[1],
+            "Optimized CG Ratio": (xopt[2] if len(xopt) == 3 else 0),
+            "total cost [£]": fopt,
+            # "Max Predicted RF [-]": -(fopt - lambdaa * normalized_CG)/ (1 - lambdaa) 
+            })
+            print(f"Final result:'{xopt[0]}' - '{xopt[1]}'- '{fopt}'- '{X_const[0]}'- '{CG_density - H2_density}'.")
+            
+    df_results = pd.DataFrame(results)
+    df_results.to_csv(os.path.join(input_directory, 'optimized_costs.csv'), index=False)
+os.chdir("Y:\\Mixing Results\\July")  # Change to the directory containing your simulation files
+# os.chdir("Y:\\Mixing Results\\May\\NewCH4")  # Change to the directory containing your simulation files
+# os.chdir("Z:\\Mixing Results\\Feb\\Results\\30 Meter Height Reservoir")  # Change to the directory containing your simulation files
 input_directory = os.getcwd()
-# Load (exactly like your example)
-mlp = torch.load("toy_relu_mlp.pt", map_location="cpu", weights_only=False)
-
-m = gp.Model("nn_direct")
-m.Params.OutputFlag = 0  # quiet
-
-# Decision variables = network inputs (bound them!)
-x = m.addMVar((2,), lb=[0.0, 0.0], ub=[1.0, 1.0], name="x")
-
-# Output var (optional: bound it if you want)
-y = m.addMVar((1,), name="y")
-
-# *** This single call embeds the PyTorch net into the model ***
-# It adds the right linear/ReLU constraints and ties x -> y through the NN.
-add_predictor_constr(m, mlp, x, y)
-
-# Example objective: maximize the NN output
-m.setObjective(y[0], gp.GRB.MAXIMIZE)
-m.optimize()
-
-print("Status:", m.Status)                      # 2 = OPTIMAL
-print("x*   :", x.X.tolist())
-print("y*   :", float(y[0].X))
+main(input_directory) 

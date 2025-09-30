@@ -11,7 +11,8 @@ fields = [
     "storagepermeabilityml", "irreducible_water_saturationml", "co2endpoint_relpermeabilityml",
     "ave_gross_prod_rate_per_wellml", "ave_water_prod_rate_per_wellml", "gassaturation",
     "gasgravity", "giip", "virgin_reservoir_pressure", "virgin_reservoir_temp",
-    "gas_compress_factor", "gas_viscosity_at_rev_cond", "porevolume", "temperaturegradient", "shallowestdepthmin", "lat", "lon", "activegasproduction"
+    "gas_compress_factor", "gas_viscosity_at_rev_cond", "porevolume", "temperaturegradient", "shallowestdepthmin", "lat", "lon", "activegasproduction",
+    "cum_gas_production"
 ]
 
 # Nicely formatted column names for output
@@ -20,7 +21,8 @@ pretty_fields = [
     "Permeability [D]", "Swr [-]", "CO2 Endpoint RelPerm",
     "Gross Prod Rate/Well [cm/d]", "Water Prod Rate/Well [cm/d]", "Gas Saturation [-]",
     "Gas Gravity", "GIIP [1e6 scm/d]", "Reservoir Pressure[MPa]", "Reservoir Temp [C]",
-    "Gas Comp. Factor", "Gas Viscosity [cp]", "Pore Volume", "Temp Gradient", "Depth [m]", "Latitude", "Longitude", "NOW"
+    "Gas Comp. Factor", "Gas Viscosity [cp]", "Pore Volume", "Temp Gradient", "Depth [m]", "Latitude", "Longitude", "NOW",
+    "Sg","cum_gas_prod"
 ]
 
 all_data = []
