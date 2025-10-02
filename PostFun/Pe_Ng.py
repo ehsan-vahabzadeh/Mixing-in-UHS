@@ -229,26 +229,26 @@ def extract_all_params_sorted(input_directory, Cycle_No):
     well_height = 10
     GridSize = 3.0
     alpha_L = 3
-
+    
     # JSON file loop
     json_files = [f for f in os.listdir(input_directory) if f.endswith('.json')]
     for json_file in json_files:
         try:
-            if (json_file == "N2-1303791-360-1329-79-307-17-0.0.json" or json_file == "CO2-1061584-337-1247-159-329-21-0.0.json" 
-                or json_file == "CO2-1314854-304-1260-126-314-25-0.0.json" or json_file == "CO2-1416192-250-1275-180-337-16-0.0.json"
-                or json_file == "CO2-1026081-346-401-121-305-15-0.0.json" or json_file == "CO2-1111641-327-1150-136-315-20-0.0.json"
-                or json_file == "CO2-958200-282-1363-87-306-20-0.0.json" or json_file == "CO2-1228931-219-971-125-317-14-0.0.json"
-                or json_file == "CO2-1367374-286-1388-182-324-15-0.0.json" or json_file == "CO2-1206093-248-1314-118-315-16-0.0.json"
-                or json_file == "CO2-1253017-301-1123-111-307-18-0.0.json" or json_file == "CO2-1086203-313-1234-104-332-23-0.0.json"
-                or json_file == "CO2-1161449-299-703-102-314-14-0.0.json" or json_file == "CO2-841540-356-1480-182-325-17-0.0.json"
-                or json_file == "CO2-1086203-313-1234-104-332-23-0.0.json" or json_file == "CO2-1471295-273-1376-153-326-16-0.0.json"
-                or json_file == "CH4-1269228-311-1113-81-306-17-0.0.json" or json_file == "CO2-1253017-301-1123-111-307-18-0.0.json"
-                or json_file == "CO2-1302378-334-1196-177-343-27-0.0.json" or json_file == "CO2-1395683-141-1129-122-314-15-0.0.json"
-                or json_file == "CO2-1322040-158-780-119-313-14-0.0.json" or json_file == "CO2-809334-280-1264-132-318-18-0.0.json"
-                or json_file == "CO2-1341719-220-1209-108-312-23-0.0.json" or json_file == "CO2-1437024-309-995-154-327-18-0.0.json"
-                or json_file == "CO2-1410720-307-1290-123-298-15-0.0.json" or json_file == "CO2-1158399-354-1109-121-312-18-0.0.json"):
-                continue
-                check = 1
+            # if (json_file == "N2-1303791-360-1329-79-307-17-0.0.json" or json_file == "CO2-1061584-337-1247-159-329-21-0.0.json" 
+            #     or json_file == "CO2-1314854-304-1260-126-314-25-0.0.json" or json_file == "CO2-1416192-250-1275-180-337-16-0.0.json"
+            #     or json_file == "CO2-1026081-346-401-121-305-15-0.0.json" or json_file == "CO2-1111641-327-1150-136-315-20-0.0.json"
+            #     or json_file == "CO2-958200-282-1363-87-306-20-0.0.json" or json_file == "CO2-1228931-219-971-125-317-14-0.0.json"
+            #     or json_file == "CO2-1367374-286-1388-182-324-15-0.0.json" or json_file == "CO2-1206093-248-1314-118-315-16-0.0.json"
+            #     or json_file == "CO2-1253017-301-1123-111-307-18-0.0.json" or json_file == "CO2-1086203-313-1234-104-332-23-0.0.json"
+            #     or json_file == "CO2-1161449-299-703-102-314-14-0.0.json" or json_file == "CO2-841540-356-1480-182-325-17-0.0.json"
+            #     or json_file == "CO2-1086203-313-1234-104-332-23-0.0.json" or json_file == "CO2-1471295-273-1376-153-326-16-0.0.json"
+            #     or json_file == "CH4-1269228-311-1113-81-306-17-0.0.json" or json_file == "CO2-1253017-301-1123-111-307-18-0.0.json"
+            #     or json_file == "CO2-1302378-334-1196-177-343-27-0.0.json" or json_file == "CO2-1395683-141-1129-122-314-15-0.0.json"
+            #     or json_file == "CO2-1322040-158-780-119-313-14-0.0.json" or json_file == "CO2-809334-280-1264-132-318-18-0.0.json"
+            #     or json_file == "CO2-1341719-220-1209-108-312-23-0.0.json" or json_file == "CO2-1437024-309-995-154-327-18-0.0.json"
+            #     or json_file == "CO2-1410720-307-1290-123-298-15-0.0.json" or json_file == "CO2-1158399-354-1109-121-312-18-0.0.json"):
+            #     continue
+            #     check = 1
             # Extract parameters
             params = extract_simulation_params_from_filename(json_file)
             # if params['pressure'] > 150:
@@ -278,122 +278,122 @@ def extract_all_params_sorted(input_directory, Cycle_No):
                 CG_viscosity = H2_viscosity
             # Derived quantities
             porosity = params['porosity']
-            
             mass_rate = params['FlowRate'] * 0.041e3 / 86400
             perm = params['Permeability'] * 9.869233e-16
             folder_tag = os.path.basename(input_directory)
             # filename = {f"{folder_tag}.json", f"{folder_tag}-June.json"}
             filename = f"{folder_tag}.json"
-            velocity, Length, sigma_rz, tip_velocity, sigma_rr, avg_vx_z, avg_vx_z_rev, avg_vx_x_H2, avg_vx_x_H2_rev, avg_mass_velocity, vx_inlet, height, max_pressure = get_velocity_from_json(filename, json_file,input_directory,Cycle_No)
-            if len(rf) < 10:
-                rf = np.zeros(10)  # Ensure rf has at least 10 elements
-                warnings.warn("RF too short, skipping: " + json_file)
+            for cj in Cycle_No: 
+                velocity, Length, sigma_rz, tip_velocity, sigma_rr, avg_vx_z, avg_vx_z_rev, avg_vx_x_H2, avg_vx_x_H2_rev, avg_mass_velocity, vx_inlet, height, max_pressure = get_velocity_from_json(filename, json_file,input_directory,cj)
+                if len(rf) < 10:
+                    rf = np.zeros(10)  # Ensure rf has at least 10 elements
+                    warnings.warn("RF too short, skipping: " + json_file)
+                    results.append({
+                    'label': params['name'],
+                    'FlowRate': params['FlowRate'],
+                    'CycleLength': params['CycleLength'],
+                    'Permeability': params['Permeability'],
+                    'porosity': params['porosity'],
+                    'Pressure': params['pressure'],
+                    'Temperature': params['temperature'],
+                    'Pe': 0.0,
+                    'Ng': 0.0,
+                    'theta': 0.0,
+                    'Fo': 0.0,
+                    'Cycle_No': cj,
+                    'rf': rf[cj],
+                    'Nusselt_number': 0.0,
+                    'Raileigh_number': 0.0,
+                    'delta_rho': CG_density - H2_density,
+                    'max_pressure':max_pressure
+                    })
+                    continue
+                # velocity = mass_rate / (H2_density / 2e-3)
+                pore_velocity = velocity / porosity 
+                if max_pressure/1e5 > 1.5 * params['pressure']:
+                    rf = np.zeros(10)  # Ensure rf has at least 10 elements
+                    warnings.warn("RF too short, skipping: " + json_file)
+                    results.append({
+                    'label': params['name'],
+                    'FlowRate': params['FlowRate'],
+                    'CycleLength': params['CycleLength'],
+                    'Permeability': params['Permeability'],
+                    'porosity': porosity,
+                    'Pressure': params['pressure'],
+                    'Temperature': params['temperature'],
+                    'Pe': 0.0,
+                    'Ng': 0.0,
+                    'theta': 0.0,
+                    'Fo': 0.0,
+                    'Cycle_No': cj,
+                    'rf': rf[cj],
+                    'Nusselt_number': 0.0,
+                    'Raileigh_number': 0.0,
+                    'delta_rho': CG_density - H2_density,
+                    'max_pressure':max_pressure
+                    })
+                    continue
+                # Length = (Cycle_No + 1) * 2 * Length
+                
+                diffusion = Diffusion(params['pressure'], params['CushionGasType'])
+                # Peclet_number = (pore_velocity * Length) / (diffusion)
+                Peclet_number = (pore_velocity * Length) / (diffusion + 0.5 * sigma_rr/(params['CycleLength']*86400/2))
+                Fourier_number = ( pore_velocity * params['CycleLength']*86400/2) / (Length)
+                theta = ((H2_density) / (CG_density)) * (CF_H2 / CF_CG)
+                # theta = np.abs(CG_density - H2_density) 
+                # Buoyancy_number = (np.sqrt(perm/10) * (CG_density - H2_density) * 9.81 * height) / (H2_viscosity * pore_velocity)
+                Buoyancy_number = ((perm/10) * (CG_density - H2_density) * 9.81 * Length) / (H2_viscosity * pore_velocity * height * porosity)
+                # Buoyancy_number = ((perm) * (CG_density - H2_density) * 9.81 * height) / (CG_viscosity * pore_velocity * Length * porosity)
+                
+                # Buoyancy_number = ((perm/10) * (CG_density - H2_density) * 9.81 *  params['CycleLength']) / (H2_viscosity * height * porosity * 10)
+                
+                Nusselt_number = (avg_mass_velocity * height) / (diffusion + 0.5 * sigma_rr/(params['CycleLength']*86400) * (CG_density - H2_density) )
+                Raileigh_number = (CG_density - H2_density) * 9.81 * height * (perm/10) / ((diffusion + 0.5 * sigma_rr/(params['CycleLength']*86400))  * H2_viscosity)
+                Raileigh_number = Raileigh_number 
+                Buoyancy_number = Buoyancy_number 
+                Peclet_number = Peclet_number 
+                
+                # if Peclet_number < 0:
+                #     warnings.warn(f"Peclet number is negative for {json_file}, skipping.")
+                #     results.append({
+                #     'label': params['name'],
+                #     'FlowRate': params['FlowRate'],
+                #     'CycleLength': params['CycleLength'],
+                #     'Permeability': params['Permeability'],
+                #     'Pressure': params['pressure'],
+                #     'Cycle_No': cj,
+                #     'rf': rf[cj],
+                #     'delta_rho': CG_density - H2_density,
+                #     'Pe': 0.0,
+                #     'Ng': 0.0,
+                #     'theta': 0.0,
+                #     'Fo': 0.0,
+                #     })
+                #     continue
                 results.append({
-                'label': params['name'],
-                'FlowRate': params['FlowRate'],
-                'CycleLength': params['CycleLength'],
-                'Permeability': params['Permeability'],
-                'porosity': params['porosity'],
-                'Pressure': params['pressure'],
-                'Temperature': params['temperature'],
-                'Pe': 0.0,
-                'Ng': 0.0,
-                'theta': 0.0,
-                'Fo': 0.0,
-                'RF': rf,
-                'RF_final': rf[Cycle_No],
-                'Nusselt_number': 0.0,
-                'Raileigh_number': 0.0,
-                'delta_rho': CG_density - H2_density,
-                'max_pressure':max_pressure
-                })
-                continue
-            # velocity = mass_rate / (H2_density / 2e-3)
-            pore_velocity = velocity / porosity 
-            if max_pressure/1e5 > 1.5 * params['pressure']:
-                rf = np.zeros(10)  # Ensure rf has at least 10 elements
-                warnings.warn("RF too short, skipping: " + json_file)
-                results.append({
-                'label': params['name'],
-                'FlowRate': params['FlowRate'],
-                'CycleLength': params['CycleLength'],
-                'Permeability': params['Permeability'],
-                'porosity': porosity,
-                'Pressure': params['pressure'],
-                'Temperature': params['temperature'],
-                'Pe': 0.0,
-                'Ng': 0.0,
-                'theta': 0.0,
-                'Fo': 0.0,
-                'RF': rf,
-                'RF_final': rf[Cycle_No],
-                'Nusselt_number': 0.0,
-                'Raileigh_number': 0.0,
-                'delta_rho': CG_density - H2_density,
-                'max_pressure':max_pressure
-                })
-                continue
-            # Length = (Cycle_No + 1) * 2 * Length
-            
-            diffusion = Diffusion(params['pressure'], params['CushionGasType'])
-            # Peclet_number = (pore_velocity * Length) / (diffusion)
-            Peclet_number = (pore_velocity * Length) / (diffusion + 0.5 * sigma_rr/(params['CycleLength']*86400/2))
-            Fourier_number = ( pore_velocity * params['CycleLength']*86400/2) / (Length)
-            theta = ((H2_density) / (CG_density)) * (CF_H2 / CF_CG)
-            # theta = np.abs(CG_density - H2_density) 
-            # Buoyancy_number = (np.sqrt(perm/10) * (CG_density - H2_density) * 9.81 * height) / (H2_viscosity * pore_velocity)
-            Buoyancy_number = ((perm/10) * (CG_density - H2_density) * 9.81 * Length) / (H2_viscosity * pore_velocity * height * porosity)
-            # Buoyancy_number = ((perm) * (CG_density - H2_density) * 9.81 * height) / (CG_viscosity * pore_velocity * Length * porosity)
-            
-            # Buoyancy_number = ((perm/10) * (CG_density - H2_density) * 9.81 *  params['CycleLength']) / (H2_viscosity * height * porosity * 10)
-            
-            Nusselt_number = (avg_mass_velocity * height) / (diffusion + 0.5 * sigma_rr/(params['CycleLength']*86400) * (CG_density - H2_density) )
-            Raileigh_number = (CG_density - H2_density) * 9.81 * height * (perm/10) / ((diffusion + 0.5 * sigma_rr/(params['CycleLength']*86400))  * H2_viscosity)
-            Raileigh_number = Raileigh_number 
-            Buoyancy_number = Buoyancy_number 
-            Peclet_number = Peclet_number 
-            results.append({
-                'label': params['name'],
-                'FlowRate': params['FlowRate'],
-                'CycleLength': params['CycleLength'],
-                'Permeability': params['Permeability'],
-                'porosity': porosity,
-                'Pressure': params['pressure'],
-                'Temperature': params['temperature'],
-                'delta_rho': CG_density - H2_density,
-                'theta': theta,
-                'Fo': Fourier_number,
-                'RF': rf,
-                'CG Ratio': params['CG'],
-                'Pe': Peclet_number,
-                'Ng': Buoyancy_number,
-                'RF_final': rf[Cycle_No],
-                'max_pressure':max_pressure
-            })
-            if Peclet_number < 0:
-                warnings.warn(f"Peclet number is negative for {json_file}, skipping.")
-                results.append({
-                'label': params['name'],
-                'FlowRate': params['FlowRate'],
-                'CycleLength': params['CycleLength'],
-                'Permeability': params['Permeability'],
-                'Pressure': params['pressure'],
-                'RF': rf,
-                'RF_final': rf[Cycle_No],
-                'delta_rho': CG_density - H2_density,
-                'Pe': 0.0,
-                'Ng': 0.0,
-                'theta': 0.0,
-                'Fo': 0.0,
-                })
-                continue
-
+                    'label': params['name'],
+                    'FlowRate': params['FlowRate'],
+                    'CycleLength': params['CycleLength'],
+                    'Permeability': params['Permeability'],
+                    'porosity': porosity,
+                    'Pressure': params['pressure'],
+                    'Temperature': params['temperature'],
+                    'delta_rho': CG_density - H2_density,
+                    'theta': theta,
+                    'Fo': Fourier_number,
+                    'Cycle_No': cj,
+                    'rf': rf[cj],
+                    'CG Ratio': params['CG'],
+                    'Pe': Peclet_number,
+                    'Ng': Buoyancy_number,
+                    'max_pressure':max_pressure
+                })    
         except Exception as e:
             warnings.warn(f"Skipping {json_file} due to error: {e}")
             continue
 
     # Sort by RF_final
-    results.sort(key=lambda x: x['RF_final'])
+    results.sort(key=lambda x: x['rf'])
 
     return results
 def save_results_to_excel(results, output_path='mixing_results.xlsx'):
@@ -422,12 +422,12 @@ if __name__ != "__main__":
     sys.exit()
 # base_input_dir = r"Y:\Mixing Results\New May"
 base_input_dir = r"Y:\Mixing Results\July"
-# gas_types = ["H2","CO2","CH4", "N2"]
-gas_types = ["H2-No CG","CO2","CH4", "N2"]
+gas_types = ["H2"]
+# gas_types = ["H2-No CG","CO2","CH4", "N2"]
 # gas_types = ["CH4"]
 # === Accumulate All Results Across Gases ===
 all_RF_List = []
-Cycle_No = 9
+Cycle_No =[ 0, 5]
 
 cycle_RF_list = []
 for gas in gas_types:
@@ -445,9 +445,9 @@ for gas in gas_types:
 
 os.chdir(base_input_dir) 
 input_directory = os.getcwd() 
-all_RF_List.sort(key=lambda x: x['RF_final'])
-# save_results_to_excel(all_RF_List, input_directory + '\\mixing_results_withoutCG.xlsx')
-save_results_to_excel(all_RF_List, input_directory + '\\mixing_results_plot.xlsx')
+all_RF_List.sort(key=lambda x: x['rf'])
+save_results_to_excel(all_RF_List, input_directory + '\\mixing_results_withoutCG_allcycles.xlsx')
+# save_results_to_excel(all_RF_List, input_directory + '\\mixing_results_plot.xlsx')
 # === Extract Combined Parameters ===
 RF_values = []
 Pe_values = []

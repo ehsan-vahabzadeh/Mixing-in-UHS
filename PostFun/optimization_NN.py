@@ -368,7 +368,8 @@ def main(input_directory):
             "porosity": data[4],
             "Temperature": data[6],
             "CG Ratio": data[16],
-            "RF_final": data[9]
+            "cycle_no":data[8],
+            "rf": data[9]
         })
         # inputs.append(params['FlowRate',1])
         # inputs.append(params['CycleLength',2])
