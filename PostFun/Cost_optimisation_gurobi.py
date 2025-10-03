@@ -7,11 +7,12 @@ from gurobipy import GRB
 # ---------------- USER SETTINGS ----------------
 INPUT_DIR   = r"Y:\Mixing Results\July"
 PATTERN     = "optim_dataset_180_H2.csv"    # files from your optim_data() writer
-TARGET_TWH  = 100.0                    # energy target
+TARGET_TWH  = 5.0                    # energy target
 H2_COST_PER_KG = 4.0                   # £/kg (already used in your dataset creation, but we'll recompute safely)
 KG_PER_M3_STP  = 0.08988               # kg/m3 at STP
 KWH_PER_KG_H2  = 39.41                 # kWh/kg (HHV)
-OUTPUT_PLAN   = "optimal_plan.csv"
+CL = 60
+OUTPUT_PLAN   = f"optimal_plan_CL{CL}_TWh{TARGET_TWH}.csv"
 # Optional global limits:
 WELL_BUDGET   = None    # e.g., 500   -> limit total wells across UK
 ALLOW_CG      = True    # False -> forces CG Ratio == 0 scenarios only
@@ -51,8 +52,10 @@ def load_scenarios(input_dir, pattern, allow_cg=True):
     NOC = 40 # number of cycles
     df["Lost m3"]       = (df["Net H2 Stored [m3]"] * NOC + df["CG injected [m3]"])
     df ["Cum H2 Produced [Twh]"] = df["Cum H2 Produced [m3]"] * KWH_PER_M3 / 1e9
-    # df["Loss Cost [M$]"] = (df["Capital Cost [$]"] + df["WG O&M Cost [$]"] * NOC) / 1e6 # in million $
+    
     df["Loss Cost [M$]"] = df["Lost m3"] * H2_COST_PER_M3 / 1e6 # in million $
+    # df["Loss Cost [M$]"] = (df["Capital Cost [$]"] + df["WG O&M Cost [$]"] * NOC) / 1e6 # in million $
+    
 
     # IDs
     df["res_id"]  = df["Field Name"].astype("category").cat.codes

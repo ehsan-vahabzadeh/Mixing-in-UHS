@@ -422,12 +422,12 @@ if __name__ != "__main__":
     sys.exit()
 # base_input_dir = r"Y:\Mixing Results\New May"
 base_input_dir = r"Y:\Mixing Results\July"
-gas_types = ["H2"]
+gas_types = ["H2","CO2","CH4", "N2"]
 # gas_types = ["H2-No CG","CO2","CH4", "N2"]
 # gas_types = ["CH4"]
 # === Accumulate All Results Across Gases ===
 all_RF_List = []
-Cycle_No =[ 0, 5]
+Cycle_No =[0,1,2,3,4,5,6,7,8,9]
 
 cycle_RF_list = []
 for gas in gas_types:

@@ -19,7 +19,7 @@ from sklearn.model_selection import KFold
 import joblib
 torch.manual_seed(42)
 np.random.seed(42)
-DOF_LIMIT = 2400
+DOF_LIMIT = 24000
 
 def train_and_evaluate_model_kfold(X, Y, trial=None):
     # === Optuna hyperparameters ===
@@ -31,14 +31,14 @@ def train_and_evaluate_model_kfold(X, Y, trial=None):
         activations = []
 
         for i in range(n_layers):
-            hidden_sizes.append(trial.suggest_int(f"n_units_l{i}", 1, 32))
-            # activations.append(trial.suggest_categorical(f"activation_l{i}", ["relu", "tanh", "sigmoid"]))
-            activations.append(trial.suggest_categorical(f"activation_l{i}", ["relu"]))
+            hidden_sizes.append(trial.suggest_int(f"n_units_l{i}", 1, 128))
+            activations.append(trial.suggest_categorical(f"activation_l{i}", ["relu", "tanh", "sigmoid"]))
+            # activations.append(trial.suggest_categorical(f"activation_l{i}", ["relu"]))
         total_params = count_params(X.shape[1], hidden_sizes)
         trial.set_user_attr("constraint", total_params - DOF_LIMIT)
         if total_params > DOF_LIMIT:
             return float("inf")
-        batch_size = 8
+        batch_size = 64
         epochs = 200  # Reduce for optimization speed
 
         kf = KFold(n_splits=5, shuffle=True, random_state=42)
@@ -120,14 +120,22 @@ def train_and_evaluate_model_kfold(X, Y, trial=None):
         # batch_size = 8
         # epochs = 300
         
-        
-        lr = 0.0011499250279688534
-        hidden_sizes = [14,11]
+        # without the consideration of CG in RF/ Latest
+        # lr = 0.0019425918125583334
+        # hidden_sizes = [22,8]
         # activation = ["relu", "tanh"]
-        activation = ["relu", "relu"]
-        batch_size = 8
-        epochs = 300
+        # # activation = ["relu", "relu"]
+        # batch_size = 8
+        # epochs = 300
         
+        
+        # RF per cycle
+        lr = 0.002110872822127545
+        hidden_sizes = [36,92,108]
+        activation = ["tanh", "relu", "sigmoid"]
+        # activation = ["relu", "relu"]
+        batch_size = 64
+        epochs = 200
         kf = KFold(n_splits=5, shuffle=True, random_state=42)
         mse_list = []
         patience = 50
@@ -264,14 +272,14 @@ def train_and_evaluate_model_kfold(X, Y, trial=None):
             plt.tight_layout()
             plt.show()
             
-            # torch.save(model.state_dict(), "ann_model_withoutCG.pt")
-            # joblib.dump({"X_scaler": scaler, "y_scaler": y_scaler}, "scalers_withoutCG.pkl")
+            torch.save(model.state_dict(), "ann_model_withoutCG_AC.pt")
+            joblib.dump({"X_scaler": scaler, "y_scaler": y_scaler}, "scalers_withoutCG_AC.pkl")
             
             # torch.save(model.state_dict(), "ann_model_withCG.pt")
             # joblib.dump({"X_scaler": scaler, "y_scaler": y_scaler}, "scalers_withCG.pkl")
             
-            torch.save(model.state_dict(), "ann_model_gurobi.pt")
-            joblib.dump({"X_scaler": scaler, "y_scaler": y_scaler}, "scalers_gurobi.pkl")
+            # torch.save(model.state_dict(), "ann_model_gurobi.pt")
+            # joblib.dump({"X_scaler": scaler, "y_scaler": y_scaler}, "scalers_gurobi.pkl")
         return model, scaler
 def constraints(trial):
     """Return positive if violating constraint."""
@@ -332,7 +340,7 @@ def NN_Model(X, Y, use_optimization=False):
         url="sqlite:///optuna_optimization_history.db",
         engine_kwargs={"pool_size": 20, "connect_args": {"timeout": 10}},)
         study = optuna.create_study(storage=storage)
-        best_params = optimize_hyperparameters(X, Y, n_trials=150)
+        best_params = optimize_hyperparameters(X, Y, n_trials=200)
         print("✅ Re-training model with best parameters...")
         train_and_evaluate_model_kfold(X, Y, trial=optuna.trial.FixedTrial(best_params))
     else:
@@ -347,7 +355,8 @@ def main(input_directory):
     rf_values = []
     labels = []
     inputs = []
-    file_path = os.path.join(input_directory, 'mixing_results_withoutCG.xlsx')
+    file_path = os.path.join(input_directory, 'mixing_results_withoutCG_allcycles.xlsx')
+    # file_path = os.path.join(input_directory, 'mixing_results_withoutCG.xlsx')
     # file_path = os.path.join(input_directory, 'mixing_results_withCG.xlsx')
     df = pd.read_excel(file_path)
     ordered_data = []
@@ -357,19 +366,18 @@ def main(input_directory):
             row.append(df[label].iloc[i])
         ordered_data.append(row)
     for data in ordered_data:
-        rf_values.append(data[9])
         inputs.append({
             "label": data[0],
             "FlowRate": data[1],
             "CycleLength":data[2],
             "Permeability": data[3],
             "Pressure": data[5],
-            "delta_rho": data[12],
+            "delta_rho": data[15],
             "porosity": data[4],
             "Temperature": data[6],
-            "CG Ratio": data[16],
-            "cycle_no":data[8],
-            "rf": data[9]
+            "CG Ratio": data[18],
+            "Cycle_No":data[11],
+            "rf": data[12]
         })
         # inputs.append(params['FlowRate',1])
         # inputs.append(params['CycleLength',2])
@@ -386,12 +394,13 @@ def main(input_directory):
     "porosity",
     "Temperature",
     "CG Ratio",
-    "RF_final" 
+    "rf",
+    "Cycle_No" 
     ])
     df = df.dropna()  # Drop rows with NaN values
     # print(df.head())    # verify ordering and contents
-    X = df[["FlowRate", "CycleLength", "Permeability", "Pressure", "delta_rho", 'porosity', 'Temperature','CG Ratio']].values
-    Y = df["RF_final"].values
+    X = df[["FlowRate", "CycleLength", "Permeability", "Pressure", "delta_rho", 'porosity', 'Temperature','CG Ratio', 'Cycle_No']].values
+    Y = df["rf"].values
     # NN_Model(X, Y, use_optimization=True) 
     NN_Model(X, Y)  
     

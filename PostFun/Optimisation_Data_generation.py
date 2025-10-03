@@ -120,6 +120,7 @@ def optim_data(df, CL, scalers, model, clf,CG_type):
             CG_OM_cost = CG_cum_inj_H2 * rho_h2_std * ( compressor_power * cost_of_electricity + cooling_cost * water_requirment + (0.05 + 0.0045))
             WG_OM_cost = WG_cum_inj_H2 * rho_h2_std * ( compressor_power * cost_of_electricity + cooling_cost * water_requirment + (0.05 + 0.0045))
             Total_capital_cost = compressor_capital_cost + well_capital_cost + gas_cost + CG_OM_cost
+             
             data.append({"Field Name": Field_name,
                          "Porosity [-]": poro,
                          "Permeability [mD]": perm,
@@ -216,12 +217,12 @@ def main(input_directory):
     model.load_state_dict(torch.load("ann_model_withoutCG.pt"))
     model.eval()
     scalers = joblib.load("scalers_withoutCG.pkl")
-    H2_cost = 7.0 # $/kg
+    H2_cost = 4.0 # $/kg
     H2_cost = H2_cost * 0.08988 # $/m3
     Number_of_cycles = 20
     CG_type = 'H2'
     results =[]
-    Cycle_length = 180
+    Cycle_length = 360
     data = optim_data(df_clean, Cycle_length, scalers, model, clf, CG_type)
     
 os.chdir("Y:\\Mixing Results\\July")  # Change to the directory containing your simulation files
