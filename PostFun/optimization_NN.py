@@ -135,7 +135,7 @@ def train_and_evaluate_model_kfold(X, Y, trial=None):
         activation = ["tanh", "relu", "sigmoid"]
         # activation = ["relu", "relu"]
         batch_size = 64
-        epochs = 200
+        epochs = 300
         kf = KFold(n_splits=5, shuffle=True, random_state=42)
         mse_list = []
         patience = 50
@@ -236,7 +236,7 @@ def train_and_evaluate_model_kfold(X, Y, trial=None):
             plt.xlim(lims)
             plt.ylim(lims)
             plt.grid(True)
-            plt.text(0.05, 0.95, f'$R^2$ = {r2_train:.2f}\nMSE = {mse_train:.4f}', 
+            plt.text(0.05, 0.95, f'$R^2$ = {r2_train:.4f}\nMSE = {mse_train:.4f}', 
                     transform=plt.gca().transAxes, fontsize=fontsize,
                     verticalalignment='top', bbox=dict(boxstyle='round,pad=0.3', facecolor='white', alpha=0.7))
 
@@ -253,7 +253,7 @@ def train_and_evaluate_model_kfold(X, Y, trial=None):
             plt.xlim(lims)
             plt.ylim(lims)
             plt.grid(True)
-            plt.text(0.05, 0.95, f'$R^2$ = {r2_test:.2f}\nMSE = {mse_test:.4f}', 
+            plt.text(0.05, 0.95, f'$R^2$ = {r2_test:.4f}\nMSE = {mse_test:.4f}', 
                     transform=plt.gca().transAxes, fontsize=fontsize,
                     verticalalignment='top', bbox=dict(boxstyle='round,pad=0.3', facecolor='white', alpha=0.7))
 

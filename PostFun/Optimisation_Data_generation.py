@@ -56,6 +56,7 @@ def optim_data(df, CL, scalers, model, clf,CG_type):
     FR_min, FR_max = 1e5, 1.5e6
     CG_min, CG_max = 0, 5
     data = []
+    cycles = list(range(10))
     well_cost = 2.9e5 # $ per well
     compressor_size = 2000 #H2 kg per hour
     compressor_cost = 10200000 # $ per unit
@@ -77,9 +78,9 @@ def optim_data(df, CL, scalers, model, clf,CG_type):
         NOW = df['Number of Wells'].iloc[ii]
         RGIIP = df['RGIIP'].iloc[ii]
         H2_capacity = df['H2 Capacity [m3]'].iloc[ii]
-        samples_NO = 7000  # set how many you want
+        samples_NO = 5000  # set how many you want
         if NOW > 10:
-            samples_NO = 10000  # set how many you want
+            samples_NO = 7000  # set how many you want
         np.random.seed(42)
         # lhs_xyz = lhs(3, samples = samples_NO )
         from scipy.stats import qmc
@@ -93,56 +94,81 @@ def optim_data(df, CL, scalers, model, clf,CG_type):
             CG_ratio = CG_samples[j]
             if CG_type != 'H2':
                 CG_ratio = 0.0
-            Number_of_wells = int(np.round(NOW_samples[j]))        
-            scaler = scalers["X_scaler"]    
-            full_input = np.array([[Flow_rate, CL, perm, pressure, delta_rho, poro, temperature, CG_ratio]])
-            scaled = scaler.transform(full_input)
-            input_tensor = torch.tensor(scaled, dtype=torch.float32)
+            Number_of_wells = int(np.round(NOW_samples[j]))  
+            if Number_of_wells < 1:
+                Number_of_wells = 1      
+            scaler = scalers["X_scaler"] 
+            rf_list=[] 
+            WG_cum_prod_H2 = 0.0 
             X = np.array([[Flow_rate, perm, pressure, delta_rho]])
             if perm < 8:
                 pred = clf.predict(X)
                 if pred == 0:
                     continue
-            with torch.no_grad():
-                rf = model(input_tensor).item()
-                if rf > 1:
-                    print("Warning: RF exceeds 1.0, capping to 1.0")
-                    rf = 1.0  # Cap RF at 1.0
-            WG_cum_inj_H2 = (CL / 2) * Flow_rate * Number_of_wells
-            CG_cum_inj_H2 = CG_ratio * (CL / 2) * Flow_rate * Number_of_wells
-            gas_cost = (WG_cum_inj_H2 + CG_cum_inj_H2) * rho_h2_std * 4.0 # $
-            if CG_cum_inj_H2 + WG_cum_inj_H2 > H2_capacity:
-                continue
-            WG_cum_prod_H2 = rf * (CL / 2) * Flow_rate * Number_of_wells
-            total_hours = (CL/2) * 24 + (CL / 2) * CG_ratio * 24
-            compressor_capital_cost = ((WG_cum_inj_H2 + CG_cum_inj_H2) * rho_h2_std / (total_hours * compressor_size)) * compressor_cost
-            well_capital_cost = well_cost * Number_of_wells
-            CG_OM_cost = CG_cum_inj_H2 * rho_h2_std * ( compressor_power * cost_of_electricity + cooling_cost * water_requirment + (0.05 + 0.0045))
-            WG_OM_cost = WG_cum_inj_H2 * rho_h2_std * ( compressor_power * cost_of_electricity + cooling_cost * water_requirment + (0.05 + 0.0045))
-            Total_capital_cost = compressor_capital_cost + well_capital_cost + gas_cost + CG_OM_cost
-             
-            data.append({"Field Name": Field_name,
-                         "Porosity [-]": poro,
-                         "Permeability [mD]": perm,
-                         "Reservoir Pressure[bar]": pressure,
-                         "Reservoir Temp [K]": temperature,
-                         "Density Difference [kg/m3]": delta_rho,
-                         "Flow Rate [sm3/d]": Flow_rate,  
-                         "Cycle Length [d]": CL,
-                         "CG Ratio": CG_ratio,
-                         "Predicted RF [-]": rf, 
-                        "Number of Wells": Number_of_wells,
-                        "RGIIP [1e6 scm]": RGIIP,
-                        "Cum H2 Injected [m3]":  WG_cum_inj_H2,
-                        "CG injected [m3]":  CG_cum_inj_H2,
-                        "Cum H2 Produced [m3]":  WG_cum_prod_H2,
-                        "Net H2 Stored [m3]":  WG_cum_inj_H2 - WG_cum_prod_H2,
-                        "Capital Cost [$]": Total_capital_cost,
-                        "WG O&M Cost [$]": WG_OM_cost,
-                        })
-    df_results = pd.DataFrame(data)
-    df_results.to_csv(os.path.join(input_directory, f"optim_dataset_{CL}_{CG_type}.csv"), index=False)                   
-
+            for cl_i in cycles: 
+                full_input = np.array([[Flow_rate, CL, perm, pressure, delta_rho, poro, temperature, CG_ratio, cl_i]])
+                scaled = scaler.transform(full_input)
+                input_tensor = torch.tensor(scaled, dtype=torch.float32)  
+                with torch.no_grad():
+                    rf = model(input_tensor).item()
+                    if rf > 1:
+                        print("Warning: RF exceeds 1.0, capping to 1.0")
+                        rf = 1.0  # Cap RF at 1.0
+                rf_list.append(rf)
+                if cl_i > 0:
+                    mrf = cl_i * rf  - rf_list[cl_i - 1] * (cl_i - 1)
+                else:
+                    mrf = rf
+                WG_cum_prod_H2 = WG_cum_prod_H2 + mrf * (CL / 2) * Flow_rate * Number_of_wells
+                WG_cum_inj_H2 = (CL / 2) * Flow_rate * Number_of_wells
+                CG_cum_inj_H2 = CG_ratio * (CL / 2) * Flow_rate * Number_of_wells
+                gas_cost = (WG_cum_inj_H2 + CG_cum_inj_H2) * rho_h2_std * 4.0 # $
+                if CG_cum_inj_H2 + WG_cum_inj_H2 > H2_capacity:
+                    continue
+                total_hours = (CL/2) * 24 + (CL / 2) * CG_ratio * 24
+                compressor_capital_cost = ((WG_cum_inj_H2 + CG_cum_inj_H2) * rho_h2_std / (total_hours * compressor_size)) * compressor_cost
+                well_capital_cost = well_cost * Number_of_wells
+                CG_OM_cost = CG_cum_inj_H2 * rho_h2_std * ( compressor_power * cost_of_electricity + cooling_cost * water_requirment + (0.05 + 0.0045))
+                WG_OM_cost = WG_cum_inj_H2 * rho_h2_std * ( compressor_power * cost_of_electricity + cooling_cost * water_requirment + (0.05 + 0.0045))
+                Total_capital_cost = compressor_capital_cost + well_capital_cost + gas_cost + CG_OM_cost
+                CRF = 0.1*(1+0.1)**40 / ((1+0.1)**40 - 1)
+                Levelised_capital_cost = Total_capital_cost * CRF / 0.8
+                LCOS = (Levelised_capital_cost / ( WG_cum_inj_H2 * rho_h2_std * 360/CL )) + cost_of_electricity + cooling_cost + 0.05 + 0.0045
+                if LCOS == 0 or WG_cum_inj_H2 == 0 or Levelised_capital_cost == 0:
+                    check = 1
+                WG_inj_TWh = WG_cum_inj_H2 * rho_h2_std * 39.41 / 1e9
+                WG_prod_TWh = WG_cum_prod_H2 * rho_h2_std * 39.41 / 1e9
+                CG_Twh = CG_cum_inj_H2 * rho_h2_std * 39.41 / 1e9
+                data.append({"Field Name": Field_name,
+                            "Porosity [-]": poro,
+                            "Permeability [mD]": perm,
+                            "Reservoir Pressure[bar]": pressure,
+                            "Reservoir Temp [K]": temperature,
+                            "Density Difference [kg/m3]": delta_rho,
+                            "Flow Rate [sm3/d]": Flow_rate,  
+                            "Cycle Length [d]": CL,
+                            "Cycle_No": cl_i,
+                            "CG Ratio": CG_ratio,
+                            "Predicted RF [-]": rf, 
+                            "Predicted MRf [-]": mrf,
+                            "Number of Wells": Number_of_wells,
+                            "RGIIP [1e6 scm]": RGIIP,
+                            "CG injected [m3]":  CG_cum_inj_H2,
+                            "Net H2 Stored [m3]":  (cl_i + 1) * WG_cum_inj_H2 - WG_cum_prod_H2,
+                            "Capital Cost [$]": Total_capital_cost,
+                            "WG O&M Cost [$]": WG_OM_cost,
+                            "LCOS":LCOS,
+                            "Cum CG Injected [Twh]": CG_Twh,
+                            "Cum H2 Injected [Twh]": (cl_i + 1) * WG_inj_TWh,
+                            "Cum H2 Produced [Twh]": WG_prod_TWh,
+                            })
+    folder = os.path.join(input_directory, f"optim_dataset_{CL}_{CG_type}")
+    os.makedirs(folder, exist_ok=True)
+    data = pd.DataFrame(data)
+    for k in range(10): 
+        kk = data[data["Cycle_No"] == k]
+        kk.to_csv(os.path.join(folder, f"cycle_{k}.csv"), index=False)
+    
 def main(input_directory):
     rf_values = []
     labels = []
@@ -206,17 +232,18 @@ def main(input_directory):
     H2_cap = H2_capacity(df_clean)
     df_clean['H2 Capacity [m3]'] = H2_cap
     
-    # activation = ["tanh", "sigmoid"]
-    # model = build_model(input_dim=8, hidden_sizes=[15, 30], activations=activation)
-    # model.load_state_dict(torch.load("ann_model_withCG.pt"))
-    # model.eval()
-    # scalers = joblib.load("scalers_withCG.pkl")
 
-    activation = ["relu", "tanh"]
-    model = build_model(input_dim=8, hidden_sizes=[22, 8], activations=activation)
-    model.load_state_dict(torch.load("ann_model_withoutCG.pt"))
+    activation = ["tanh", "relu", "sigmoid"]
+    model = build_model(input_dim=9, hidden_sizes=[36,92,108], activations=activation)
+    model.load_state_dict(torch.load("ann_model_withoutCG_AC.pt"))
     model.eval()
-    scalers = joblib.load("scalers_withoutCG.pkl")
+    scalers = joblib.load("scalers_withoutCG_AC.pkl")
+
+    # activation = ["relu", "tanh"]
+    # model = build_model(input_dim=8, hidden_sizes=[22, 8], activations=activation)
+    # model.load_state_dict(torch.load("ann_model_withoutCG.pt"))
+    # model.eval()
+    # scalers = joblib.load("scalers_withoutCG.pkl")
     H2_cost = 4.0 # $/kg
     H2_cost = H2_cost * 0.08988 # $/m3
     Number_of_cycles = 20
