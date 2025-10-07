@@ -3,17 +3,17 @@ import numpy as np
 import pandas as pd
 import gurobipy as gp
 from gurobipy import GRB
-
+from CoolProp.CoolProp import PropsSI
 # ---------------- USER SETTINGS ----------------
 INPUT_DIR   = r"Y:\Mixing Results\July"
 FOLDER     = "optim_dataset_180_H2"    # files from your optim_data() writer
-TARGET_TWH  = 1.0                    # energy target
+TARGET_TWH  = 50                    # energy target
 H2_COST_PER_KG = 4.0                   # £/kg (already used in your dataset creation, but we'll recompute safely)
-KG_PER_M3_STP  = 0.08988               # kg/m3 at STP
+KG_PER_M3_STP  =  PropsSI("D", "P", 1 * 1e5, "T", 293.15, "Hydrogen")
 KWH_PER_KG_H2  = 39.41                 # kWh/kg (HHV)
 CL = 180
 NOC = 1 # number of cycles
-OUTPUT_PLAN   = f"optimal_plan_CL{CL}_TWh{TARGET_TWH}.csv"
+OUTPUT_PLAN   = f"optimal_plan_CL{CL}_TWh{TARGET_TWH}.xlsx"
 # Optional global limits:
 WELL_BUDGET   = None    # e.g., 500   -> limit total wells across UK
 ALLOW_CG      = True    # False -> forces CG Ratio == 0 scenarios only
@@ -21,7 +21,6 @@ ALLOW_CG      = True    # False -> forces CG Ratio == 0 scenarios only
 
 H2_COST_PER_M3 = H2_COST_PER_KG * KG_PER_M3_STP
 KWH_PER_M3     = KWH_PER_KG_H2 * KG_PER_M3_STP
-
 def twh_to_m3(twh: float) -> float:
     return (twh * 1e9) / KWH_PER_M3
 def save_cycles_to_excel(df_long, out_xlsx="rf_by_cycle.xlsx",
@@ -41,7 +40,7 @@ def load_scenarios(input_dir, pattern, allow_cg=True, cyc = 0):
     else:  
         sheet = f"cycle_{cyc}"
     paths = glob.glob(os.path.join(input_dir, pattern, sheet + ".csv"))
-    df = pd.read_excel(paths, sheet_name=sheet)
+    df = pd.read_csv(paths[0])
     # df = pd.concat(df, ignore_index=True)
 
     # # Clean numeric columns (commas)
@@ -55,23 +54,28 @@ def load_scenarios(input_dir, pattern, allow_cg=True, cyc = 0):
 
     # Basic sanity
     need = ["Field Name", "Cum H2 Produced [Twh]", "Net H2 Stored [m3]", "Cum CG Injected [Twh]",
-            "Number of Wells", "Flow Rate [sm3/d]", "CG Ratio", "Predicted RF [-]"]
+            "Number of Wells", "Flow Rate [sm3/d]", "CG Ratio", "Predicted RF [-]", "Cum H2 Injected [Twh]", "LCOS"]
     df = df.dropna(subset=need).reset_index(drop=True)
 
     # Filter CG policy (if not allowed, keep only CG Ratio == 0)
     if not allow_cg:
         df = df.loc[(df["CG Ratio"].fillna(0.0) == 0.0)].reset_index(drop=True)
-    Twh_per_cycle = (df["Flow Rate [sm3/d]"] * df["Cycle Length [d]"] / 2) * KWH_PER_M3 / 1e9
+    Twh_per_cycle = (df["Flow Rate [sm3/d]"]* df["Number of Wells"] * df["Cycle Length [d]"] / 2) * KWH_PER_M3 / 1e9
     df["Net H2 Stored [Twh]"] = df["Net H2 Stored [m3]"] * KWH_PER_M3 / 1e9
     # Compute loss cost from data only (no ML)
     if cyc > 9:
-         df["Lost [Twh]"]       = (df["Net H2 Stored [Twh]"] + (cyc - 9) * ((1 - df["Predicted RF [-]"]) * Twh_per_cycle) + df["Cum CG Injected [Twh]"])
-         df["Cum H2 Produced [Twh]"] = df["Cum H2 Produced [Twh]"] + (cyc - 9) * (df["Predicted RF [-]"] * Twh_per_cycle)
+        # check1 =  (cyc - 9) * ((1 - df["Predicted MRf [-]"][0]) * Twh_per_cycle[0])
+        # check2 = df["Net H2 Stored [Twh]"][0] 
+        # check3 = df["Cum H2 Produced [Twh]"][0]
+        # check4 = (cyc - 9) * (df["Predicted MRf [-]"][0] * Twh_per_cycle[0])
+        df["Lost [Twh]"]       = (df["Net H2 Stored [Twh]"] + (cyc - 9) * ((1 - df["Predicted MRf [-]"]) * Twh_per_cycle) + df["Cum CG Injected [Twh]"])
+        df["Cum H2 Produced [Twh]"] = df["Cum H2 Produced [Twh]"] + (cyc - 9) * (df["Predicted MRf [-]"] * Twh_per_cycle)
+        df["Cum H2 Injected [Twh]"] = df["Cum H2 Injected [Twh]"] + (cyc - 9) * Twh_per_cycle
     else:
          df["Lost [Twh]"]       = (df["Net H2 Stored [Twh]"] + df["Cum CG Injected [Twh]"])
     
-    df["Loss Cost [M$]"] = df["Lost [Twh]"] *1e9 / KWH_PER_KG_H2 * H2_COST_PER_KG / 1e6 # in million $
-    # df["Loss Cost [M$]"] = (df["Capital Cost [$]"] + df["WG O&M Cost [$]"] * cyc) / 1e6 # in million $
+    # df["Loss Cost [M$]"] = df["Lost [Twh]"] *1e9 / KWH_PER_KG_H2 * H2_COST_PER_KG / 1e6 # in million $
+    df["Loss Cost [M$]"] = (df["Capital Cost [$]"] + df["WG O&M Cost [$]"] * (cyc+1)) / 1e6 # in million $
     
 
     # IDs
@@ -114,36 +118,36 @@ def build_and_solve(df: pd.DataFrame, target_twh: float, well_budget=None, logfi
     return m, sol
 
 if __name__ == "__main__":
-    cycles_of_interest = [0,2,4,6,8,9,15,20,25,30,35,40]
-    for cyc in cycles_of_interest:
-        df = load_scenarios(INPUT_DIR, FOLDER, allow_cg=ALLOW_CG, cyc=cyc)
+    os.chdir("Y:\\Mixing Results\\July")  # Change to the directory containing your simulation files
+    cycles_of_interest = range(0, 100)  # e.g., range(0, 10) for cycles 0 to 9  
+    with pd.ExcelWriter(OUTPUT_PLAN, engine="openpyxl") as writer:
+        for cyc in cycles_of_interest:
+            df = load_scenarios(INPUT_DIR, FOLDER, allow_cg=ALLOW_CG, cyc=cyc)
 
-        model, sol = build_and_solve(df, TARGET_TWH, well_budget=WELL_BUDGET)
+            model, sol = build_and_solve(df, TARGET_TWH * (cyc+1), well_budget=WELL_BUDGET)
 
-        # Summaries
-        # total_loss = sol["Lost"].sum()
-        total_loss = sol["Loss Cost [M$]"].sum()
-        total_prod_TWh = sol["Cum H2 Produced [Twh]"].sum()
-        total_wells = sol["Number of Wells"].sum()
+            # Summaries
+            # total_loss = sol["Lost"].sum()
+            total_loss = sol["Loss Cost [M$]"].sum()
+            total_prod_TWh = sol["Cum H2 Produced [Twh]"].sum()
+            total_wells = sol["Number of Wells"].sum()
 
-        print("\n=== Optimal Scenario Selection ===")
-        print(f"Delivered: {total_prod_TWh:.2f} TWh (target {TARGET_TWH:.2f} TWh)")
-        print(f"Total wells used: {int(total_wells)}")
-        print(f"Minimum loss cost: Million ${total_loss:,.0f}")
+            print("\n=== Optimal Scenario Selection ===")
+            print(f"Delivered: {total_prod_TWh:.2f} TWh (target {TARGET_TWH:.2f} TWh)")
+            print(f"Total wells used: {int(total_wells)}")
+            print(f"Minimum loss cost: Million ${total_loss:,.0f}")
 
-        keep = [
-            "Field Name", "Flow Rate [sm3/d]", "Number of Wells", "CG Ratio",
-            "Cum H2 Injected [m3]", "CG injected [m3]", "Cum H2 Produced [m3]", "Net H2 Stored [m3]",
-            "Loss Cost [£]", "Porosity [-]", "Permeability [mD]", "Reservoir Pressure[bar]", "Reservoir Temp [K]", 
-            "Cum H2 Produced [Twh]"
-        ]
-            
-        for c in keep:
-            if c not in sol.columns: 
-                sol[c] = np.nan
+            keep = [
+                "Field Name", "Flow Rate [sm3/d]", "Number of Wells", "CG Ratio",
+                "Cum H2 Injected [m3]", "CG injected [m3]", "Cum H2 Produced [m3]", "Net H2 Stored [m3]",
+                "Loss Cost [£]", "Porosity [-]", "Permeability [mD]", "Reservoir Pressure[bar]", "Reservoir Temp [K]", 
+                "Cum H2 Produced [Twh]","Cum H2 Injected [Twh]", "LCOS"
+            ]
                 
-        with pd.ExcelWriter(OUTPUT_PLAN, engine="openpyxl") as writer:
-            sheet = f"cycle_{int(cyc)}"
-            sheet = sheet[:31]  # Excel sheet names max 31 chars
+            for c in keep:
+                if c not in sol.columns: 
+                    sol[c] = np.nan
+                    
+            sheet = f"cycle_{int(cyc)}"[:31]
             sol[keep].to_excel(writer, sheet_name=sheet, index=False)
-        
+            

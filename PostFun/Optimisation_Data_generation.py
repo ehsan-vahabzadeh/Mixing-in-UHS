@@ -78,9 +78,9 @@ def optim_data(df, CL, scalers, model, clf,CG_type):
         NOW = df['Number of Wells'].iloc[ii]
         RGIIP = df['RGIIP'].iloc[ii]
         H2_capacity = df['H2 Capacity [m3]'].iloc[ii]
-        samples_NO = 5000  # set how many you want
+        samples_NO = 7000  # set how many you want
         if NOW > 10:
-            samples_NO = 7000  # set how many you want
+            samples_NO = 10000  # set how many you want
         np.random.seed(42)
         # lhs_xyz = lhs(3, samples = samples_NO )
         from scipy.stats import qmc
@@ -249,7 +249,7 @@ def main(input_directory):
     Number_of_cycles = 20
     CG_type = 'H2'
     results =[]
-    Cycle_length = 360
+    Cycle_length = 180
     data = optim_data(df_clean, Cycle_length, scalers, model, clf, CG_type)
     
 os.chdir("Y:\\Mixing Results\\July")  # Change to the directory containing your simulation files
