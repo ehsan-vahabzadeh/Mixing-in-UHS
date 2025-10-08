@@ -249,7 +249,7 @@ def main(input_directory):
     Number_of_cycles = 20
     CG_type = 'H2'
     results =[]
-    Cycle_length = 180
+    Cycle_length = 14
     data = optim_data(df_clean, Cycle_length, scalers, model, clf, CG_type)
     
 os.chdir("Y:\\Mixing Results\\July")  # Change to the directory containing your simulation files

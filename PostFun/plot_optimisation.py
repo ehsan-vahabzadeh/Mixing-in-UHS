@@ -1,16 +1,26 @@
-import os, re
+import os, re, glob
 import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
 
-# --------- SETTINGS ---------
-INPUT_DIR = r"Y:\Mixing Results\July"
-CL = 180
-TWH = 50
-fname = f"optimal_plan_CL{CL}_TWh{TWH}.xlsx"
-path = os.path.join(INPUT_DIR, fname)
+# ---------------- user settings ----------------
+INPUT_DIR    = r"Y:\Mixing Results\July"
 
-# column names exactly as in your file
+# EITHER: list files explicitly
+FILES = [
+    "optimal_plan_CL14_TWh5.xlsx",
+    "optimal_plan_CL60_TWh15.xlsx",
+    "optimal_plan_CL180_TWh50.xlsx",
+    "optimal_plan_CL360_TWh100.xlsx",
+    "optimal_plan_CL360_TWh200.xlsx",
+]
+
+# OR: glob everything that matches
+# GLOB_PATTERN = "optimal_plan_CL*_TWh*.xlsx"
+GLOB_PATTERN = None
+# ------------------------------------------------
+
+# column names
 COL_INJ_TWH = "Cum H2 Injected [Twh]"
 COL_PRO_TWH = "Cum H2 Produced [Twh]"
 COL_INJ_M3  = "Cum H2 Injected [m3]"
@@ -18,84 +28,130 @@ COL_PRO_M3  = "Cum H2 Produced [m3]"
 COL_NET_M3  = "Net H2 Stored [m3]"
 COL_LCOS    = "LCOS"
 COL_PERM    = "Permeability [mD]"
-# ----------------------------
+COL_WELLS   = "Number of Wells"
+COL_CG      = "CG Ratio"
 
-xls = pd.ExcelFile(path)  # needs openpyxl installed
-cycle_sheets = sorted(
-    (int(m.group(1)), s)
-    for s in xls.sheet_names
-    for m in [re.match(r"^cycle_(\d+)$", s)]
-    if m
-)
+KWH_PER_M3  = 39.41 * 0.08988  # kWh per m3 at STP
 
-rows = []
-for cyc, sname in cycle_sheets:
-    df = pd.read_excel(xls, sheet_name=sname)
+def m3_to_TWh(m3):
+    return m3 * KWH_PER_M3 / 1e9
 
-    inj_twh = df.get(COL_INJ_TWH, pd.Series([np.nan]*len(df))).sum(min_count=1)
-    pro_twh = df.get(COL_PRO_TWH, pd.Series([np.nan]*len(df))).sum(min_count=1)
+def label_from_filename(fname: str) -> str:
+    """Make a short legend label like 'CL180–50TWh'."""
+    m = re.search(r"CL(\d+)_TWh(\d+)", fname)
+    return f"CL{m.group(1)}–{m.group(2)} TWh" if m else os.path.splitext(fname)[0]
 
-    # if TWh columns missing, fall back to m3 (keeps code robust)
-    if not np.isfinite(inj_twh) or not np.isfinite(pro_twh):
-        inj_twh = df[COL_INJ_M3].sum() * 39.41 * 0.08988 / 1e9   # m3 -> TWh
-        pro_twh = df[COL_PRO_M3].sum() * 39.41 * 0.08988 / 1e9
+def aggregate_one_file(path: str) -> pd.DataFrame:
+    """Return a tidy dataframe with one row per cycle for this scenario."""
+    xls = pd.ExcelFile(path)
+    # collect only sheets called cycle_<int>
+    cyc_sheets = sorted(
+        (int(m.group(1)), s)
+        for s in xls.sheet_names
+        for m in [re.match(r"^cycle_(\d+)$", s)]
+        if m
+    )
+    rows = []
+    for cyc, sname in cyc_sheets:
+        df = pd.read_excel(xls, sheet_name=sname)
 
-    net_twh = inj_twh - pro_twh  # net stored (energy terms)
+        # totals (robust even if TWh cols missing)
+        inj_twh = pd.to_numeric(df.get(COL_INJ_TWH), errors="coerce").sum(min_count=1)
+        pro_twh = pd.to_numeric(df.get(COL_PRO_TWH), errors="coerce").sum(min_count=1)
+        if not np.isfinite(inj_twh) or not np.isfinite(pro_twh):
+            inj_twh = m3_to_TWh(pd.to_numeric(df[COL_INJ_M3], errors="coerce").sum())
+            pro_twh = m3_to_TWh(pd.to_numeric(df[COL_PRO_M3], errors="coerce").sum())
 
-    # LCOS aggregation
-    lcos = pd.to_numeric(df[COL_LCOS], errors="coerce")
-    w    = pd.to_numeric(df.get(COL_PRO_TWH, pd.Series(0)), errors="coerce").fillna(0.0)
-    # weighted by produced TWh; if all weights zero, fall back to mean
-    lcos_w = (lcos.multiply(w)).sum() / w.sum() if w.sum() > 0 else lcos.mean()
-    avg_perm = pd.to_numeric(df[COL_PERM], errors="coerce").mean()
-    rows.append(dict(cycle=cyc, inj_twh=inj_twh, pro_twh=pro_twh,
-                     net_twh=net_twh, lcos_mean=lcos.mean(), lcos_w=lcos_w, avg_perm=avg_perm))
+        # weights for energy-weighted stats
+        w = pd.to_numeric(df.get(COL_PRO_TWH), errors="coerce").fillna(0.0)
+        if w.sum() == 0:
+            # fall back to equal weights if produced energy missing/zero
+            w = pd.Series(np.ones(len(df)), index=df.index)
 
-agg = pd.DataFrame(rows).sort_values("cycle").reset_index(drop=True)
+        # energy-weighted LCOS / permeability / CG
+        lcos = pd.to_numeric(df[COL_LCOS], errors="coerce")
+        perm = pd.to_numeric(df[COL_PERM], errors="coerce")
+        cg   = pd.to_numeric(df[COL_CG],   errors="coerce")
 
-# ======= PLOTS =======
+        lcos_w  = (lcos * w).sum() / w.sum()
+        perm_w  = (perm * w).sum() / w.sum()
+        cg_w    = (cg   * w).sum() / w.sum()
 
-plt.figure(figsize=(14,4.5))
+        wells_sum = pd.to_numeric(df[COL_WELLS], errors="coerce").sum()
 
-# (1) Injected vs Produced TWh by cycle
-ax1 = plt.subplot(1,4,1)
-ax1.plot(agg["inj_twh"], agg["pro_twh"],  "-o")
-# ax1.plot(agg["cycle"], agg["inj_twh"],  "-o", label="Injected (TWh)")
-# ax1.plot(agg["cycle"], agg["pro_twh"],  "-o", label="Produced (TWh)")
-ax1.set_xlabel("Cycle No.")
-ax1.set_ylabel("Energy (TWh)")
-ax1.set_title(f"CL={CL} d, Target={TWH} TWh")
-ax1.grid(alpha=0.3); ax1.legend()
+        rows.append(dict(
+            cycle=cyc,
+            inj_twh=inj_twh,
+            pro_twh=pro_twh,
+            eff=pro_twh / inj_twh if inj_twh > 0 else np.nan,  # efficiency
+            lcos=lcos_w,
+            wells=wells_sum,
+            perm=perm_w,
+            cg=cg_w,
+        ))
 
-# (2) LCOS vs cycle (weighted & mean)
-ax2 = plt.subplot(1,4,2)
-ax2.plot(agg["cycle"], agg["lcos_w"],   "-o", label="LCOS (weighted by Produced TWh)")
-ax2.plot(agg["cycle"], agg["lcos_mean"],"--o", label="LCOS (simple mean)")
-ax2.set_xlabel("Cycle No.")
-ax2.set_ylabel("LCOS")
-ax2.set_title("LCOS by cycle")
-ax2.grid(alpha=0.3); ax2.legend()
+    out = pd.DataFrame(rows).sort_values("cycle").reset_index(drop=True)
+    return out
 
-# (3) LCOS vs Net Stored TWh (one point per cycle)
-ax3 = plt.subplot(1,4,3)
-ax3.scatter(agg["pro_twh"], agg["lcos_w"])
-for c, x, y in zip(agg["cycle"], agg["pro_twh"], agg["lcos_w"]):
-    ax3.annotate(str(int(c)), (x, y), textcoords="offset points", xytext=(5,5), fontsize=9)
-ax3.set_xlabel("Net Stored (TWh)  = Injected − Produced")
-ax3.set_ylabel("LCOS (weighted)")
-ax3.set_title("LCOS vs Net Stored")
-ax3.grid(alpha=0.3)
+# ------------- collect scenarios -------------
+if GLOB_PATTERN:
+    file_list = sorted(glob.glob(os.path.join(INPUT_DIR, GLOB_PATTERN)))
+else:
+    file_list = [os.path.join(INPUT_DIR, f) for f in FILES]
 
-# (4) NEW: Avg permeability vs cycle
-ax4 = plt.subplot(1,4,4)
-ax4.plot(agg["cycle"], agg["avg_perm"], "-o", color="purple")
-ax4.set_xlabel("Cycle No.")
-ax4.set_ylabel("Average Permeability (mD)")
-ax4.set_title("Average Permeability vs Cycle")
-ax4.grid(alpha=0.3)
+scenarios = []
+for f in file_list:
+    if not os.path.exists(f): 
+        print(f"[skip] {f} not found")
+        continue
+    agg = aggregate_one_file(f)
+    agg["scenario"] = label_from_filename(os.path.basename(f))
+    scenarios.append(agg)
 
-plt.tight_layout()
-plt.show()
+if not scenarios:
+    raise RuntimeError("No scenarios loaded. Check FILES/GLOB_PATTERN and paths.")
 
-# Optional: print the table you plotted
-print(agg.to_string(index=False))
+# ----------- plotting style -----------
+plt.rcParams.update({
+    "font.size": 18,
+    "axes.labelsize": 18,
+    "axes.titlesize": 18,
+    "legend.fontsize": 14,
+    "xtick.labelsize": 16,
+    "ytick.labelsize": 16,
+    "lines.linewidth": 3,
+    "lines.markersize": 7,
+})
+
+def plot_one(metric_key, ylabel, title, yfmt=None):
+    plt.figure(figsize=(9.5, 6.5))
+    for df in scenarios:
+        s = df["scenario"].iloc[0]
+        plt.plot(df["cycle"], df[metric_key], marker="o", label=s)
+    plt.xlabel("Cycle number [-]")
+    plt.ylabel(ylabel)
+    if yfmt:
+        ax = plt.gca()
+        ax.yaxis.set_major_formatter(yfmt)
+    plt.title(title)
+    plt.grid(alpha=0.35)
+    plt.legend(frameon=True, ncol=1)
+    plt.tight_layout()
+    plt.show()
+
+# ========== Figures ==========
+# 1) Efficiency = Produced / Injected (TWh)
+plot_one("eff", "Efficiency (Produced / Injected) [-]",
+         "Scenario efficiency vs. cycle")
+
+# 2) LCOS (weighted by produced TWh)
+plot_one("lcos", "LCOS [$/MWh]", "LCOS vs. cycle (energy-weighted)")
+
+# 3) Total number of wells selected
+plot_one("wells", "Total wells selected [-]", "Wells vs. cycle")
+
+# 4) Average permeability (energy-weighted)
+plot_one("perm", "Average permeability [mD]", "Permeability vs. cycle")
+
+# 5) Average CG ratio (energy-weighted)
+plot_one("cg", "Average cushion-gas ratio [-]", "Cushion-gas ratio vs. cycle")

@@ -6,12 +6,12 @@ from gurobipy import GRB
 from CoolProp.CoolProp import PropsSI
 # ---------------- USER SETTINGS ----------------
 INPUT_DIR   = r"Y:\Mixing Results\July"
-FOLDER     = "optim_dataset_180_H2"    # files from your optim_data() writer
-TARGET_TWH  = 50                    # energy target
 H2_COST_PER_KG = 4.0                   # £/kg (already used in your dataset creation, but we'll recompute safely)
 KG_PER_M3_STP  =  PropsSI("D", "P", 1 * 1e5, "T", 293.15, "Hydrogen")
 KWH_PER_KG_H2  = 39.41                 # kWh/kg (HHV)
-CL = 180
+TARGET_TWH  = 50                    # energy target
+CL = 180 
+FOLDER = f"optim_dataset_{CL}_H2"
 NOC = 1 # number of cycles
 OUTPUT_PLAN   = f"optimal_plan_CL{CL}_TWh{TARGET_TWH}.xlsx"
 # Optional global limits:
@@ -53,7 +53,7 @@ def load_scenarios(input_dir, pattern, allow_cg=True, cyc = 0):
     #         df[c] = pd.to_numeric(df[c], errors="coerce")
 
     # Basic sanity
-    need = ["Field Name", "Cum H2 Produced [Twh]", "Net H2 Stored [m3]", "Cum CG Injected [Twh]",
+    need = ["Field Name", "Cum H2 Produced [Twh]", "Net H2 Stored [m3]", "Cum CG Injected [Twh]","Capital Cost [$]", "WG O&M Cost [$]",
             "Number of Wells", "Flow Rate [sm3/d]", "CG Ratio", "Predicted RF [-]", "Cum H2 Injected [Twh]", "LCOS"]
     df = df.dropna(subset=need).reset_index(drop=True)
 
@@ -75,9 +75,18 @@ def load_scenarios(input_dir, pattern, allow_cg=True, cyc = 0):
          df["Lost [Twh]"]       = (df["Net H2 Stored [Twh]"] + df["Cum CG Injected [Twh]"])
     
     # df["Loss Cost [M$]"] = df["Lost [Twh]"] *1e9 / KWH_PER_KG_H2 * H2_COST_PER_KG / 1e6 # in million $
-    df["Loss Cost [M$]"] = (df["Capital Cost [$]"] + df["WG O&M Cost [$]"] * (cyc+1)) / 1e6 # in million $
-    
-
+    # df["Loss Cost [M$]"] = (df["Capital Cost [$]"] + df["WG O&M Cost [$]"] * (cyc+1)) / 1e6 # in million $
+    Tot_time = round((cyc+1) * CL / 360)
+    if Tot_time == 0:
+        Tot_time = 1
+    CAPEX = pd.to_numeric(df["Capital Cost [$]"], errors="coerce").fillna(0.0)
+    df["OPEX"] = df["WG O&M Cost [$]"] * 0
+    df["Met_demand"] = df["WG O&M Cost [$]"] * 0
+    for ii in range(Tot_time):
+        df["OPEX"] = df["OPEX"] + (df["WG O&M Cost [$]"] * (360 / CL)) / ((1+0.1)**ii)
+        df["Met_demand"] = df["Met_demand"] +  ( ((df["Cum H2 Produced [Twh]"] * 1e6)) / (((cyc+1) * CL)/360) ) / ((1+0.1)**ii)
+    df["LCOS"] = (df["Capital Cost [$]"] + df["OPEX"]) / (df["Met_demand"])
+    df["Loss Cost [M$]"] = df["LCOS"] * df["Cum H2 Produced [Twh]"] * 1e6 / (cyc+1) / 1e6 # in million $
     # IDs
     df["res_id"]  = df["Field Name"].astype("category").cat.codes
     df["cand_id"] = np.arange(len(df), dtype=int)
@@ -98,7 +107,7 @@ def build_and_solve(df: pd.DataFrame, target_twh: float, well_budget=None, logfi
     # m.setObjective(gp.quicksum(x[k] * df.at[k, "Lost"] for k in df.index), GRB.MINIMIZE)
     m.setObjective(gp.quicksum(x[k] * df.at[k, "Loss Cost [M$]"] for k in df.index), GRB.MINIMIZE)
     # Target (delivered H2 >= target)
-    m.addConstr(gp.quicksum(x[k] * df.at[k, "Cum H2 Produced [Twh]"] for k in df.index) >= target_twh,
+    m.addConstr(gp.quicksum(x[k] * df.at[k, "Cum H2 Produced [Twh]"] / (cyc + 1) for k in df.index) >= target_twh,
                 name="energy_target")
 
     # At most one scenario per reservoir
@@ -119,12 +128,15 @@ def build_and_solve(df: pd.DataFrame, target_twh: float, well_budget=None, logfi
 
 if __name__ == "__main__":
     os.chdir("Y:\\Mixing Results\\July")  # Change to the directory containing your simulation files
-    cycles_of_interest = range(0, 100)  # e.g., range(0, 10) for cycles 0 to 9  
+    Years = np.array([1,5,10,15,20,25,30])
+    cycles_of_interest = Years * 360 / CL
+    cycles_of_interest = np.unique(cycles_of_interest).astype(int)
+    # cycles_of_interest = [9,19,29,39,49,59,69,79,89,99]  # e.g., range(0, 10) for cycles 0 to 9  
     with pd.ExcelWriter(OUTPUT_PLAN, engine="openpyxl") as writer:
         for cyc in cycles_of_interest:
             df = load_scenarios(INPUT_DIR, FOLDER, allow_cg=ALLOW_CG, cyc=cyc)
 
-            model, sol = build_and_solve(df, TARGET_TWH * (cyc+1), well_budget=WELL_BUDGET)
+            model, sol = build_and_solve(df, TARGET_TWH, well_budget=WELL_BUDGET)
 
             # Summaries
             # total_loss = sol["Lost"].sum()
@@ -143,7 +155,9 @@ if __name__ == "__main__":
                 "Loss Cost [£]", "Porosity [-]", "Permeability [mD]", "Reservoir Pressure[bar]", "Reservoir Temp [K]", 
                 "Cum H2 Produced [Twh]","Cum H2 Injected [Twh]", "LCOS"
             ]
-                
+            sol["Cum H2 Produced [Twh]"] = sol["Cum H2 Produced [Twh]"] / (cyc + 1)
+            sol["Cum H2 Injected [Twh]"] = sol["Cum H2 Injected [Twh]"] / (cyc + 1)  
+ 
             for c in keep:
                 if c not in sol.columns: 
                     sol[c] = np.nan
