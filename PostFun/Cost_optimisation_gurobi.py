@@ -9,7 +9,7 @@ INPUT_DIR   = r"Y:\Mixing Results\July"
 H2_COST_PER_KG = 4.0                   # £/kg (already used in your dataset creation, but we'll recompute safely)
 KG_PER_M3_STP  =  PropsSI("D", "P", 1 * 1e5, "T", 293.15, "Hydrogen")
 KWH_PER_KG_H2  = 39.41                 # kWh/kg (HHV)
-TARGET_TWH  = 50                    # energy target
+TARGET_TWH  = 50                   # energy target
 CL = 180 
 FOLDER = f"optim_dataset_{CL}_H2"
 NOC = 1 # number of cycles
@@ -76,17 +76,47 @@ def load_scenarios(input_dir, pattern, allow_cg=True, cyc = 0):
     
     # df["Loss Cost [M$]"] = df["Lost [Twh]"] *1e9 / KWH_PER_KG_H2 * H2_COST_PER_KG / 1e6 # in million $
     # df["Loss Cost [M$]"] = (df["Capital Cost [$]"] + df["WG O&M Cost [$]"] * (cyc+1)) / 1e6 # in million $
-    Tot_time = round((cyc+1) * CL / 360)
-    if Tot_time == 0:
-        Tot_time = 1
-    CAPEX = pd.to_numeric(df["Capital Cost [$]"], errors="coerce").fillna(0.0)
-    df["OPEX"] = df["WG O&M Cost [$]"] * 0
-    df["Met_demand"] = df["WG O&M Cost [$]"] * 0
-    for ii in range(Tot_time):
-        df["OPEX"] = df["OPEX"] + (df["WG O&M Cost [$]"] * (360 / CL)) / ((1+0.1)**ii)
-        df["Met_demand"] = df["Met_demand"] +  ( ((df["Cum H2 Produced [Twh]"] * 1e6)) / (((cyc+1) * CL)/360) ) / ((1+0.1)**ii)
-    df["LCOS"] = (df["Capital Cost [$]"] + df["OPEX"]) / (df["Met_demand"])
-    df["Loss Cost [M$]"] = df["LCOS"] * df["Cum H2 Produced [Twh]"] * 1e6 / (cyc+1) / 1e6 # in million $
+    
+    r = 0.10
+    years = max(1, round((cyc+1) * CL / 360))  # project horizon in years
+
+    # Annual OPEX approximation ($/yr): scale per-cycle O&M to per-year
+    annual_opex = df["WG O&M Cost [$]"] * (360.0 / CL)
+
+    # PV(OPEX)
+    pv_opex = sum(annual_opex / ((1 + r) ** y) for y in range(1, years + 1))
+
+    # CAPEX at t=0 (if your CAPEX is staged, discount each stage instead)
+    pv_capex = pd.to_numeric(df["Capital Cost [$]"], errors="coerce").fillna(0.0)
+
+    # Delivered energy over the horizon (TWh total, from your sheet)
+    tot_twh = pd.to_numeric(df["Cum H2 Produced [Twh]"], errors="coerce").fillna(0.0)
+
+    # Approximate uniform annual energy (TWh/yr)
+    annual_twh = tot_twh / years
+
+    # PV(energy) (TWh)
+    pv_energy_twh = sum(annual_twh / ((1 + r) ** y) for y in range(1, years + 1))
+    df["Cum H2 Produced [Twh]"] = pv_energy_twh
+    # LCOS = PV(cost)/PV(energy)
+    df["LCOS"] = (pv_capex + pv_opex) / pv_energy_twh
+
+    # Objective number to minimize = PV(cost) directly
+    df["Loss Cost [M$]"] = (pv_capex + pv_opex) / 1e6  # in million $
+
+    
+    
+    # Tot_time = round((cyc+1) * CL / 360)
+    # if Tot_time == 0:
+    #     Tot_time = 1
+    # CAPEX = pd.to_numeric(df["Capital Cost [$]"], errors="coerce").fillna(0.0)
+    # df["OPEX"] = df["WG O&M Cost [$]"] * 0
+    # df["Met_demand"] = df["WG O&M Cost [$]"] * 0
+    # for ii in range(Tot_time):
+    #     df["OPEX"] = df["OPEX"] + (df["WG O&M Cost [$]"] * (360 / CL)) / ((1+0.1)**ii)
+    #     df["Met_demand"] = df["Met_demand"] +  ( ((df["Cum H2 Produced [Twh]"] * 1e6)) / (((cyc+1) * CL)/360) ) / ((1+0.1)**ii)
+    # df["LCOS"] = (df["Capital Cost [$]"] + df["OPEX"]) / (df["Met_demand"])
+    # df["Loss Cost [M$]"] = df["LCOS"] * df["Cum H2 Produced [Twh]"] * 1e6 / (cyc+1) / 1e6 # in million $
     # IDs
     df["res_id"]  = df["Field Name"].astype("category").cat.codes
     df["cand_id"] = np.arange(len(df), dtype=int)
@@ -107,7 +137,7 @@ def build_and_solve(df: pd.DataFrame, target_twh: float, well_budget=None, logfi
     # m.setObjective(gp.quicksum(x[k] * df.at[k, "Lost"] for k in df.index), GRB.MINIMIZE)
     m.setObjective(gp.quicksum(x[k] * df.at[k, "Loss Cost [M$]"] for k in df.index), GRB.MINIMIZE)
     # Target (delivered H2 >= target)
-    m.addConstr(gp.quicksum(x[k] * df.at[k, "Cum H2 Produced [Twh]"] / (cyc + 1) for k in df.index) >= target_twh,
+    m.addConstr(gp.quicksum(x[k] * df.at[k, "Cum H2 Produced [Twh]"]  for k in df.index) >= target_twh,
                 name="energy_target")
 
     # At most one scenario per reservoir
@@ -134,9 +164,13 @@ if __name__ == "__main__":
     # cycles_of_interest = [9,19,29,39,49,59,69,79,89,99]  # e.g., range(0, 10) for cycles 0 to 9  
     with pd.ExcelWriter(OUTPUT_PLAN, engine="openpyxl") as writer:
         for cyc in cycles_of_interest:
-            df = load_scenarios(INPUT_DIR, FOLDER, allow_cg=ALLOW_CG, cyc=cyc)
-
-            model, sol = build_and_solve(df, TARGET_TWH, well_budget=WELL_BUDGET)
+            df = load_scenarios(INPUT_DIR, FOLDER, allow_cg=ALLOW_CG, cyc=cyc - 1)
+            year = round((cyc * CL) / 360)
+            r = 0.10
+            pv_mult = sum(1.0/((1+r)**y) for y in range(1, year+1))
+            target_pv_twh = TARGET_TWH * pv_mult         # if TARGET_TWH is annual demand
+            # target_pv_twh = TARGET_TWH                  # if TARGET_TWH is a fixed total for the horizon
+            model, sol = build_and_solve(df, target_pv_twh, well_budget=WELL_BUDGET)
 
             # Summaries
             # total_loss = sol["Lost"].sum()
@@ -155,8 +189,8 @@ if __name__ == "__main__":
                 "Loss Cost [£]", "Porosity [-]", "Permeability [mD]", "Reservoir Pressure[bar]", "Reservoir Temp [K]", 
                 "Cum H2 Produced [Twh]","Cum H2 Injected [Twh]", "LCOS"
             ]
-            sol["Cum H2 Produced [Twh]"] = sol["Cum H2 Produced [Twh]"] / (cyc + 1)
-            sol["Cum H2 Injected [Twh]"] = sol["Cum H2 Injected [Twh]"] / (cyc + 1)  
+            # sol["Cum H2 Produced [Twh]"] = sol["Cum H2 Produced [Twh]"] / (cyc + 1)
+            # sol["Cum H2 Injected [Twh]"] = sol["Cum H2 Injected [Twh]"] / (cyc + 1)  
  
             for c in keep:
                 if c not in sol.columns: 

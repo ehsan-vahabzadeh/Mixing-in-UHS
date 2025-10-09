@@ -2,6 +2,7 @@ import os, re, glob
 import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
+from matplotlib.patches import Patch
 
 # ---------- paths ----------
 INPUT_DIR   = r"Y:\Mixing Results\July"
@@ -33,7 +34,7 @@ for c in [COL_PORO, COL_PERM, COL_P_MPA, COL_T_C]:
 # drop rows missing the basics
 dfm = dfm.dropna(subset=[COL_FIELD, COL_PERM, COL_PORO, COL_P_MPA]).copy()
 dfm["Reservoir Temp [K]"] = dfm[COL_T_C] + 273.15
-dfm["Depth_est [m]"]      = (dfm[COL_P_MPA] / MPA_PER_M).round(0)
+dfm["Depth [m]"]      = (dfm[COL_P_MPA] / MPA_PER_M).round(0)
 
 # =========================================================
 # 2) Union of selected fields across all scenarios & cycles
@@ -66,7 +67,7 @@ def stats_series(s: pd.Series):
     if len(s) == 0:
         return dict(n=0, mean=np.nan, std=np.nan, min=np.nan, max=np.nan)
     return dict(n=len(s), mean=s.mean(), std=s.std(ddof=1), min=s.min(), max=s.max())
-def compare_box_violin(df_all, df_sel, col, ylabel, title, show_violin=True):
+def compare_box_violin(df_all, df_sel, col, ylabel, title, show_violin=False):
     a = pd.to_numeric(df_all[col], errors="coerce").dropna()
     s = pd.to_numeric(df_sel[col], errors="coerce").dropna()
 
@@ -74,7 +75,7 @@ def compare_box_violin(df_all, df_sel, col, ylabel, title, show_violin=True):
 
     # --- side-by-side boxplots ---
     bp = ax.boxplot(
-        [a, s], positions=[1, 2], widths=0.55, showmeans=True, meanline=True,
+        [a, s], positions=[1, 2], widths=0.55, showmeans=True, meanline=True, vert=False, orientation="horizontal",
         boxprops=dict(linewidth=2), whiskerprops=dict(linewidth=2),
         capprops=dict(linewidth=2), medianprops=dict(linewidth=2),
         meanprops=dict(linewidth=2, color="C1"),
@@ -104,7 +105,7 @@ def summarize_block(df: pd.DataFrame, label: str):
         (COL_PORO, "Porosity [-]"),
         (COL_P_MPA, "Pressure [MPa]"),
         ("Reservoir Temp [K]", "Temperature [K]"),
-        ("Depth_est [m]", "Depth (est) [m]"),
+        ("Depth [m]", "Depth [m]"),
     ]:
         st = stats_series(df[col])
         rows.append([nice, st["n"], st["mean"], st["std"], st["min"], st["max"]])
@@ -127,32 +128,68 @@ print(summary.to_string(index=False))
 # 4) Boxplots (presentation ready) over SELECTED reservoirs
 # =========================================================
 plt.rcParams.update({
-    "font.size": 18, "axes.labelsize": 18, "axes.titlesize": 18,
-    "xtick.labelsize": 16, "ytick.labelsize": 16
+    "font.size": 20, "axes.labelsize": 20, "axes.titlesize": 20,
+    "xtick.labelsize": 20, "ytick.labelsize": 20
 })
+def overlay_horizontal_boxplots(df_all, df_sel, var_name="Porosity [-]"):
+    # y positions so the boxes are "on top of each other"
+    all_vals = pd.to_numeric(df_all[var_name], errors="coerce").dropna()
+    sel_vals = pd.to_numeric(df_sel[var_name], errors="coerce").dropna()
+    y0 = 1.0
+    offset = 0.10
+    pos_all = y0 + offset
+    pos_sel = y0 - offset
 
-def boxplot_param(series, ylabel, title, fname):
-    s = pd.to_numeric(series, errors="coerce").dropna()
-    plt.figure(figsize=(6.8, 7.2))
-    plt.boxplot(s, vert=True, showmeans=True, meanline=True,
-                boxprops=dict(linewidth=2), whiskerprops=dict(linewidth=2),
-                capprops=dict(linewidth=2), medianprops=dict(linewidth=2),
-                meanprops=dict(linewidth=2, color="C1"))
-    plt.ylabel(ylabel)
-    plt.title(title)
-    plt.grid(axis="y", alpha=0.3)
-    plt.tight_layout()
-    # plt.savefig(os.path.join(INPUT_DIR, fname), dpi=300)
+    fig, ax = plt.subplots(figsize=(15, 5), dpi=140)
+
+    # Common styling
+    box_kws = dict(vert=False, widths=0.18, patch_artist=True,
+                   showmeans=True, meanline=True, showfliers=True)
+
+    # All reservoirs (blue, with dashed mean)
+    b1 = ax.boxplot(all_vals, positions=[pos_all], **box_kws,
+                    boxprops=dict(facecolor="#4C78A8", alpha=0.35, edgecolor="black", linewidth=1.8),
+                    whiskerprops=dict(color="black", linewidth=1.6),
+                    capprops=dict(color="black", linewidth=1.6),
+                    medianprops=dict(color="black", linewidth=2.2),          # solid median line
+                    # meanprops=dict(color="#1f3a93", linestyle="--", linewidth=2.0),  # dashed mean line
+                    flierprops=dict(marker="o", markersize=4, markerfacecolor="#4C78A8", alpha=0.6, markeredgecolor="none"))
+
+    # Selected (red, with dashed mean)
+    b2 = ax.boxplot(sel_vals, positions=[pos_sel], **box_kws,
+                    boxprops=dict(facecolor="#E45756", alpha=0.35, edgecolor="black", linewidth=1.8),
+                    whiskerprops=dict(color="black", linewidth=1.6),
+                    capprops=dict(color="black", linewidth=1.6),
+                    medianprops=dict(color="black", linewidth=2.2),
+                    # meanprops=dict(color="#9b1c1c", linestyle="--", linewidth=2.0),
+                    flierprops=dict(marker="o", markersize=4, markerfacecolor="#E45756", alpha=0.6, markeredgecolor="none"))
+
+    # Y axis: a single tick label for the variable
+    # ax.set_yticks([y0])
+    # ax.set_yticklabels([var_name])
+    if var_name.lower().startswith("permeability"):
+        ax.set_xscale("log")
+        ax.set_xlabel(f"{var_name} (log scale)")
+    # X label, limits, grid, legend
+    ax.set_xlabel(var_name)
+    ax.grid(axis="x", alpha=0.25)
+    ax.spines["top"].set_visible(True)
+    ax.spines["right"].set_visible(True) 
+    ax.get_yaxis().set_visible(False)
+    # Legend
+    # handles = [Patch(facecolor="#4C78A8", alpha=0.35, edgecolor="black", label="All reservoirs"),
+    #            Patch(facecolor="#E45756", alpha=0.35, edgecolor="black", label="Selected")]
+    # ax.legend(handles=handles, loc="lower right", frameon=True)
+
+    # plt.tight_layout()
     plt.show()
-
-# boxplot_param(dfs[COL_PERM], "Permeability [mD]", "Selected reservoirs – Permeability", "box_perm.png")
-# boxplot_param(dfs[COL_PORO], "Porosity [-]", "Selected reservoirs – Porosity", "box_poro.png")
-# boxplot_param(dfs[COL_P_MPA], "Pressure [MPa]", "Selected reservoirs – Pressure", "box_pressure.png")
-# boxplot_param(dfs["Depth_est [m]"], "Depth (estimated) [m]", "Selected reservoirs – Depth (est.)", "box_depth.png")
 # # ==== make the comparison plots you asked for ====
 # compare_box_violin(dfm, dfs, "Permeability [mD]",
 #                    "Permeability [mD]", "Permeability: All vs Selected")
-
+# overlay_horizontal_boxplots(dfm, dfs, "Permeability [mD]")
+# overlay_horizontal_boxplots(dfm, dfs, "Porosity [-]")
+# overlay_horizontal_boxplots(dfm, dfs, "Reservoir Pressure[MPa]")
+overlay_horizontal_boxplots(dfm, dfs, "Depth [m]")
 # compare_box_violin(dfm, dfs, "Porosity [-]",
 #                    "Porosity [-]", "Porosity: All vs Selected")
 
@@ -161,60 +198,3 @@ def boxplot_param(series, ylabel, title, fname):
 
 # compare_box_violin(dfm, dfs, "Depth_est [m]",
 #                    "Depth (estimated) [m]", "Depth: All vs Selected")
-
-cols = {
-    "Permeability [mD]": "Permeability [mD]",
-    "Porosity [-]": "Porosity [-]",
-    "Reservoir Pressure[MPa]": "Pressure [MPa]",
-    "Depth_est [m]": "Depth (estimated) [m]",
-}
-
-# compute stats
-summary = []
-for c in cols.keys():
-    all_vals = pd.to_numeric(dfm[c], errors="coerce").dropna()
-    sel_vals = pd.to_numeric(dfs[c], errors="coerce").dropna()
-    summary.append({
-        "Parameter": cols[c],
-        "All_mean": all_vals.mean(),
-        "All_std": all_vals.std(),
-        "Sel_mean": sel_vals.mean(),
-        "Sel_std": sel_vals.std(),
-    })
-summary = pd.DataFrame(summary)
-
-# plotting style
-plt.rcParams.update({
-    "font.size": 18,
-    "axes.labelsize": 18,
-    "axes.titlesize": 20,
-    "xtick.labelsize": 16,
-    "ytick.labelsize": 16,
-    "legend.fontsize": 15,
-})
-
-# plot each parameter separately
-for i, row in summary.iterrows():
-    fig, ax = plt.subplots(figsize=(9, 3.5))
-
-    # horizontal bars
-    ax.barh(0, row["All_mean"], xerr=row["All_std"],
-            color="lightgray", edgecolor="black",
-            height=0.35, label="All reservoirs", capsize=5)
-    ax.barh(1, row["Sel_mean"], xerr=row["Sel_std"],
-            color="#1f77b4", edgecolor="black",
-            height=0.35, label="Selected reservoirs", capsize=5)
-
-    # labels and formatting
-    ax.set_yticks([0, 1])
-    ax.set_yticklabels(["All", "Selected"])
-    ax.set_xlabel(row["Parameter"])
-    ax.set_title(f"{row['Parameter']} – Comparison")
-    ax.grid(axis="x", alpha=0.3)
-
-    # numeric labels
-    ax.text(row["All_mean"] * 1.02, 0, f"{row['All_mean']:.2f}", va="center", fontsize=14)
-    ax.text(row["Sel_mean"] * 1.02, 1, f"{row['Sel_mean']:.2f}", va="center", fontsize=14)
-
-    plt.tight_layout()
-    plt.show()
