@@ -12,28 +12,27 @@ FILES = [
     "optimal_plan_CL180_TWh50.xlsx",
     "optimal_plan_CL360_TWh100.xlsx",
     "optimal_plan_CL360_TWh150.xlsx",
+    "optimal_plan_CL360_TWh200.xlsx",
 ]
-greens = ["black", "peru", "darkseagreen", "mediumblue", "crimson"]
 # Or glob:
 # GLOB_PATTERN = "optimal_plan_CL*_TWh*.xlsx"
 GLOB_PATTERN = None
 
-YEAR_MARKS = np.array([1, 5, 10, 15, 20, 25, 30], dtype=int)
+YEAR_MARKS = np.array([30], dtype=int)
+
+SCEN_COL_LABEL = "Scenario"
+LOSS_LABEL = r"Optimal Loss Cost ($\times 10^9$ USD)"
+LCOS_LABEL     = "LCOS ($\$$/MWh)"
 # ------------------------------------------------
 
-# column names
+# columns (multi-name tolerant)
 COL_INJ_TWH = "Cum H2 Injected [Twh]"
-COL_PRO_TWH = "Cum H2 Produced [Twh]"
-COL_INJ_M3  = "Cum H2 Injected [m3]"
-COL_PRO_M3  = "Cum H2 Produced [m3]"
+COL_PRO_TWH = "Cum H2 Produced [Twh]"            # nominal
+COL_PRO_TWH_PV = "Produced TWh (PV total)"       # preferred if present
 COL_LCOS    = "LCOS"
-COL_PERM    = "Permeability [mD]"
 COL_WELLS   = "Number of Wells"
-COL_CG      = "CG Ratio"
-KWH_PER_M3  = 39.41 * 0.08988  # kWh per m3 at STP
 
-def m3_to_TWh(m3):
-    return m3 * KWH_PER_M3 / 1e9
+LOSS_CANDIDATES = ["Loss Cost [M$]", "Loss Cost [$]", "Loss Cost [£]", "Loss Cost [M£]"]
 
 def parse_CL(fname):
     m = re.search(r"CL(\d+)", fname)
@@ -41,111 +40,216 @@ def parse_CL(fname):
 
 def label_from_filename(fname: str) -> str:
     m = re.search(r"CL(\d+)_TWh(\d+)", fname)
-    return f"CL{m.group(1)}–{m.group(2)} TWh" if m else os.path.splitext(fname)[0]
+    # return f"{m.group(1)} d–{m.group(2)} TWh" if m else os.path.splitext(fname)[0]
+    return f"{m.group(2)} TWh" if m else os.path.splitext(fname)[0]
+def pick_loss_column(df: pd.DataFrame) -> str:
+    for c in LOSS_CANDIDATES:
+        if c in df.columns:
+            return c
+    raise KeyError(f"No loss column found among {LOSS_CANDIDATES}. Got: {list(df.columns)[:10]} ...")
 
-def aggregate_one_file(path: str) -> pd.DataFrame:
-    """Return per-cycle aggregates for this scenario."""
-    xls = pd.ExcelFile(path)
-    cyc_sheets = sorted(
-        (int(m.group(1)), s)
-        for s in xls.sheet_names
-        for m in [re.match(r"^cycle_(\d+)$", s)]
-        if m
-    )
-    rows = []
-    for cyc, sname in cyc_sheets:
-        df = pd.read_excel(xls, sheet_name=sname)
+def aggregate_plan_rows(df_sheet: pd.DataFrame) -> dict:
+    """Aggregate one sheet (one year for a scenario) to plan-level totals."""
+    # loss cost (sum across selected assets)
+    loss_col = pick_loss_column(df_sheet)
+    loss_vals = pd.to_numeric(df_sheet[loss_col], errors="coerce")/1e3
+    total_loss = loss_vals.sum(min_count=1)
 
-        inj_twh = pd.to_numeric(df.get(COL_INJ_TWH), errors="coerce").sum(min_count=1)
-        pro_twh = pd.to_numeric(df.get(COL_PRO_TWH), errors="coerce").sum(min_count=1)
-        if not np.isfinite(inj_twh) or not np.isfinite(pro_twh):
-            inj_twh = m3_to_TWh(pd.to_numeric(df[COL_INJ_M3], errors="coerce").sum())
-            pro_twh = m3_to_TWh(pd.to_numeric(df[COL_PRO_M3], errors="coerce").sum())
+    # energy weights (prefer PV energy if present)
+    if COL_PRO_TWH_PV in df_sheet.columns:
+        w = pd.to_numeric(df_sheet[COL_PRO_TWH_PV], errors="coerce").fillna(0.0)
+    else:
+        w = pd.to_numeric(df_sheet.get(COL_PRO_TWH), errors="coerce").fillna(0.0)
 
-        w = pd.to_numeric(df.get(COL_PRO_TWH), errors="coerce").fillna(0.0)
-        if w.sum() == 0:
-            w = pd.Series(np.ones(len(df)), index=df.index)
+    # plan LCOS: energy-weighted mean (fallback to simple mean if all weights are zero)
+    lcos_vals = pd.to_numeric(df_sheet.get(COL_LCOS), errors="coerce")
+    if (w > 0).any() and lcos_vals.notna().any():
+        plan_lcos = (lcos_vals.fillna(0.0) * w).sum() / max(w.sum(), 1e-12)
+    else:
+        plan_lcos = lcos_vals.mean() if lcos_vals.notna().any() else np.nan
 
-        lcos = pd.to_numeric(df[COL_LCOS], errors="coerce")
-        perm = pd.to_numeric(df[COL_PERM], errors="coerce")
-        cg   = pd.to_numeric(df[COL_CG],   errors="coerce")
+    return {
+        LOSS_LABEL: total_loss,
+        LCOS_LABEL: plan_lcos,
+        "wells": pd.to_numeric(df_sheet.get(COL_WELLS), errors="coerce").sum(min_count=1)
+    }
 
-        rows.append(dict(
-            cycle=cyc,
-            inj_twh=inj_twh,
-            pro_twh=pro_twh,
-            eff=(pro_twh / inj_twh) if inj_twh > 0 else np.nan,
-            lcos=(lcos * w).sum() / w.sum(),
-            wells=pd.to_numeric(df[COL_WELLS], errors="coerce").sum(),
-            perm=(perm * w).sum() / w.sum(),
-            cg=(cg * w).sum() / w.sum(),
-        ))
-    return pd.DataFrame(rows).sort_values("cycle").reset_index(drop=True)
+def snap_cycle_to_year(cycle: int, cl_days: int, year_marks: np.ndarray) -> int:
+    year_raw = cycle * (cl_days / 360.0)
+    return int(year_marks[np.abs(year_marks - year_raw).argmin()])
 
-def snap_cycles_to_years(df_cycles: pd.DataFrame, cl_days: int, year_marks: np.ndarray) -> pd.DataFrame:
-    """
-    Add 'year_raw' = cycle*CL/360 and 'year' = nearest YEAR_MARK.
-    For each target year, keep the row whose cycle is closest to that year.
-    """
-    df = df_cycles.copy()
-    df["year_raw"] = df["cycle"] * (cl_days / 360.0)
-    # snap to nearest mark
-    df["year"] = year_marks[np.abs(df["year_raw"].values[:, None] - year_marks).argmin(axis=1)]
-    # choose closest row per snapped year
-    df["dist"] = np.abs(df["year_raw"] - df["year"])
-    idx = df.groupby("year")["dist"].idxmin()   # indices of closest cycles
-    out = df.loc[idx].sort_values("year").drop(columns=["dist"]).reset_index(drop=True)
-    return out
+def collect_long_dataframe(input_dir: str, files: list, glob_pat: str | None) -> pd.DataFrame:
+    if glob_pat:
+        file_list = sorted(glob.glob(os.path.join(input_dir, glob_pat)))
+    else:
+        file_list = [os.path.join(input_dir, f) for f in files]
 
-# ------------- collect scenarios -------------
-if GLOB_PATTERN:
-    file_list = sorted(glob.glob(os.path.join(INPUT_DIR, GLOB_PATTERN)))
-else:
-    file_list = [os.path.join(INPUT_DIR, f) for f in FILES]
+    records = []
+    for path in file_list:
+        if not os.path.exists(path):
+            print(f"[skip] {path} not found")
+            continue
 
-scenarios = []
-for f in file_list:
-    if not os.path.exists(f):
-        print(f"[skip] {f} not found")
-        continue
-    agg_cyc = aggregate_one_file(f)
-    cl = parse_CL(os.path.basename(f))
-    agg_year = snap_cycles_to_years(agg_cyc, cl, YEAR_MARKS)
-    agg_year["scenario"] = label_from_filename(os.path.basename(f))
-    scenarios.append(agg_year)
+        xls = pd.ExcelFile(path)
+        cl = parse_CL(os.path.basename(path))
+        scen_label = label_from_filename(os.path.basename(path))
 
-if not scenarios:
-    raise RuntimeError("No scenarios loaded.")
+        # sheets are named "cycle_<n>"
+        cyc_sheets = sorted(
+            (int(m.group(1)), s)
+            for s in xls.sheet_names
+            for m in [re.match(r"^cycle_(\d+)$", s)]
+            if m
+        )
+
+        for cyc, sname in cyc_sheets:
+            df_sheet = pd.read_excel(xls, sheet_name=sname)
+            agg = aggregate_plan_rows(df_sheet)
+            year = snap_cycle_to_year(cyc, cl, YEAR_MARKS)
+
+            rec = {
+                SCEN_COL_LABEL: scen_label,
+                "CL_days": cl,
+                "cycle": cyc,
+                "year": year,
+                **agg
+            }
+            records.append(rec)
+
+    if not records:
+        raise RuntimeError("No scenarios loaded/aggregated.")
+
+    df_long = pd.DataFrame.from_records(records)
+    # keep only requested year marks (in case a sheet doesn’t align)
+    df_long = df_long[df_long["year"].isin(YEAR_MARKS)].reset_index(drop=True)
+    return df_long
+
+# ----------- collect -----------
+def collect_long_dataframe(input_dir: str, files: list, glob_pat: str | None) -> pd.DataFrame:
+    if glob_pat:
+        file_list = sorted(glob.glob(os.path.join(input_dir, glob_pat)))
+    else:
+        file_list = [os.path.join(input_dir, f) for f in files]
+
+    records = []
+    for path in file_list:
+        if not os.path.exists(path):
+            print(f"[skip] {path} not found")
+            continue
+
+        xls = pd.ExcelFile(path)
+        cl = parse_CL(os.path.basename(path))
+        scen_label = label_from_filename(os.path.basename(path))
+
+        cyc_sheets = sorted(
+            (int(m.group(1)), s)
+            for s in xls.sheet_names
+            for m in [re.match(r"^cycle_(\d+)$", s)]
+            if m
+        )
+
+        for cyc, sname in cyc_sheets:
+            df_sheet = pd.read_excel(xls, sheet_name=sname)
+            agg = aggregate_plan_rows(df_sheet)
+
+            year_raw = cyc * (cl / 360.0)  # no snapping
+            rec = {
+                SCEN_COL_LABEL: scen_label,
+                "CL_days": cl,
+                "cycle": cyc,
+                "year_raw": year_raw,   # keep actual year value
+                **agg
+            }
+            records.append(rec)
+
+    if not records:
+        raise RuntimeError("No scenarios loaded/aggregated.")
+
+    df_long = pd.DataFrame.from_records(records)
+    return df_long
+
+# ----------- collect -----------
+dfL = collect_long_dataframe(INPUT_DIR, FILES, GLOB_PATTERN)
+
+# ----------- SCATTER: ALL points from ALL years & scenarios -----------
+fig, ax = plt.subplots(figsize=(10, 6))
+for scen, g in dfL.groupby(SCEN_COL_LABEL):
+    ax.scatter(g[LOSS_LABEL], g[LCOS_LABEL], s=45, alpha=0.9, label=scen)
+
+ax.set_title("LCOS vs Total Loss Cost — all years, coloured by Scenario")
+ax.set_xlabel(LOSS_LABEL)
+ax.set_ylabel(LCOS_LABEL)
+ax.grid(True, linestyle=":", alpha=0.5)
+ax.legend(title=SCEN_COL_LABEL, frameon=False, bbox_to_anchor=(1.02, 1), loc="upper left")
+fig.tight_layout()
+fig.savefig("scatter_loss_vs_lcos_all_years.png", dpi=300, bbox_inches="tight")
+plt.show()
 
 # ----------- plotting style -----------
 plt.rcParams.update({
     "font.size": 20,
     "axes.labelsize": 20,
     "axes.titlesize": 20,
-    "legend.fontsize": 20,
-    "xtick.labelsize": 20,
-    "ytick.labelsize": 20,
-    "lines.linewidth": 3,
-    "lines.markersize": 7,
+    "legend.fontsize": 18,
+    "xtick.labelsize": 18,
+    "ytick.labelsize": 18,
+    "lines.linewidth": 2.5,
+    "lines.markersize": 6,
 })
 
-def plot_one(metric_key, ylabel, title):
-    plt.figure(figsize=(9.5, 6.2))
-    for i, df in enumerate(scenarios):
-        s = df["scenario"].iloc[0]
-        plt.plot(df["year"], df[metric_key], marker="o", label=s,color = greens[i])
-    plt.xlabel("Years")
-    plt.ylabel(ylabel)
-    plt.title(title)
-    plt.xticks(YEAR_MARKS)
-    plt.grid(alpha=0.35)
-    plt.legend(frameon=True)
-    plt.tight_layout()
+# ----------- 1) BOX: Total Loss Cost by Scenario -----------
+def horizontal_boxplot(df, value_col, group_col, title, xlabel, outfile=None):
+    order = (df.groupby(group_col)[value_col]
+               .median()
+               .sort_values(ascending=True)
+               .index.tolist())
+    data = [df.loc[df[group_col]==g, value_col].values for g in order]
+
+    fig, ax = plt.subplots(figsize=(10, 6))
+    ax.boxplot(
+        data, vert=False, labels=order, patch_artist=True,showfliers=False,
+        medianprops={"color":"red", "linewidth":2},
+        boxprops={"facecolor":"none", "edgecolor":"blue", "linewidth":2},
+        whiskerprops={"color":"black", "linewidth":1.2},
+        capprops={"color":"black", "linewidth":1.2},
+        # flierprops={"marker":"o", "markersize":3, "markerfacecolor":"none", "markeredgecolor":"blue"}
+    )
+    ax.set_title(title)
+    ax.set_xlabel(xlabel)
+    ax.set_ylabel("Demand")
+    ax.grid(True, axis="x", linestyle=":", alpha=0.5)
+    fig.tight_layout()
+    if outfile:
+        fig.savefig(outfile, dpi=300, bbox_inches="tight")
     plt.show()
 
-# ========== Figures (vs. years) ==========
-plot_one("eff",   "Efficiency (Produced / Injected) [-]", "Scenario efficiency vs. years")
-plot_one("lcos",  "LCOS [$/MWh]",                         "LCOS vs. years (energy-weighted)")
-plot_one("wells", "Total wells selected [-]",             "Wells vs. years")
-plot_one("perm",  "Average permeability [mD]",            "Permeability vs. years")
-plot_one("cg",    "Average cushion-gas ratio [-]",        "Cushion-gas ratio vs. years")
+horizontal_boxplot(
+    dfL, LOSS_LABEL, SCEN_COL_LABEL,
+    title="Distribution of Optimal Total Loss Cost by Scenario",
+    xlabel=f"{LOSS_LABEL}",
+    outfile="box_total_loss_by_scenario.png"
+)
+
+# ----------- 2) BOX: LCOS by Scenario -----------
+horizontal_boxplot(
+    dfL, LCOS_LABEL, SCEN_COL_LABEL,
+    title="Distribution of LCOS by Scenario",
+    xlabel=f"{LCOS_LABEL}",
+    outfile="box_lcos_by_scenario.png"
+)
+
+# ----------- 3) SCATTER: Total Loss vs LCOS (coloured by Scenario) -----------
+fig, ax = plt.subplots(figsize=(10, 6))
+scenarios = dfL[SCEN_COL_LABEL].unique()
+for scen in scenarios:
+    g = dfL[dfL[SCEN_COL_LABEL]==scen]
+    ax.scatter(g[LOSS_LABEL], g[LCOS_LABEL], s=45, alpha=0.9, label=scen)
+
+ax.set_title("LCOS vs Total Loss Cost (coloured by Scenario)")
+ax.set_xlabel(LOSS_LABEL)
+ax.set_ylabel(f"{LCOS_LABEL} ($/MWh)")
+ax.grid(True, linestyle=":", alpha=0.5)
+ax.legend(title=SCEN_COL_LABEL, frameon=False, bbox_to_anchor=(1.02, 1), loc="upper left")
+fig.tight_layout()
+fig.savefig("scatter_loss_vs_lcos_by_scenario.png", dpi=300, bbox_inches="tight")
+plt.show()

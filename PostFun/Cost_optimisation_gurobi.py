@@ -9,8 +9,9 @@ INPUT_DIR   = r"Y:\Mixing Results\July"
 H2_COST_PER_KG = 4.0                   # £/kg (already used in your dataset creation, but we'll recompute safely)
 KG_PER_M3_STP  =  PropsSI("D", "P", 1 * 1e5, "T", 293.15, "Hydrogen")
 KWH_PER_KG_H2  = 39.41                 # kWh/kg (HHV)
-TARGET_TWH  = 50                   # energy target
-CL = 180 
+TARGET_TWH  = 200                   # energy target
+CL = 360 
+r = 0.07
 FOLDER = f"optim_dataset_{CL}_H2"
 NOC = 1 # number of cycles
 OUTPUT_PLAN   = f"optimal_plan_CL{CL}_TWh{TARGET_TWH}.xlsx"
@@ -77,7 +78,7 @@ def load_scenarios(input_dir, pattern, allow_cg=True, cyc = 0):
     # df["Loss Cost [M$]"] = df["Lost [Twh]"] *1e9 / KWH_PER_KG_H2 * H2_COST_PER_KG / 1e6 # in million $
     # df["Loss Cost [M$]"] = (df["Capital Cost [$]"] + df["WG O&M Cost [$]"] * (cyc+1)) / 1e6 # in million $
     
-    r = 0.10
+    
     years = max(1, round((cyc+1) * CL / 360))  # project horizon in years
 
     # Annual OPEX approximation ($/yr): scale per-cycle O&M to per-year
@@ -97,9 +98,9 @@ def load_scenarios(input_dir, pattern, allow_cg=True, cyc = 0):
 
     # PV(energy) (TWh)
     pv_energy_twh = sum(annual_twh / ((1 + r) ** y) for y in range(1, years + 1))
-    df["Cum H2 Produced [Twh]"] = pv_energy_twh
+    df["Cum H2 Produced [Twh]"] = tot_twh / (cyc+1)
     # LCOS = PV(cost)/PV(energy)
-    df["LCOS"] = (pv_capex + pv_opex) / pv_energy_twh
+    df["LCOS"] = (pv_capex + pv_opex) / pv_energy_twh/1e6 
 
     # Objective number to minimize = PV(cost) directly
     df["Loss Cost [M$]"] = (pv_capex + pv_opex) / 1e6  # in million $
@@ -166,11 +167,10 @@ if __name__ == "__main__":
         for cyc in cycles_of_interest:
             df = load_scenarios(INPUT_DIR, FOLDER, allow_cg=ALLOW_CG, cyc=cyc - 1)
             year = round((cyc * CL) / 360)
-            r = 0.10
             pv_mult = sum(1.0/((1+r)**y) for y in range(1, year+1))
             target_pv_twh = TARGET_TWH * pv_mult         # if TARGET_TWH is annual demand
             # target_pv_twh = TARGET_TWH                  # if TARGET_TWH is a fixed total for the horizon
-            model, sol = build_and_solve(df, target_pv_twh, well_budget=WELL_BUDGET)
+            model, sol = build_and_solve(df, TARGET_TWH, well_budget=WELL_BUDGET)
 
             # Summaries
             # total_loss = sol["Lost"].sum()
@@ -186,11 +186,11 @@ if __name__ == "__main__":
             keep = [
                 "Field Name", "Flow Rate [sm3/d]", "Number of Wells", "CG Ratio",
                 "Cum H2 Injected [m3]", "CG injected [m3]", "Cum H2 Produced [m3]", "Net H2 Stored [m3]",
-                "Loss Cost [£]", "Porosity [-]", "Permeability [mD]", "Reservoir Pressure[bar]", "Reservoir Temp [K]", 
+                "Loss Cost [£]", "Porosity [-]", "Permeability [mD]", "Reservoir Pressure[bar]", "Reservoir Temp [K]", "Loss Cost [M$]", 
                 "Cum H2 Produced [Twh]","Cum H2 Injected [Twh]", "LCOS"
             ]
             # sol["Cum H2 Produced [Twh]"] = sol["Cum H2 Produced [Twh]"] / (cyc + 1)
-            # sol["Cum H2 Injected [Twh]"] = sol["Cum H2 Injected [Twh]"] / (cyc + 1)  
+            sol["Cum H2 Injected [Twh]"] = sol["Cum H2 Injected [Twh]"] / (cyc) 
  
             for c in keep:
                 if c not in sol.columns: 

@@ -7,8 +7,8 @@ folder_path = r"Y:\Mixing Results\July"
 os.chdir(folder_path)
 
 base_file  = "consolidated_output - Final.csv"          # has the Lat/Lon you trust
-final_file = "optimized_results_with_CG.csv"  # needs Lat/Lon filled
-out_file   = "optimized_results_with_CG_1.csv"
+final_file = "optimized_results_without_CG.csv"  # needs Lat/Lon filled
+out_file   = "optimized_results_without_CG_u.csv"
 
 # ---- 1) Load files ----
 base  = pd.read_csv(base_file, encoding='cp1252')

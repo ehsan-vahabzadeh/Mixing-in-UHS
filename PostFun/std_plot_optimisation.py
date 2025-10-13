@@ -186,9 +186,9 @@ def overlay_horizontal_boxplots(df_all, df_sel, var_name="Porosity [-]"):
 # # ==== make the comparison plots you asked for ====
 # compare_box_violin(dfm, dfs, "Permeability [mD]",
 #                    "Permeability [mD]", "Permeability: All vs Selected")
-# overlay_horizontal_boxplots(dfm, dfs, "Permeability [mD]")
-# overlay_horizontal_boxplots(dfm, dfs, "Porosity [-]")
-# overlay_horizontal_boxplots(dfm, dfs, "Reservoir Pressure[MPa]")
+overlay_horizontal_boxplots(dfm, dfs, "Permeability [mD]")
+overlay_horizontal_boxplots(dfm, dfs, "Porosity [-]")
+overlay_horizontal_boxplots(dfm, dfs, "Reservoir Pressure[MPa]")
 overlay_horizontal_boxplots(dfm, dfs, "Depth [m]")
 # compare_box_violin(dfm, dfs, "Porosity [-]",
 #                    "Porosity [-]", "Porosity: All vs Selected")

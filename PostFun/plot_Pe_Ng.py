@@ -14,7 +14,7 @@ from sklearn.metrics import r2_score, mean_squared_error
 import plotly.graph_objects as go
 import numpy as np
 from scipy.ndimage import gaussian_filter, distance_transform_edt
-
+fontsize = 32
 def nearest_outside_fill(Z, mask):
     # Fill ~mask with nearest value from mask==True
     outside = ~mask
@@ -139,10 +139,10 @@ plot = ax[0].contourf(
 # ax[0].set_xscale('log')
 # ax[0].set_yscale('log')
 print(min(Pe), max(Pe))
-ax[0].set_xlabel(r"Pe [-]", fontsize=18)
-ax[0].set_ylabel("Ng [-]", fontsize=18)
-ax[0].tick_params(axis='x', labelsize=18)
-ax[0].tick_params(axis='y', labelsize=18)
+ax[0].set_xlabel(r"Pe [-]", fontsize=fontsize)
+ax[0].set_ylabel("Ng [-]", fontsize=fontsize)
+ax[0].tick_params(axis='x', labelsize=fontsize)
+ax[0].tick_params(axis='y', labelsize=fontsize)
 # ax[0].legend(loc='best', frameon=True, fontsize=12)
 ax[0].set_xlim([2.5, max(Pe)])
 from matplotlib.ticker import MaxNLocator
@@ -173,10 +173,10 @@ scatter = ax[1].scatter(
     edgecolor='k',
     alpha=0.3
 )
-ax[1].set_xlabel(r"Pe [-]", fontsize=18)
-ax[1].set_ylabel("RF [-]", fontsize=18)
-ax[1].tick_params(axis='x', labelsize=18)
-ax[1].tick_params(axis='y', labelsize=18)
+ax[1].set_xlabel(r"Pe [-]", fontsize=fontsize)
+ax[1].set_ylabel("RF [-]", fontsize=fontsize)
+ax[1].tick_params(axis='x', labelsize=fontsize)
+ax[1].tick_params(axis='y', labelsize=fontsize)
 # ax[1].legend(loc='best', frameon=True, fontsize=12)
 scatter = ax[2].scatter(
     Ng,
@@ -205,10 +205,10 @@ rmse = np.sqrt(mean_squared_error(RF_values, y_pred))
 xs = np.linspace(Pe.min(), Pe.max(), 500)
 ax[1].plot(xs, hb_fun(xs, Multipliers_hb), 'k-', lw=2, alpha=0.5)
 
-ax[2].set_xlabel("Ng [-]", fontsize=18)
-ax[2].set_ylabel("RF [-]", fontsize=18)
-ax[2].tick_params(axis='x', labelsize=18)
-ax[2].tick_params(axis='y', labelsize=18)
+ax[2].set_xlabel("Ng [-]", fontsize=fontsize)
+ax[2].set_ylabel("RF [-]", fontsize=fontsize)
+ax[2].tick_params(axis='x', labelsize=fontsize)
+ax[2].tick_params(axis='y', labelsize=fontsize)
 # ax[2].legend(loc='best', frameon=True, fontsize=12)
 def ln_fun(x, M):
     return M[0] * np.log((M[1] * x) + 1) + M[2]  
@@ -219,24 +219,24 @@ rmse = np.sqrt(mean_squared_error(RF_values, y_pred))
 xs = np.linspace(Ng.min()+1e-6, Ng.max(), 500)
 ax[2].plot(xs, ln_fun(xs, Multipliers2), 'k-', lw=2, alpha=0.5)
 cbar = plt.colorbar(plot, ax=ax[2])
-cbar.ax.tick_params(labelsize=18)
-cbar.set_label("RF[-]", fontsize=18)
+cbar.ax.tick_params(labelsize=fontsize)
+cbar.set_label("RF[-]", fontsize=fontsize)
 plt.tight_layout()
-eq_txt1 = f"$RF = {Multipliers0[0]:.2f}\cdot Pe^{{{Multipliers0[1]:.2f}}} {Multipliers0[2]:.2f}\cdot Ng^{{{Multipliers0[3]:.2f}}}$\n$R^2$ = {r2:.2f}"
-ax[0].text(0.38, 0.98, eq_txt1,
-           transform=ax[0].transAxes,
-           ha='left', va='top', fontsize=14,
-           bbox=dict(fc='white', alpha=0.8, boxstyle='round,pad=0.2'))
-# eq_txt2 = f"$RF = {Multipliers[0]:.2f} \cdot exp({Multipliers[1]:.2f} \cdot Pe) + {Multipliers[2]:.2f}$\n$R^2$ = {r2_1:.2f}"
-eq_txt2 = f"$RF = {Multipliers_hb[0]:.2f} + \\frac{{(RF_{{max}}  {Multipliers_hb[0]:.2f}) \cdot Pe}}{{{Multipliers_hb[1]:.2f} + Pe}}$\n$R^2$ = {r2_1:.2f}"
-ax[1].text(1.65, 0.07, eq_txt2,
-           transform=ax[0].transAxes,
-           ha='left', va='top', fontsize=14,
-           bbox=dict(fc='white', alpha=0.8, boxstyle='round,pad=0.2'))
-eq_txt3 = f"$RF = {Multipliers2[0]:.2f} \cdot log({Multipliers2[1]:.2f} \cdot Ng + 1) + {Multipliers2[2]:.2f}$\n$R^2$ = {r2_2:.2f}"
-ax[2].text(2.8, 0.982, eq_txt3,
-           transform=ax[0].transAxes,
-           ha='left', va='top', fontsize=14,
-           bbox=dict(fc='white', alpha=0.8, boxstyle='round,pad=0.2'))
+# eq_txt1 = f"$RF = {Multipliers0[0]:.2f}\cdot Pe^{{{Multipliers0[1]:.2f}}} {Multipliers0[2]:.2f}\cdot Ng^{{{Multipliers0[3]:.2f}}}$\n$R^2$ = {r2:.2f}"
+# ax[0].text(0.38, 0.98, eq_txt1,
+#            transform=ax[0].transAxes,
+#            ha='left', va='top', fontsize=14,
+#            bbox=dict(fc='white', alpha=0.8, boxstyle='round,pad=0.2'))
+# # eq_txt2 = f"$RF = {Multipliers[0]:.2f} \cdot exp({Multipliers[1]:.2f} \cdot Pe) + {Multipliers[2]:.2f}$\n$R^2$ = {r2_1:.2f}"
+# eq_txt2 = f"$RF = {Multipliers_hb[0]:.2f} + \\frac{{(RF_{{max}}  {Multipliers_hb[0]:.2f}) \cdot Pe}}{{{Multipliers_hb[1]:.2f} + Pe}}$\n$R^2$ = {r2_1:.2f}"
+# ax[1].text(1.65, 0.07, eq_txt2,
+#            transform=ax[0].transAxes,
+#            ha='left', va='top', fontsize=14,
+#            bbox=dict(fc='white', alpha=0.8, boxstyle='round,pad=0.2'))
+# eq_txt3 = f"$RF = {Multipliers2[0]:.2f} \cdot log({Multipliers2[1]:.2f} \cdot Ng + 1) + {Multipliers2[2]:.2f}$\n$R^2$ = {r2_2:.2f}"
+# ax[2].text(2.8, 0.982, eq_txt3,
+#            transform=ax[0].transAxes,
+#            ha='left', va='top', fontsize=14,
+#            bbox=dict(fc='white', alpha=0.8, boxstyle='round,pad=0.2'))
 plt.show()
 
