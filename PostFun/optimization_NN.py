@@ -221,8 +221,8 @@ def train_and_evaluate_model_kfold(X, Y, trial=None):
         
             # Plotting
             plt.figure(figsize=(18, 6))
-            fontsize = 18
-            fontsize_ticks = 16
+            fontsize = 20
+            fontsize_ticks = 20
             # ---- Training subplot ----
             plt.subplot(1, 3, 1)
             sc1 = plt.scatter(y_true_train, y_pred_train, c='royalblue', alpha=0.7, edgecolor='k', s=60)
