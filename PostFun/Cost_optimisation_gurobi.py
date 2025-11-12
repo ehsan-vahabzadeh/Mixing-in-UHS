@@ -9,8 +9,8 @@ INPUT_DIR   = r"Y:\Mixing Results\July"
 H2_COST_PER_KG = 4.0                   # £/kg (already used in your dataset creation, but we'll recompute safely)
 KG_PER_M3_STP  =  PropsSI("D", "P", 1 * 1e5, "T", 293.15, "Hydrogen")
 KWH_PER_KG_H2  = 39.41                 # kWh/kg (HHV)
-TARGET_TWH  = 200                   # energy target
-CL = 360 
+TARGET_TWH  = 50                   # energy target
+CL = 180 
 r = 0.07
 FOLDER = f"optim_dataset_{CL}_H2"
 NOC = 1 # number of cycles
@@ -63,17 +63,27 @@ def load_scenarios(input_dir, pattern, allow_cg=True, cyc = 0):
         df = df.loc[(df["CG Ratio"].fillna(0.0) == 0.0)].reset_index(drop=True)
     Twh_per_cycle = (df["Flow Rate [sm3/d]"]* df["Number of Wells"] * df["Cycle Length [d]"] / 2) * KWH_PER_M3 / 1e9
     df["Net H2 Stored [Twh]"] = df["Net H2 Stored [m3]"] * KWH_PER_M3 / 1e9
+    PSA_cap = 10.4702 * np.exp(-60.7137 * df["Predicted RF [-]"]) + 3.1879 * np.exp(-4.8854 * df["Predicted RF [-]"])
+    PSA_cap = PSA_cap  * 100
+    df["PSA Cost [$/kg]"] = PSA_cap
+    print(np.average(PSA_cap))
+    PSA_rec = 1
+    if any(PSA_cap < 0):
+        PSA_cap[PSA_cap < 0] = 0.0
+    PSA_opex = PSA_cap / 0.6 * 0.4
+    
     # Compute loss cost from data only (no ML)
     if cyc > 9:
         # check1 =  (cyc - 9) * ((1 - df["Predicted MRf [-]"][0]) * Twh_per_cycle[0])
         # check2 = df["Net H2 Stored [Twh]"][0] 
         # check3 = df["Cum H2 Produced [Twh]"][0]
         # check4 = (cyc - 9) * (df["Predicted MRf [-]"][0] * Twh_per_cycle[0])
-        df["Lost [Twh]"]       = (df["Net H2 Stored [Twh]"] + (cyc - 9) * ((1 - df["Predicted MRf [-]"]) * Twh_per_cycle) + df["Cum CG Injected [Twh]"])
-        df["Cum H2 Produced [Twh]"] = df["Cum H2 Produced [Twh]"] + (cyc - 9) * (df["Predicted MRf [-]"] * Twh_per_cycle)
+        df["Lost [Twh]"]       = (df["Net H2 Stored [Twh]"] + (cyc - 9) * ((1 - PSA_rec * df["Predicted MRf [-]"]) * Twh_per_cycle) + df["Cum CG Injected [Twh]"])
+        df["Cum H2 Produced [Twh]"] = df["Cum H2 Produced [Twh]"] + (cyc - 9) * PSA_rec * (df["Predicted MRf [-]"] * Twh_per_cycle)
         df["Cum H2 Injected [Twh]"] = df["Cum H2 Injected [Twh]"] + (cyc - 9) * Twh_per_cycle
     else:
          df["Lost [Twh]"]       = (df["Net H2 Stored [Twh]"] + df["Cum CG Injected [Twh]"])
+         
     
     # df["Loss Cost [M$]"] = df["Lost [Twh]"] *1e9 / KWH_PER_KG_H2 * H2_COST_PER_KG / 1e6 # in million $
     # df["Loss Cost [M$]"] = (df["Capital Cost [$]"] + df["WG O&M Cost [$]"] * (cyc+1)) / 1e6 # in million $
@@ -82,12 +92,15 @@ def load_scenarios(input_dir, pattern, allow_cg=True, cyc = 0):
     years = max(1, round((cyc+1) * CL / 360))  # project horizon in years
 
     # Annual OPEX approximation ($/yr): scale per-cycle O&M to per-year
+    df["WG O&M Cost [$]"] = df["WG O&M Cost [$]"] + ((df["Predicted RF [-]"] * Twh_per_cycle) * 1e9 / KWH_PER_KG_H2) * PSA_opex
     annual_opex = df["WG O&M Cost [$]"] * (360.0 / CL)
 
     # PV(OPEX)
     pv_opex = sum(annual_opex / ((1 + r) ** y) for y in range(1, years + 1))
 
     # CAPEX at t=0 (if your CAPEX is staged, discount each stage instead)
+    df["Capital Cost [$]"] = df["Capital Cost [$]"] + ((df["Predicted RF [-]"] * Twh_per_cycle) * 1e9 / KWH_PER_KG_H2) * PSA_cap
+    df["Purification Capital Cost [$]"] = ((df["Predicted RF [-]"] * Twh_per_cycle) * 1e9 / KWH_PER_KG_H2) * PSA_cap
     pv_capex = pd.to_numeric(df["Capital Cost [$]"], errors="coerce").fillna(0.0)
 
     # Delivered energy over the horizon (TWh total, from your sheet)
@@ -186,7 +199,7 @@ if __name__ == "__main__":
             keep = [
                 "Field Name", "Flow Rate [sm3/d]", "Number of Wells", "CG Ratio",
                 "Cum H2 Injected [m3]", "CG injected [m3]", "Cum H2 Produced [m3]", "Net H2 Stored [m3]",
-                "Loss Cost [£]", "Porosity [-]", "Permeability [mD]", "Reservoir Pressure[bar]", "Reservoir Temp [K]", "Loss Cost [M$]", 
+                "Loss Cost [£]", "Porosity [-]", "Permeability [mD]", "Reservoir Pressure[bar]", "Reservoir Temp [K]","PSA Cost [$/kg]","Purification Capital Cost [$]", "Loss Cost [M$]", 
                 "Cum H2 Produced [Twh]","Cum H2 Injected [Twh]", "LCOS"
             ]
             # sol["Cum H2 Produced [Twh]"] = sol["Cum H2 Produced [Twh]"] / (cyc + 1)

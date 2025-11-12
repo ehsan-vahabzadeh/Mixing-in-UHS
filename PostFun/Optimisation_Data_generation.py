@@ -64,6 +64,7 @@ def optim_data(df, CL, scalers, model, clf,CG_type):
     cost_of_electricity = 0.14 # $ per kwh
     water_requirment = 50 # L/kg H2
     cooling_cost = 0.0002 # $ per 1 L H2O
+    PSA_rec  = 0.8 
     rho_h2_std = PropsSI("D", "P", P_std * 1e5, "T", T_std, "Hydrogen")
     print(f"{len(df)}")
     for ii in range(len(df)):
@@ -119,7 +120,8 @@ def optim_data(df, CL, scalers, model, clf,CG_type):
                     mrf = cl_i * rf  - rf_list[cl_i - 1] * (cl_i - 1)
                 else:
                     mrf = rf
-                WG_cum_prod_H2 = WG_cum_prod_H2 + mrf * (CL / 2) * Flow_rate * Number_of_wells
+                   
+                WG_cum_prod_H2 = WG_cum_prod_H2 + (mrf * (CL / 2) * Flow_rate * Number_of_wells) * PSA_rec
                 WG_cum_inj_H2 = (CL / 2) * Flow_rate * Number_of_wells
                 CG_cum_inj_H2 = CG_ratio * (CL / 2) * Flow_rate * Number_of_wells
                 gas_cost = (WG_cum_inj_H2 + CG_cum_inj_H2) * rho_h2_std * 4.0 # $
@@ -130,6 +132,7 @@ def optim_data(df, CL, scalers, model, clf,CG_type):
                 well_capital_cost = well_cost * Number_of_wells
                 CG_OM_cost = CG_cum_inj_H2 * rho_h2_std * ( compressor_power * cost_of_electricity + cooling_cost * water_requirment + (0.05 + 0.0045))
                 WG_OM_cost = WG_cum_inj_H2 * rho_h2_std * ( compressor_power * cost_of_electricity + cooling_cost * water_requirment + (0.05 + 0.0045))
+
                 Total_capital_cost = compressor_capital_cost + well_capital_cost + gas_cost + CG_OM_cost
                 CRF = 0.1*(1+0.1)**40 / ((1+0.1)**40 - 1)
                 Levelised_capital_cost = Total_capital_cost * CRF / 0.8
@@ -249,7 +252,7 @@ def main(input_directory):
     Number_of_cycles = 20
     CG_type = 'H2'
     results =[]
-    Cycle_length = 360
+    Cycle_length = 14
     data = optim_data(df_clean, Cycle_length, scalers, model, clf, CG_type)
     
 os.chdir("Y:\\Mixing Results\\July")  # Change to the directory containing your simulation files
