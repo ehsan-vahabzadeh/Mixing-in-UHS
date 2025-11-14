@@ -14,6 +14,7 @@ from joblib import dump, load
 import torch.nn as nn
 from pyDOE2 import lhs
 
+H2_cost = 5.0
 T_std = 293.15
 P_std = 1.01325
 def get_activation(name):
@@ -64,7 +65,6 @@ def optim_data(df, CL, scalers, model, clf,CG_type):
     cost_of_electricity = 0.14 # $ per kwh
     water_requirment = 50 # L/kg H2
     cooling_cost = 0.0002 # $ per 1 L H2O
-    PSA_rec  = 0.8 
     rho_h2_std = PropsSI("D", "P", P_std * 1e5, "T", T_std, "Hydrogen")
     print(f"{len(df)}")
     for ii in range(len(df)):
@@ -120,11 +120,12 @@ def optim_data(df, CL, scalers, model, clf,CG_type):
                     mrf = cl_i * rf  - rf_list[cl_i - 1] * (cl_i - 1)
                 else:
                     mrf = rf
-                   
+                PSA_rec = -0.4006 * np.exp(-6.5626 * mrf) + 0.8078 
+                # PSA_rec = 0.8
                 WG_cum_prod_H2 = WG_cum_prod_H2 + (mrf * (CL / 2) * Flow_rate * Number_of_wells) * PSA_rec
                 WG_cum_inj_H2 = (CL / 2) * Flow_rate * Number_of_wells
                 CG_cum_inj_H2 = CG_ratio * (CL / 2) * Flow_rate * Number_of_wells
-                gas_cost = (WG_cum_inj_H2 + CG_cum_inj_H2) * rho_h2_std * 4.0 # $
+                gas_cost = (WG_cum_inj_H2 + CG_cum_inj_H2) * rho_h2_std * H2_cost # $
                 if CG_cum_inj_H2 + WG_cum_inj_H2 > H2_capacity:
                     continue
                 total_hours = (CL/2) * 24 + (CL / 2) * CG_ratio * 24
@@ -165,7 +166,7 @@ def optim_data(df, CL, scalers, model, clf,CG_type):
                             "Cum H2 Injected [Twh]": (cl_i + 1) * WG_inj_TWh,
                             "Cum H2 Produced [Twh]": WG_prod_TWh,
                             })
-    folder = os.path.join(input_directory, f"optim_dataset_{CL}_{CG_type}")
+    folder = os.path.join(input_directory, f"optim_dataset_{CL}_{CG_type}_{H2_cost}")
     os.makedirs(folder, exist_ok=True)
     data = pd.DataFrame(data)
     for k in range(10): 
@@ -247,12 +248,10 @@ def main(input_directory):
     # model.load_state_dict(torch.load("ann_model_withoutCG.pt"))
     # model.eval()
     # scalers = joblib.load("scalers_withoutCG.pkl")
-    H2_cost = 4.0 # $/kg
-    H2_cost = H2_cost * 0.08988 # $/m3
     Number_of_cycles = 20
     CG_type = 'H2'
     results =[]
-    Cycle_length = 14
+    Cycle_length = 360
     data = optim_data(df_clean, Cycle_length, scalers, model, clf, CG_type)
     
 os.chdir("Y:\\Mixing Results\\July")  # Change to the directory containing your simulation files

@@ -6,15 +6,16 @@ from gurobipy import GRB
 from CoolProp.CoolProp import PropsSI
 # ---------------- USER SETTINGS ----------------
 INPUT_DIR   = r"Y:\Mixing Results\July"
-H2_COST_PER_KG = 4.0                   # £/kg (already used in your dataset creation, but we'll recompute safely)
+H2_COST_PER_KG = 3.0                   # £/kg (already used in your dataset creation, but we'll recompute safely)
 KG_PER_M3_STP  =  PropsSI("D", "P", 1 * 1e5, "T", 293.15, "Hydrogen")
 KWH_PER_KG_H2  = 39.41                 # kWh/kg (HHV)
-TARGET_TWH  = 50                   # energy target
-CL = 180 
+# PSA_cap = 20
+TARGET_TWH  = 100                   # energy target
+CL = 360 
 r = 0.07
-FOLDER = f"optim_dataset_{CL}_H2"
+FOLDER = f"optim_dataset_{CL}_H2_{H2_COST_PER_KG}"  # subfolder in INPUT_DIR
 NOC = 1 # number of cycles
-OUTPUT_PLAN   = f"optimal_plan_CL{CL}_TWh{TARGET_TWH}.xlsx"
+OUTPUT_PLAN   = f"optimal_plan_CL{CL}_TWh{TARGET_TWH}_High_H2{H2_COST_PER_KG}.xlsx"
 # Optional global limits:
 WELL_BUDGET   = None    # e.g., 500   -> limit total wells across UK
 ALLOW_CG      = True    # False -> forces CG Ratio == 0 scenarios only
@@ -64,12 +65,12 @@ def load_scenarios(input_dir, pattern, allow_cg=True, cyc = 0):
     Twh_per_cycle = (df["Flow Rate [sm3/d]"]* df["Number of Wells"] * df["Cycle Length [d]"] / 2) * KWH_PER_M3 / 1e9
     df["Net H2 Stored [Twh]"] = df["Net H2 Stored [m3]"] * KWH_PER_M3 / 1e9
     PSA_cap = 10.4702 * np.exp(-60.7137 * df["Predicted RF [-]"]) + 3.1879 * np.exp(-4.8854 * df["Predicted RF [-]"])
+    # PSA_cap = 2.756 * np.exp(-9.223 * df["Predicted RF [-]"]) + 0.884
     PSA_cap = PSA_cap  * 100
+    # PSA_cap = PSA_cap_  # override with user setting
     df["PSA Cost [$/kg]"] = PSA_cap
     print(np.average(PSA_cap))
-    PSA_rec = 1
-    if any(PSA_cap < 0):
-        PSA_cap[PSA_cap < 0] = 0.0
+    # PSA_rec = 1
     PSA_opex = PSA_cap / 0.6 * 0.4
     
     # Compute loss cost from data only (no ML)
@@ -78,6 +79,8 @@ def load_scenarios(input_dir, pattern, allow_cg=True, cyc = 0):
         # check2 = df["Net H2 Stored [Twh]"][0] 
         # check3 = df["Cum H2 Produced [Twh]"][0]
         # check4 = (cyc - 9) * (df["Predicted MRf [-]"][0] * Twh_per_cycle[0])
+        # PSA_rec = -0.4006 * np.exp(-6.5626 * df["Predicted MRf [-]"]) + 0.8078 
+        PSA_rec = df["Predicted MRf [-]"]
         df["Lost [Twh]"]       = (df["Net H2 Stored [Twh]"] + (cyc - 9) * ((1 - PSA_rec * df["Predicted MRf [-]"]) * Twh_per_cycle) + df["Cum CG Injected [Twh]"])
         df["Cum H2 Produced [Twh]"] = df["Cum H2 Produced [Twh]"] + (cyc - 9) * PSA_rec * (df["Predicted MRf [-]"] * Twh_per_cycle)
         df["Cum H2 Injected [Twh]"] = df["Cum H2 Injected [Twh]"] + (cyc - 9) * Twh_per_cycle
@@ -200,7 +203,7 @@ if __name__ == "__main__":
                 "Field Name", "Flow Rate [sm3/d]", "Number of Wells", "CG Ratio",
                 "Cum H2 Injected [m3]", "CG injected [m3]", "Cum H2 Produced [m3]", "Net H2 Stored [m3]",
                 "Loss Cost [£]", "Porosity [-]", "Permeability [mD]", "Reservoir Pressure[bar]", "Reservoir Temp [K]","PSA Cost [$/kg]","Purification Capital Cost [$]", "Loss Cost [M$]", 
-                "Cum H2 Produced [Twh]","Cum H2 Injected [Twh]", "LCOS"
+                "Cum H2 Produced [Twh]","Cum H2 Injected [Twh]", "LCOS","Predicted RF [-]"
             ]
             # sol["Cum H2 Produced [Twh]"] = sol["Cum H2 Produced [Twh]"] / (cyc + 1)
             sol["Cum H2 Injected [Twh]"] = sol["Cum H2 Injected [Twh]"] / (cyc) 
