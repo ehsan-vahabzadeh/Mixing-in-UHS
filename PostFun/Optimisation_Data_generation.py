@@ -14,7 +14,7 @@ from joblib import dump, load
 import torch.nn as nn
 from pyDOE2 import lhs
 
-H2_cost = 5.0
+H2_cost = 3.0
 T_std = 293.15
 P_std = 1.01325
 def get_activation(name):
@@ -120,8 +120,8 @@ def optim_data(df, CL, scalers, model, clf,CG_type):
                     mrf = cl_i * rf  - rf_list[cl_i - 1] * (cl_i - 1)
                 else:
                     mrf = rf
-                PSA_rec = -0.4006 * np.exp(-6.5626 * mrf) + 0.8078 
-                # PSA_rec = 0.8
+                # PSA_rec = -0.4006 * np.exp(-6.5626 * mrf) + 0.8078 
+                PSA_rec = 0.9
                 WG_cum_prod_H2 = WG_cum_prod_H2 + (mrf * (CL / 2) * Flow_rate * Number_of_wells) * PSA_rec
                 WG_cum_inj_H2 = (CL / 2) * Flow_rate * Number_of_wells
                 CG_cum_inj_H2 = CG_ratio * (CL / 2) * Flow_rate * Number_of_wells
@@ -251,7 +251,7 @@ def main(input_directory):
     Number_of_cycles = 20
     CG_type = 'H2'
     results =[]
-    Cycle_length = 360
+    Cycle_length = 14
     data = optim_data(df_clean, Cycle_length, scalers, model, clf, CG_type)
     
 os.chdir("Y:\\Mixing Results\\July")  # Change to the directory containing your simulation files
