@@ -135,7 +135,7 @@ def train_and_evaluate_model_kfold(X, Y, trial=None):
         activation = ["tanh", "relu", "sigmoid"]
         # activation = ["relu", "relu"]
         batch_size = 64
-        epochs = 300
+        epochs = 10
         kf = KFold(n_splits=5, shuffle=True, random_state=42)
         mse_list = []
         patience = 50
@@ -272,14 +272,73 @@ def train_and_evaluate_model_kfold(X, Y, trial=None):
             plt.tight_layout()
             plt.show()
             
-            torch.save(model.state_dict(), "ann_model_withoutCG_AC.pt")
-            joblib.dump({"X_scaler": scaler, "y_scaler": y_scaler}, "scalers_withoutCG_AC.pkl")
+            # torch.save(model.state_dict(), "ann_model_withoutCG_AC.pt")
+            # joblib.dump({"X_scaler": scaler, "y_scaler": y_scaler}, "scalers_withoutCG_AC.pkl")
             
             # torch.save(model.state_dict(), "ann_model_withCG.pt")
             # joblib.dump({"X_scaler": scaler, "y_scaler": y_scaler}, "scalers_withCG.pkl")
             
             # torch.save(model.state_dict(), "ann_model_gurobi.pt")
             # joblib.dump({"X_scaler": scaler, "y_scaler": y_scaler}, "scalers_gurobi.pkl")
+
+            fig = plt.figure(figsize=(12, 10))
+
+            # Subplot 1: Histogram Train
+            plt.subplot(2, 2, 1)
+            r2_train = r2_score(y_true_train, y_pred_train)
+            relative_errors_train = []
+            for ii in range(len(y_true_train)):     
+                rel_error = abs((y_true_train[ii] - y_pred_train[ii]) / y_true_train[ii])
+                relative_errors_train.append(rel_error)
+            plt.hist(relative_errors_train, bins=10, color='gray')
+            # plt.title("Train $R^2$ Score Distribution")
+            # plt.text(0.985, 180, f"$\\mu$ = {r2_train:.3f}\n$\\sigma$ = 0.001", fontsize=10)
+            plt.xlim([0, 0.3])
+            # Subplot 2: Histogram Test
+            plt.subplot(2, 2, 3)
+            r2_test = r2_score(y_true_test, y_pred_test)
+            relative_errors_test = []
+            for ii in range(len(y_true_train)):     
+                rel_error = abs((y_true_train[ii] - y_pred_train[ii]) / y_true_train[ii])
+                relative_errors_test.append(rel_error)
+            plt.hist([relative_errors_test], bins=10, color='gray')
+            plt.title("Validation $R^2$ Score Distribution")
+            plt.text(0.985, 180, f"$\\mu$ = {r2_test:.3f}\n$\\sigma$ = 0.001", fontsize=10)
+            plt.xlim([0, 0.3])
+            # Subplot 3: Scatter Train with 95% pred band
+            plt.subplot(2, 2, 2)
+            sc2 = plt.scatter(y_true_train, y_pred_train, c='darkorange', alpha=0.7, edgecolor='k', s=60)
+            lims = [min(y_true_test.min(), y_pred_test.min()), max(y_true_test.max(), y_pred_test.max())]
+            plt.plot(lims, lims, 'r--', lw=2)
+            plt.xlabel('Actual RF', fontsize=fontsize)
+            plt.ylabel('Predicted RF', fontsize=fontsize)
+            plt.xticks(fontsize=fontsize_ticks)
+            plt.yticks(fontsize=fontsize_ticks)
+            # plt.title('Training Set', fontsize=fontsize)
+            plt.xlim(lims)
+            plt.ylim(lims) 
+            plt.text(0.05, 0.95, f'$R^2$ = {r2_train:.4f}\nMSE = {mse_train:.4f}', 
+                    transform=plt.gca().transAxes, fontsize=fontsize,
+                    verticalalignment='top', bbox=dict(boxstyle='round,pad=0.3', facecolor='white', alpha=0.7))
+
+            # Subplot 4: Scatter Test with 95% pred band
+            plt.subplot(2, 2, 4)
+            plt.scatter(y_true_test, y_pred_test, c='darkorange', alpha=0.7, edgecolor='k', s=60)
+            lims = [min(y_true_test.min(), y_pred_test.min()), max(y_true_test.max(), y_pred_test.max())]
+            plt.plot(lims, lims, 'r--', lw=2)
+            plt.xlabel('Actual RF', fontsize=fontsize)
+            plt.ylabel('Predicted RF', fontsize=fontsize)
+            plt.xticks(fontsize=fontsize_ticks)
+            plt.yticks(fontsize=fontsize_ticks)
+            # plt.title('Test Set', fontsize=fontsize)
+            plt.xlim(lims)
+            plt.ylim(lims)
+            plt.text(0.05, 0.95, f'$R^2$ = {r2_test:.4f}\nMSE = {mse_test:.4f}', 
+                    transform=plt.gca().transAxes, fontsize=fontsize,
+                    verticalalignment='top', bbox=dict(boxstyle='round,pad=0.3', facecolor='white', alpha=0.7))
+
+            plt.tight_layout()
+            plt.show()
         return model, scaler
 def constraints(trial):
     """Return positive if violating constraint."""

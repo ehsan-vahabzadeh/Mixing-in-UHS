@@ -6,6 +6,13 @@ import matplotlib.pyplot as plt
 import matplotlib.colors as mcolors
 from matplotlib.lines import Line2D
 from scipy.interpolate import griddata
+from scipy.interpolate import griddata
+from scipy.ndimage import gaussian_filter
+from scipy.interpolate import LinearNDInterpolator
+from scipy.spatial import Delaunay, ConvexHull
+from scipy.ndimage import gaussian_filter, distance_transform_edt
+from matplotlib.path import Path
+from scipy.ndimage import zoom
 
 plt.rcParams.update({
     "font.size": 20,
@@ -17,36 +24,84 @@ plt.rcParams.update({
     "lines.linewidth": 3,
     "lines.markersize": 7,
 })
-def coutour_map(df):
+def nearest_outside_fill(Z, mask):
+    # Fill ~mask with nearest value from mask==True
+    outside = ~mask
+    dist, (iy, ix) = distance_transform_edt(outside, return_indices=True)
+    Zfilled = Z.copy()
+    Zfilled[outside] = Z[iy[outside], ix[outside]]
+    return Zfilled
 
+def boundary_safe_gaussian(Z, mask, sigma, mode='nearest'):
+    Zfilled = nearest_outside_fill(Z, mask)
+    Zsmooth = gaussian_filter(Zfilled, sigma=sigma, mode=mode)
+    Zsmooth[~mask] = np.nan
+    return Zsmooth
+def coutour_map(input_directory):
+    file_path = os.path.join(input_directory, 'compiled_optimal_data.csv')
+    df = pd.read_csv(file_path)
     # Assume df is your DataFrame with columns:
     # 'H2_Target_TWh', 'H2_Cost_per_kg', 'PSA_Cost', 'CG_Ratio', 'LCOS'
     mask = ~((df["H2_Target_TWh"] == 200) & (df["CG_Ratio"] < 1e-4))
     df = df[mask]
 
-    df['Ratio'] = df['H2_Cost_per_kg'] / df['PSA_Cost']
+    # df['Ratio'] = df['H2_Cost_per_kg'] / df['PSA_Cost']
 
     # Define grid
-    xi = np.linspace(df['H2_Target_TWh'].min(), df['H2_Target_TWh'].max(), 100)
-    yi = np.linspace(df['Ratio'].min(), df['Ratio'].max(), 100)
+    xi = np.linspace(df['H2_Target_TWh'].min(), df['H2_Target_TWh'].max(), 50)
+    yi = np.linspace(df['Ratio'].min(), df['Ratio'].max(), 50)
     Xi, Yi = np.meshgrid(xi, yi)
 
+    
+    # Build a regular grid
+    z = df["CG_Ratio"]  # ensure physical range if needed
+    tri = Delaunay(np.column_stack([df['H2_Target_TWh'], df['Ratio']]))
+    lin = LinearNDInterpolator(tri, z, fill_value=np.nan)
+    Zi = lin(Xi, Yi)
+    mask = np.isfinite(Zi)          # True inside (where Zi is defined)
+
+    Zi_filled = np.where(np.isnan(Zi), np.nanmean(Zi), Zi)
+
+    # Zoom the interpolated data (cubic interpolation)
+    Zi_zoomed = zoom(Zi_filled, zoom=2, order=2)
+    xi_zoom = np.linspace(xi.min(), xi.max(), Zi_zoomed.shape[1])
+    yi_zoom = np.linspace(yi.min(), yi.max(), Zi_zoomed.shape[0])
+    Xi_zoom, Yi_zoom = np.meshgrid(xi_zoom, yi_zoom)
+    # smooth with boundary-safe method (it already re-masks outside to NaN)
+    Zi_cg = boundary_safe_gaussian(Zi, mask, sigma=3)
+    Zi_cg[~mask] = np.nan
+    
+    
+    
     # Interpolate data
-    Zi_cg   = griddata((df['H2_Target_TWh'], df['Ratio']), df['CG_Ratio'], (Xi, Yi), method='cubic')
-    Zi_lcos = griddata((df['H2_Target_TWh'], df['Ratio']), df['LCOS'], (Xi, Yi), method='cubic')
-    Zi_cg = np.clip(Zi_cg, 0.01, 4.6)
-    print(Zi_cg.min()) 
-    print(Zi_lcos.min())  
+    z = df["LCOS"]  # ensure physical range if needed
+    tri = Delaunay(np.column_stack([df['H2_Target_TWh'], df['Ratio']]))
+    lin = LinearNDInterpolator(tri, z, fill_value=np.nan)
+    Zi = lin(Xi, Yi)
+    mask = np.isfinite(Zi)          # True inside (where Zi is defined)
+    Zi_lcos = boundary_safe_gaussian(Zi, mask, sigma=3)
+    Zi_lcos[~mask] = np.nan
+    
+    
+    # Zi_cg   = griddata((df['H2_Target_TWh'], df['Ratio']), df['CG_Ratio'], (Xi, Yi), method='cubic')
+    # Zi_lcos = griddata((df['H2_Target_TWh'], df['Ratio']), df['LCOS'], (Xi, Yi), method='cubic')
+    # Zi_cg = np.clip(Zi_cg, 0.1, 4.6)
+    
+ 
     # Plot
     fig, ax = plt.subplots(figsize=(8, 6))
-
+    boundaries = [0,0.5,1,1.5,2,2.5,3,3.5,4]
+    cmap = plt.get_cmap("plasma", len(boundaries) )
+    norm = mcolors.BoundaryNorm(boundaries, cmap.N)
     # Filled contour: CG Ratio
-    ctf = ax.contourf(Xi, Yi, Zi_cg, levels=10, cmap='viridis')
-    plt.colorbar(ctf, label='Cushion Gas Ratio', ax=ax)
-
+    ctf = ax.contourf(Xi, Yi, Zi_cg, cmap=cmap,norm = norm)
+    # ctf = ax.contourf(Xi_zoom, Yi_zoom, Zi_zoomed, levels=10, cmap='viridis')
+    plt.colorbar(ctf, label='Cushion Gas Ratio', cmap = cmap, norm = norm, ax=ax, ticks=boundaries,spacing='uniform')
+    plt.scatter(df["H2_Target_TWh"], df["H2_Cost_per_kg"]/df["PSA_Cost"], 
+    c=df["CG_Ratio"], cmap=cmap, norm = norm, edgecolors="k", linewidths=1, label="Sample Points")
     # Contour lines: LCOS
-    cs = ax.contour(Xi, Yi, Zi_lcos, colors='white', linewidths=1.2)
-    ax.clabel(cs, fmt='%1.1f', fontsize=9)
+    cs = ax.contour(Xi, Yi, Zi_lcos, colors='white', linewidths=1.5)
+    ax.clabel(cs, fmt='%1.1f', fontsize=16)
     ax.set_yscale('log')
     ax.set_xlabel("Target H₂ Demand (TWh)")
     ax.set_ylabel("H₂ Cost / PSA Cost Ratio")
@@ -153,83 +208,83 @@ COLS_TO_KEEP = [
     "Predicted RF [-]",
 ]
 
-# Regex pattern to extract metadata from filename
-FILENAME_PATTERN = r"optimal_plan_CL(\d+)_TWh(\d+)_ *(Low|Med|High)_H2(\d+(?:\.\d+)?)"
+# # Regex pattern to extract metadata from filename
+# FILENAME_PATTERN = r"optimal_plan_CL(\d+)_TWh(\d+)_ *(Low|Med|High)_H2(\d+(?:\.\d+)?)"
 
-# Initialize container for all data
-all_data = []
+# # Initialize container for all data
+# all_data = []
 
-# Iterate through all Excel files
-for fname in os.listdir(FOLDER_PATH):
-    if not fname.endswith(".xlsx"):
-        continue
+# # Iterate through all Excel files
+# for fname in os.listdir(FOLDER_PATH):
+#     if not fname.endswith(".xlsx"):
+#         continue
 
-    match = re.search(FILENAME_PATTERN, fname)
-    if not match:
-        print(f"Skipping unrecognized file format: {fname}")
-        continue
+#     match = re.search(FILENAME_PATTERN, fname)
+#     if not match:
+#         print(f"Skipping unrecognized file format: {fname}")
+#         continue
 
-    # Extract metadata from filename
-    cl = int(match.group(1))
-    twh = int(match.group(2))
-    psa_level = match.group(3)
-    h2_cost = float(match.group(4))
+#     # Extract metadata from filename
+#     cl = int(match.group(1))
+#     twh = int(match.group(2))
+#     psa_level = match.group(3)
+#     h2_cost = float(match.group(4))
 
-    # Read the last sheet only
-    full_path = os.path.join(FOLDER_PATH, fname)
-    try:
-        sheet_names = pd.ExcelFile(full_path).sheet_names
-        last_sheet = sheet_names[-1]
-        df = pd.read_excel(full_path, sheet_name=last_sheet)
-    except Exception as e:
-        print(f"Error reading {fname}: {e}")
-        continue
+#     # Read the last sheet only
+#     full_path = os.path.join(FOLDER_PATH, fname)
+#     try:
+#         sheet_names = pd.ExcelFile(full_path).sheet_names
+#         last_sheet = sheet_names[-1]
+#         df = pd.read_excel(full_path, sheet_name=last_sheet)
+#     except Exception as e:
+#         print(f"Error reading {fname}: {e}")
+#         continue
 
-    # Filter required columns and append metadata
-    if not all(col in df.columns for col in COLS_TO_KEEP):
-        print(f"Missing columns in {fname}, skipping.")
-        continue   
+#     # Filter required columns and append metadata
+#     if not all(col in df.columns for col in COLS_TO_KEEP):
+#         print(f"Missing columns in {fname}, skipping.")
+#         continue   
     
 
     
-    w = pd.to_numeric(df["Cum H2 Produced [Twh]"], errors="coerce").fillna(0.0)
-    if w.sum() == 0:
-        w = pd.Series(np.ones(len(df)), index=df.index)
+#     w = pd.to_numeric(df["Cum H2 Produced [Twh]"], errors="coerce").fillna(0.0)
+#     if w.sum() == 0:
+#         w = pd.Series(np.ones(len(df)), index=df.index)
 
-    lcos = pd.to_numeric(df["LCOS"], errors="coerce")
-    perm = pd.to_numeric(df["Permeability [mD]"], errors="coerce")
-    cg   = pd.to_numeric(df["CG Ratio"],   errors="coerce")
-    PSA_cost = pd.to_numeric(df["PSA Cost [$/kg]"], errors="coerce")
-    RF = pd.to_numeric(df["Predicted RF [-]"], errors="coerce")
-    Res_pressure = pd.to_numeric(df["Reservoir Pressure[bar]"], errors="coerce")
-    Porosity = pd.to_numeric(df.get("Porosity [-]"), errors="coerce")
-    well_no = np.sum(pd.to_numeric(df["Number of Wells"], errors="coerce"))
-    lcos=(lcos * w).sum() / w.sum()
-    perm=(perm * w).sum() / w.sum()
-    cg=(cg * w).sum() / w.sum()
-    PSA_cost=PSA_cost.mean()
-    RF=(RF * w).sum() / w.sum()
-    Res_pressure=(Res_pressure * w).sum() / w.sum()
-    Porosity=(Porosity * w).sum() / w.sum()
-    df_filtered = pd.DataFrame()
-    df_filtered["LCOS"] = [lcos]
-    df_filtered["Cycle Length"] = [cl]
-    df_filtered["Permeability_mD"] = [perm]
-    df_filtered["CG_Ratio"] = [cg]
-    df_filtered["H2_Cost_per_kg"] = [h2_cost]
-    df_filtered["PSA_Cost"] = [PSA_cost]
-    df_filtered["Predicted_RF"] = [RF]
-    df_filtered["Reservoir_Pressure"] = [Res_pressure]
-    df_filtered["Porosity"] = [Porosity]
-    df_filtered["Wells No."] = [well_no]
-    df_filtered["H2_Target_TWh"] = [twh]
-    df_filtered["Source_File"] = [fname]
+#     lcos = pd.to_numeric(df["LCOS"], errors="coerce")
+#     perm = pd.to_numeric(df["Permeability [mD]"], errors="coerce")
+#     cg   = pd.to_numeric(df["CG Ratio"],   errors="coerce")
+#     PSA_cost = pd.to_numeric(df["PSA Cost [$/kg]"], errors="coerce")
+#     RF = pd.to_numeric(df["Predicted RF [-]"], errors="coerce")
+#     Res_pressure = pd.to_numeric(df["Reservoir Pressure[bar]"], errors="coerce")
+#     Porosity = pd.to_numeric(df.get("Porosity [-]"), errors="coerce")
+#     well_no = np.sum(pd.to_numeric(df["Number of Wells"], errors="coerce"))
+#     lcos=(lcos * w).sum() / w.sum()
+#     perm=(perm * w).sum() / w.sum()
+#     cg=(cg * w).sum() / w.sum()
+#     PSA_cost=(PSA_cost * w).sum() / w.sum()
+#     RF=(RF * w).sum() / w.sum()
+#     Res_pressure=(Res_pressure * w).sum() / w.sum()
+#     Porosity=(Porosity * w).sum() / w.sum()
+#     df_filtered = pd.DataFrame()
+#     df_filtered["LCOS"] = [lcos]
+#     df_filtered["Cycle Length"] = [cl]
+#     df_filtered["Permeability_mD"] = [perm]
+#     df_filtered["CG_Ratio"] = [cg]
+#     df_filtered["H2_Cost_per_kg"] = [h2_cost]
+#     df_filtered["PSA_Cost"] = [PSA_cost]
+#     df_filtered["Predicted_RF"] = [RF]
+#     df_filtered["Reservoir_Pressure"] = [Res_pressure]
+#     df_filtered["Porosity"] = [Porosity]
+#     df_filtered["Wells No."] = [well_no]
+#     df_filtered["H2_Target_TWh"] = [twh]
+#     df_filtered["Source_File"] = [fname]
     
-    all_data.append(df_filtered)
+#     all_data.append(df_filtered)
 
-# Combine into single DataFrame
-final_df = pd.concat(all_data, ignore_index=True)
-coutour_map(final_df)
+# # Combine into single DataFrame
+# final_df = pd.concat(all_data, ignore_index=True)
+coutour_map(FOLDER_PATH)
 # plot_bubble_chart(final_df)
 # plot_bubble_chart_rf(final_df)
 # plot_bubble_size_legend_lcos()

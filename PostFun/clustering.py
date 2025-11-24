@@ -320,7 +320,7 @@ plt.scatter(
     df["Porosity [-]"],
     df["Permeability [mD]"],
     color='black',
-    alpha=1,
+    alpha=0.7,
     s=80,
     label='Field Data'
 )
@@ -330,7 +330,7 @@ plt.scatter(
     color='white',
     edgecolor='black',
     s=80,
-    label='Sampled'
+    label='Sampled Data'
 )
 plt.xlabel("Porosity [-]", fontsize=18)
 plt.ylabel("Permeability [mD]", fontsize=18)
@@ -345,7 +345,7 @@ plt.scatter(
     df["Reservoir Temp [C]"] + 273.15,
     df["Reservoir Pressure[MPa]"] * 10,
     color='black',
-    alpha=1,
+    alpha=0.7,
     s=80,
     label='Field Data'
 )
@@ -355,11 +355,11 @@ plt.scatter(
     color='white',
     edgecolor='black',
     s=80,
-    label='Sampled'
+    label='Sampled Data'
 )
-plt.xlabel("Reservoir Temp [K]", fontsize=18)
-plt.ylabel("Reservoir Pressure[bar]", fontsize=18)
-plt.legend(fontsize=14)
+plt.xlabel("Reservoir Temperature [K]", fontsize=18)
+plt.ylabel("Reservoir Pressure [bar]", fontsize=18)
+plt.legend(fontsize=14,edgecolor='black')
 # plt.grid(True)
 plt.tight_layout()
 plt.show()
@@ -405,7 +405,7 @@ for label, color in zip(labels, colors):
     plt.scatter(
         df.loc[m, "Permeability [mD]"],
         df.loc[m, "Reservoir Pressure[MPa]"],
-        color=color, label=label, alpha=0.7, edgecolor='k'
+        color=color, label=label, alpha=0.5, edgecolor='k'
     )
 plt.xlabel("Permeability [mD]")
 plt.ylabel("Reservoir Pressure [MPa]")

@@ -28,7 +28,7 @@ df_clean = df[columns].dropna()
 plt.figure(figsize=(5, 10))
 for i, col in enumerate(columns, 1):
     plt.subplot(2, 2, i)
-    sns.histplot(df_clean[col], kde=True, color=Color, edgecolor='black', alpha=0.5)
+    sns.histplot(df_clean[col], color=Color, edgecolor='black', alpha=0.5)
     # plt.title(f"Distribution of {col}", fontsize=fontsize)
     plt.xlabel(col, fontsize=fontsize)
     plt.xticks(fontsize=fontsize)
@@ -56,24 +56,24 @@ if not pressure_porosity.empty:
     axes[0].set_title("Permeability [mD] vs Porosity", fontsize=fontsize)
 
 # Scatter plot: Reservoir Pressure vs Gross Prod Rate
-pressure_flow = df[["Reservoir Temp [C]", "Reservoir Pressure[MPa]"]].dropna()
+pressure_flow = df[["Reservoir Temperature [K]", "Reservoir Pressure [bar]"]].dropna()
 if not pressure_flow.empty:
     sns.scatterplot(
         data=pressure_flow,
-        x="Reservoir Pressure[MPa]",
-        y="Reservoir Temp [C]",
+        x="Reservoir Pressure [bar]",
+        y="Reservoir Temperature [K]",
         ax=axes[1],
         color="darkred"
     )
     axes[1].set_title("Reservoir Pressure vs Reservoir Temperature", fontsize=fontsize)
 
 # Scatter plot: Reservoir Pressure vs Gross Prod Rate
-pressure_perm = df[["Permeability [mD]","Reservoir Pressure[MPa]" ]].dropna()
+pressure_perm = df[["Permeability [mD]","Reservoir Pressure [bar]" ]].dropna()
 if not pressure_perm.empty:
     sns.scatterplot(
         data=pressure_perm,
         x="Permeability [mD]",
-        y="Reservoir Pressure[MPa]",
+        y="Reservoir Pressure[bar]",
         ax=axes[2],
         color="darkred"
     )
