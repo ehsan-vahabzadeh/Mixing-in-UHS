@@ -6,16 +6,24 @@ from gurobipy import GRB
 from CoolProp.CoolProp import PropsSI
 # ---------------- USER SETTINGS ----------------
 INPUT_DIR   = r"Y:\Mixing Results\July"
-H2_COST_PER_KG = 5.0                   # £/kg (already used in your dataset creation, but we'll recompute safely)
+H2_COST_PER_KG = 3.0                   # £/kg (already used in your dataset creation, but we'll recompute safely)
 KG_PER_M3_STP  =  PropsSI("D", "P", 1 * 1e5, "T", 293.15, "Hydrogen")
 KWH_PER_KG_H2  = 39.41                 # kWh/kg (HHV)
 # PSA_cap = 20
-TARGET_TWH  = 5                   # energy target
-CL = 14 
+TARGET_TWH  = 150                   # energy target
+CL = 360 
+multiplier = 1
 r = 0.07
 FOLDER = f"optim_dataset_{CL}_H2_{H2_COST_PER_KG}"  # subfolder in INPUT_DIR
 NOC = 1 # number of cycles
-OUTPUT_PLAN   = f"optimal_plan_CL{CL}_TWh{TARGET_TWH}_ High_H2{H2_COST_PER_KG}.xlsx"
+
+if multiplier == 1:
+    name1= "Low"
+elif multiplier == 10:
+    name1= "Medium"
+else:
+    name1= "High"
+OUTPUT_PLAN   = f"optimal_plan_CL{CL}_TWh{TARGET_TWH}_ {name1}_H2{H2_COST_PER_KG}.xlsx"
 # Optional global limits:
 WELL_BUDGET   = None    # e.g., 500   -> limit total wells across UK
 ALLOW_CG      = True    # False -> forces CG Ratio == 0 scenarios only
@@ -65,8 +73,9 @@ def load_scenarios(input_dir, pattern, allow_cg=True, cyc = 0):
     Twh_per_cycle = (df["Flow Rate [sm3/d]"]* df["Number of Wells"] * df["Cycle Length [d]"] / 2) * KWH_PER_M3 / 1e9
     df["Net H2 Stored [Twh]"] = df["Net H2 Stored [m3]"] * KWH_PER_M3 / 1e9
     PSA_cap = 10.4702 * np.exp(-60.7137 * df["Predicted RF [-]"]) + 3.1879 * np.exp(-4.8854 * df["Predicted RF [-]"])
-    # PSA_cap = 2.756 * np.exp(-9.223 * df["Predicted RF [-]"]) + 0.884
-    PSA_cap = PSA_cap  * 100
+    # PSA_cap = 3.3133 * np.exp(-4.7682 * df["Predicted RF [-]"]) -0.0767
+    # PSA_cap = 0.03
+    PSA_cap = PSA_cap  * multiplier
     # PSA_cap = PSA_cap_  # override with user setting
     df["PSA Cost [$/kg]"] = PSA_cap
     print(np.average(PSA_cap))

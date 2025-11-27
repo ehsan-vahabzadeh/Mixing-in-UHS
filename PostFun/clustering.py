@@ -330,6 +330,7 @@ plt.scatter(
     color='white',
     edgecolor='black',
     s=80,
+    alpha=0.7,
     label='Sampled Data'
 )
 plt.xlabel("Porosity [-]", fontsize=18)
@@ -355,6 +356,7 @@ plt.scatter(
     color='white',
     edgecolor='black',
     s=80,
+    alpha=0.7,
     label='Sampled Data'
 )
 plt.xlabel("Reservoir Temperature [K]", fontsize=18)

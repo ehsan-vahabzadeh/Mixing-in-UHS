@@ -2,8 +2,9 @@ import os
 import pandas as pd
 import matplotlib.pyplot as plt
 import seaborn as sns
+import numpy as np
 fontsize = 18
-Color = 'gray'
+Color = '#a0a0a0'
 # Path to your consolidated CSV
 csv_path = r"Y:\Mixing Results\Field Data\consolidated_output - Final.csv"
 
@@ -28,7 +29,17 @@ df_clean = df[columns].dropna()
 plt.figure(figsize=(5, 10))
 for i, col in enumerate(columns, 1):
     plt.subplot(2, 2, i)
-    sns.histplot(df_clean[col], color=Color, edgecolor='black', alpha=0.5)
+    if col == "Permeability [mD]":
+        bins = [0,10,50,100,250,500,750,1000,1500]
+        labels = ["10","50","100","250","500","750","1000","1500"]
+        counts, _ = np.histogram(df[col], bins=bins)
+        plt.bar(range(len(counts)), counts,color = Color, edgecolor='black', width = 1)
+        plt.xticks(range(len(counts)), labels)
+        
+        # sns.histplot(df_clean[col], color=Color, edgecolor='black', alpha=0.5, bins=[0,10,50,100,500,1000,1500])
+        # plt.subplot(2, 2, i).set_xscale('log')
+    else:
+        sns.histplot(df_clean[col], color=Color, edgecolor='black', bins = 8, alpha=1)
     # plt.title(f"Distribution of {col}", fontsize=fontsize)
     plt.xlabel(col, fontsize=fontsize)
     plt.xticks(fontsize=fontsize)
