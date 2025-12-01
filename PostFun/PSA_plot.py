@@ -1,6 +1,5 @@
 import numpy as np
 import matplotlib.pyplot as plt
-
 # ------------------------
 # Data
 # ------------------------
@@ -28,23 +27,23 @@ y_line_100 = 100 * y_line
 plt.figure(figsize=(8, 5))
 
 # Data points
-plt.scatter(x_data, y_data, s=80, label="Data", color="black")
-
+# plt.scatter(x_data, y_data, s=60, label="Cost Points", color="black")
 # Model curves
-plt.plot(x_line, y_line, linewidth=3, label="Model")
-plt.plot(x_line, y_line_50, linewidth=3, linestyle="--", label="50× Model")
-plt.plot(x_line, y_line_100, linewidth=3, linestyle=":", label="100× Model")
+plt.plot(x_line, y_line, linewidth=2, label="Low Scenario", color="black")
+plt.plot(x_line, y_line_50, linewidth=2, linestyle="--", label="Medium Scenario", color="black")
+plt.plot(x_line, y_line_100, linewidth=2, linestyle=":", label="High Scenario", color="black")
 
 # Axis labels
-plt.xlabel("H₂ composition", fontsize=18)
-plt.ylabel("PSA capital", fontsize=18)
-
+plt.xlabel("H₂ composition [-]", fontsize=18)
+plt.ylabel("PSA capital [$/kg]", fontsize=18)
+plt.ylim(-1, 20)
+plt.xlim(0.4, 1.0)
 # Ticks
 plt.xticks(fontsize=18)
 plt.yticks(fontsize=18)
 
 # Layout + legend
-plt.legend(fontsize=16)
+plt.legend(fontsize=16,edgecolor='black')
 plt.tight_layout()
-
+plt.savefig("PSA_cost_model.jpeg", dpi=300)
 plt.show()
