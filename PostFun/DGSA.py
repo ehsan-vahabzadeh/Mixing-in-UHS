@@ -84,7 +84,8 @@ def LSA(inputs, RF):
 
 # Main function to load data, calculate RF, and plot the results
 def main(input_directory):
-    file_path = os.path.join(input_directory, 'mixing_results_new.xlsx')
+    file_path = os.path.join(input_directory, 'mixing_results_plot.xlsx')
+    # file_path = os.path.join(input_directory, 'mixing_results_withoutCG.xlsx')
     df = pd.read_excel(file_path)
     ordered_data = []
     rf_values = []
@@ -97,18 +98,18 @@ def main(input_directory):
             
         ordered_data.append(row)
     for data in ordered_data:
-        if data[7] == 0:
+        if data[11] == 0:
             continue
-        rf_values.append(data[7])
+        rf_values.append(data[11])
         inputs.append({
             "label": data[0],
             "FlowRate": data[1],
             "CycleLength":data[2],
             "Permeability": data[3],
-            "Pressure": data[4],
-            "Density": data[10],
-            "Temperature": data[13],
-            "Porosity": data[12],
+            "Pressure": data[5],
+            "Density": data[14],
+            "Temperature": data[6],
+            "Porosity": data[4],
         })
         # inputs.append(params['FlowRate',1])
         # inputs.append(params['CycleLength',2])
@@ -142,20 +143,46 @@ def main(input_directory):
     distances = squareform(distances)
     n_clusters = 3
     clusterer = KMedoids(n_clusters=n_clusters, max_iter=3000, tol=1e-4)
+    cluster_names = ['Low RF', 'Medium RF', 'High RF']
+    cluster_colors = cm.viridis(np.linspace(0, 1, n_clusters))
     labels, medoids = clusterer.fit_predict(distances)
-    
-    parameter_names = ["FlowRate", "CycleLength", "Permeability", "pressure", "Density", "Porosity", "Temperature"]
+    # for i in range(n_clusters):
+    #     sc = ax.scatter(x[labels == i], y[labels == i],
+    #                 c=cluster_colors[i], label=cluster_names[i])
+    parameter_names = ["Flow Rate", "Cycle Length", "Permeability", "Pressure", "Density", "Porosity", "Temperature"]
     mean_sensitivity = dgsa(
         parameters, labels, parameter_names=parameter_names, quantile=0.99, n_boots=5000, confidence=True
     )
+    mean_sensitivity = mean_sensitivity.sort_values(by='sensitivity', ascending=True)
+    print(mean_sensitivity.index)
+    # print(mean_sensitivity['sensitivity']['FlowRate'],mean_sensitivity['confidence'])
     print(mean_sensitivity)
-    mean_interact_sensitivity = dgsa_interactions(parameters, labels, parameter_names=parameter_names)
-    print(mean_interact_sensitivity)
+    # mean_interact_sensitivity = dgsa_interactions(parameters, labels, parameter_names=parameter_names)
+    # print(mean_interact_sensitivity)
+    # fig, ax = plt.subplots(figsize=(12, 7))
 
+    # y_pos = np.arange(len(parameter_names))
+
+    # bars = ax.barh(
+    #     mean_sensitivity.index,
+    #     mean_sensitivity['sensitivity'].values,
+    #     color=['blue','blue','red','red','red','red','red'],
+    #     edgecolor='black',
+    #     height=0.55,
+    #     xerr = mean_sensitivity['confidence'].values,
+    # )
+    # ax.set_xlabel('Mean Sensitivity', fontsize=16)
+    # ax.tick_params(axis='x', labelsize=16)
+    # ax.tick_params(axis='y', labelsize=16)
+    # plt.show()
+    # from pyDGSA.plot import plot_cdf
+    # fig, ax = plot_cdf(parameters, labels, 'Porosity', parameter_names=parameter_names, 
+    #                cluster_names=cluster_names)
+    # plt.show()
     fig, ax = vert_pareto_plot(mean_sensitivity, confidence=True)
     plt.show()
-    fig, ax = vert_pareto_plot(mean_interact_sensitivity, np_plot="+10")
-    plt.show()
+    # fig, ax = vert_pareto_plot(mean_interact_sensitivity, np_plot="+10")
+    # plt.show()
 # Example usage
 os.chdir("Y:\\Mixing Results\\July")  # Change to the directory containing your simulation files
 input_directory = os.getcwd()

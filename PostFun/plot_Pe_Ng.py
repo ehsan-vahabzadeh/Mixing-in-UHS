@@ -14,7 +14,7 @@ from sklearn.metrics import r2_score, mean_squared_error
 import plotly.graph_objects as go
 import numpy as np
 from scipy.ndimage import gaussian_filter, distance_transform_edt
-fontsize = 32
+fontsize = 18
 def nearest_outside_fill(Z, mask):
     # Fill ~mask with nearest value from mask==True
     outside = ~mask
@@ -112,8 +112,8 @@ Zi_smooth2 = Zi.copy()
 # Zi_smooth[~mask] = gaussian_filter(Zi[~mask], sigma=3)
 
 
-fig, ax = plt.subplots(1, 3, figsize=(12, 6))
-fig.subplots_adjust(wspace=0.1)
+fig, ax = plt.subplots(1, 3, figsize=(14, 8))
+fig.subplots_adjust(wspace=0.2)
 
 # 1) Filled contour
 levels = 5
@@ -218,25 +218,25 @@ r2_2 = r2_score(RF_values, y_pred)
 rmse = np.sqrt(mean_squared_error(RF_values, y_pred))
 xs = np.linspace(Ng.min()+1e-6, Ng.max(), 500)
 ax[2].plot(xs, ln_fun(xs, Multipliers2), 'k-', lw=2, alpha=0.5)
-cbar = plt.colorbar(plot, ax=ax[2])
-cbar.ax.tick_params(labelsize=fontsize)
-cbar.set_label("RF[-]", fontsize=fontsize)
-plt.tight_layout()
-# eq_txt1 = f"$RF = {Multipliers0[0]:.2f}\cdot Pe^{{{Multipliers0[1]:.2f}}} {Multipliers0[2]:.2f}\cdot Ng^{{{Multipliers0[3]:.2f}}}$\n$R^2$ = {r2:.2f}"
-# ax[0].text(0.38, 0.98, eq_txt1,
-#            transform=ax[0].transAxes,
-#            ha='left', va='top', fontsize=14,
-#            bbox=dict(fc='white', alpha=0.8, boxstyle='round,pad=0.2'))
-# # eq_txt2 = f"$RF = {Multipliers[0]:.2f} \cdot exp({Multipliers[1]:.2f} \cdot Pe) + {Multipliers[2]:.2f}$\n$R^2$ = {r2_1:.2f}"
-# eq_txt2 = f"$RF = {Multipliers_hb[0]:.2f} + \\frac{{(RF_{{max}}  {Multipliers_hb[0]:.2f}) \cdot Pe}}{{{Multipliers_hb[1]:.2f} + Pe}}$\n$R^2$ = {r2_1:.2f}"
-# ax[1].text(1.65, 0.07, eq_txt2,
-#            transform=ax[0].transAxes,
-#            ha='left', va='top', fontsize=14,
-#            bbox=dict(fc='white', alpha=0.8, boxstyle='round,pad=0.2'))
-# eq_txt3 = f"$RF = {Multipliers2[0]:.2f} \cdot log({Multipliers2[1]:.2f} \cdot Ng + 1) + {Multipliers2[2]:.2f}$\n$R^2$ = {r2_2:.2f}"
-# ax[2].text(2.8, 0.982, eq_txt3,
-#            transform=ax[0].transAxes,
-#            ha='left', va='top', fontsize=14,
-#            bbox=dict(fc='white', alpha=0.8, boxstyle='round,pad=0.2'))
+# cbar = plt.colorbar(plot, ax=ax[2])
+# cbar.ax.tick_params(labelsize=fontsize)
+# cbar.set_label("RF[-]", fontsize=fontsize)
+# plt.tight_layout()
+eq_txt1 = f"$RF = {Multipliers0[0]:.2f}\cdot Pe^{{{Multipliers0[1]:.2f}}} {Multipliers0[2]:.2f}\cdot Ng^{{{Multipliers0[3]:.2f}}}$\n$R^2$ = {r2:.2f}"
+ax[0].text(0.25, 0.98, eq_txt1,
+           transform=ax[0].transAxes,
+           ha='left', va='top', fontsize=18,
+           bbox=dict(fc='white', alpha=0.8, boxstyle='round,pad=0.2'))
+# eq_txt2 = f"$RF = {Multipliers[0]:.2f} \cdot exp({Multipliers[1]:.2f} \cdot Pe) + {Multipliers[2]:.2f}$\n$R^2$ = {r2_1:.2f}"
+eq_txt2 = f"$RF = {Multipliers_hb[0]:.2f} + \\frac{{(RF_{{max}}  {Multipliers_hb[0]:.2f}) \cdot Pe}}{{{Multipliers_hb[1]:.2f} + Pe}}$\n$R^2$ = {r2_1:.2f}"
+ax[1].text(1.5, 0.1, eq_txt2,
+           transform=ax[0].transAxes,
+           ha='left', va='top', fontsize=18,
+           bbox=dict(fc='white', alpha=0.8, boxstyle='round,pad=0.2'))
+eq_txt3 = f"$RF = {Multipliers2[0]:.2f} \cdot log({Multipliers2[1]:.2f} \cdot Ng + 1) + {Multipliers2[2]:.2f}$\n$R^2$ = {r2_2:.2f}"
+ax[2].text(2.5, 0.982, eq_txt3,
+           transform=ax[0].transAxes,
+           ha='left', va='top', fontsize=18,
+           bbox=dict(fc='white', alpha=0.8, boxstyle='round,pad=0.2'))
 plt.show()
 

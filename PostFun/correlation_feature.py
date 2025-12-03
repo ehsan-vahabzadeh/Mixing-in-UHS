@@ -66,7 +66,7 @@ def annotate_corr(x, y, **kwargs):
     ax = plt.gca()
     ax.set_axis_off()
     ax.annotate(f"{r:.2f}", xy=(0.5, 0.5), xycoords=ax.transAxes,
-                ha='center', va='center', fontsize=20)
+                ha='center', va='center', fontsize=32)
 
 def custom_regplot(x, y, **kwargs):
     ax = plt.gca()
@@ -84,13 +84,16 @@ def pairwise(df):
     sns.set(style="white")
     g = sns.PairGrid(df, height=2, aspect=1)
     g = sns.PairGrid(df, diag_sharey=False, corner=False)
-    g.map_lower(sns.regplot, lowess=True, scatter_kws={'s': 15, 'edgecolor': 'white'}, line_kws={'color': 'red'})
-    g.map_upper(annotate_corr)
-    g.map_diag(sns.histplot, kde=True, color="skyblue")
+    g.map_lower(
+    sns.scatterplot,
+    s=15, alpha=0.6, color='grey'
+    )
+    g.map_upper(annotate_corr, fontsize=32)
+    g.map_diag(sns.histplot, kde=True, color="grey", edgecolor='black',alpha = 0.6, bins=15)
     for ax in g.axes.flatten():
         if ax is not None:
-            ax.tick_params(axis='x', labelsize=16)
-            ax.tick_params(axis='y', labelsize=16)
+            ax.tick_params(axis='x', labelsize=20)
+            ax.tick_params(axis='y', labelsize=20)
             ax.set_xlabel(ax.get_xlabel(), fontsize=18)
             ax.set_ylabel(ax.get_ylabel(), fontsize=18)
 
@@ -105,12 +108,13 @@ def main(input_directory):
     # file_path = os.path.join(input_directory, 'mixing_results_new.xlsx')
     file_path = os.path.join(input_directory, 'mixing_results_plot.xlsx')
     df = pd.read_excel(file_path)
-    df = df.drop(columns=['label','CushionGas','theta','CG Ratio','Nusselt_number','Raileigh_number'])
+    df = df.drop(columns=['label','CushionGas','theta','CG Ratio','Nusselt_number','Raileigh_number','Pe','Ng','theta','Fo','max_pressure','CushionGas','CG Ratio'])
     df = df.dropna()  # Drop rows with NaN values
+    df = df[df['RF_final'] > 0]
     df = df.rename(columns = {
+        'RF_final': 'RF',
         'FlowRate': 'Flow Rate',
         'CycleLength': 'Cycle Length',
-        'RF_final': 'RF',
         'delta_rho': 'Density',
         })
     
@@ -119,7 +123,7 @@ def main(input_directory):
         df = pd.concat(df_list, ignore_index=True)
     else:
         df = pd.DataFrame()
-        
+    df = df[['Flow Rate','Cycle Length', 'porosity', 'RF', 'Permeability', 'Pressure', 'Temperature','Density' ]]    
     # Pearson(df)
     pairwise(df)
     # pysr_fun(df)
