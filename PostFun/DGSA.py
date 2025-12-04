@@ -9,10 +9,14 @@ from pyDGSA.dgsa import dgsa
 from pyDGSA.dgsa import dgsa_interactions
 from scipy.spatial.distance import pdist, squareform
 from pyDGSA.cluster import KMedoids
+# from sklearn_extra.cluster import KMedoids
 from pyDGSA.plot import vert_pareto_plot
 from sklearn.metrics import silhouette_score, davies_bouldin_score
 import pandas as pd
 from scipy.interpolate import interp1d
+import random
+
+np.random.seed(42)
 # import gurobipy as gp
 # from gurobipy import GRB
 
@@ -129,10 +133,10 @@ def main(input_directory):
     # print(df.head())    # verify ordering and contents
     X = df[["FlowRate", "CycleLength", "Permeability", "Pressure", "Density", "Temperature", "Porosity"]].values
     Y = np.array(rf_values)
-    for ii in range(len(X)):
-        Y[ii] = (Y[ii] - np.min(Y)) / (np.max(Y) - np.min(Y))  # Normalize RF values
-        for jj in range(len(X[ii])):
-            X[ii,jj] = (X[ii,jj] - np.min(X[:,jj])) / (np.max(X[:,jj]) - np.min(X[:,jj]))
+    # for ii in range(len(X)):
+    #     Y[ii] = (Y[ii] - np.min(Y)) / (np.max(Y) - np.min(Y))  # Normalize RF values
+    #     for jj in range(len(X[ii])):
+    #         X[ii,jj] = (X[ii,jj] - np.min(X[:,jj])) / (np.max(X[:,jj]) - np.min(X[:,jj]))
     # LSA(inputs, RF)
     # parameters = np.array([[input['FlowRate'], input['CycleLength'], input['Permeability'],
     #                         input['Pressure'], input['Density'], input['Porosity'], input['Temperature']] for input in X])
@@ -142,16 +146,27 @@ def main(input_directory):
     distances = pdist(responses, metric="euclidean")
     distances = squareform(distances)
     n_clusters = 3
-    clusterer = KMedoids(n_clusters=n_clusters, max_iter=3000, tol=1e-4)
-    cluster_names = ['Low RF', 'Medium RF', 'High RF']
-    cluster_colors = cm.viridis(np.linspace(0, 1, n_clusters))
+    clusterer = KMedoids(n_clusters=n_clusters, max_iter=3000)
+    cluster_names = ['RF < 0.5', 'RF > 0.75', '0.5 < RF < 0.75', 'RF']
+    cluster_colors = ['#fcc44b', '#9b3004', '#f16c09', 'black']
     labels, medoids = clusterer.fit_predict(distances)
+    # AA = silhouette_score(responses, clusterer.fit_predict(responses))
+    # print("Silhouette score:", AA)
+    fig, ax = plt.subplots(figsize=(8, 5), facecolor='white')
+    for i in range(n_clusters):
+        sc = ax.scatter(Y[labels == i], Y[labels == i],
+                    c=cluster_colors[i], label=cluster_names[i])
+    plt.show()
+    # fig, ax = plt.subplots(figsize=(8, 5), facecolor='white')
+    # perm_vec = X[:,2]  # Permeability
     # for i in range(n_clusters):
-    #     sc = ax.scatter(x[labels == i], y[labels == i],
+    #     sc = ax.scatter(Y[labels == i], perm_vec[labels == i],
     #                 c=cluster_colors[i], label=cluster_names[i])
-    parameter_names = ["Flow Rate", "Cycle Length", "Permeability", "Pressure", "Density", "Porosity", "Temperature"]
+    # plt.show()
+
+    parameter_names = ["Flow Rate", "Cycle Length", "Permeability", "Pressure", r"$\Delta \rho$", "Porosity", "Temperature"]
     mean_sensitivity = dgsa(
-        parameters, labels, parameter_names=parameter_names, quantile=0.99, n_boots=5000, confidence=True
+        parameters, labels, parameter_names=parameter_names, quantile=0.95, n_boots=3000, confidence=True
     )
     mean_sensitivity = mean_sensitivity.sort_values(by='sensitivity', ascending=True)
     print(mean_sensitivity.index)
@@ -159,28 +174,72 @@ def main(input_directory):
     print(mean_sensitivity)
     # mean_interact_sensitivity = dgsa_interactions(parameters, labels, parameter_names=parameter_names)
     # print(mean_interact_sensitivity)
-    # fig, ax = plt.subplots(figsize=(12, 7))
+    fig, ax = plt.subplots(figsize=(12, 7))
 
-    # y_pos = np.arange(len(parameter_names))
+    y_pos = np.arange(len(parameter_names))
 
-    # bars = ax.barh(
-    #     mean_sensitivity.index,
-    #     mean_sensitivity['sensitivity'].values,
-    #     color=['blue','blue','red','red','red','red','red'],
-    #     edgecolor='black',
-    #     height=0.55,
-    #     xerr = mean_sensitivity['confidence'].values,
-    # )
-    # ax.set_xlabel('Mean Sensitivity', fontsize=16)
-    # ax.tick_params(axis='x', labelsize=16)
-    # ax.tick_params(axis='y', labelsize=16)
-    # plt.show()
-    # from pyDGSA.plot import plot_cdf
-    # fig, ax = plot_cdf(parameters, labels, 'Porosity', parameter_names=parameter_names, 
-    #                cluster_names=cluster_names)
-    # plt.show()
-    fig, ax = vert_pareto_plot(mean_sensitivity, confidence=True)
+    bars = ax.barh(
+        mean_sensitivity.index,
+        mean_sensitivity['sensitivity'].values,
+        # color=['blue','blue','red','red','red','red','red'],
+        color ='grey',
+        edgecolor='black',
+        height=0.55,
+        xerr = mean_sensitivity['confidence'].values / mean_sensitivity['sensitivity'].values,
+        alpha=0.7
+    )
+    ax.set_xlabel('Standardised Sensitivity', fontsize=16)
+    ax.tick_params(axis='x', labelsize=16)
+    ax.tick_params(axis='y', labelsize=16)
+    plt.savefig('sens_plot.jpg', dpi=300) 
     plt.show()
+    from pyDGSA.plot import plot_cdf
+    percentiles = np.arange(1, 100)
+    plt.rcParams.update({
+    "font.size": 16,
+    "axes.linewidth": 1.3,
+    "xtick.major.width": 1.0,
+    "ytick.major.width": 1.0
+    })
+
+    fig, axes = plt.subplots(2, 2, figsize=(12, 10))
+    axes = axes.ravel()   # flatten to 1D for easy indexing
+    param_indices = [2,3,4,1]
+    param_name = ["Permeability [md]", "Pressure [bar]", r"$\Delta \rho$ [kg m$^{-3}$]", "Cycle Length [d]"]
+    line_styles = ['dashed', 'dotted', 'dashdot', 'solid']
+    # -------------------------------------
+    # Build each subplot
+    # -------------------------------------
+    for idx, ax in enumerate(axes):
+
+        p_index = param_indices[idx]
+
+        for c in range(n_clusters + 1):
+            # Compute percentiles for cluster c
+           
+            if c == n_clusters:
+                x = np.percentile(parameters[:, p_index], percentiles)
+            else:
+                 x = np.percentile(parameters[np.where(labels == c), p_index], percentiles)
+            ax.plot(
+                x, percentiles/100,
+                color=cluster_colors[c],
+                linewidth=3.0,
+                linestyle=line_styles[c],
+                label=f'{cluster_names[c]}'
+            )
+
+        ax.set_xlabel(param_name[idx], fontsize=16)
+        ax.set_ylabel("CDF", fontsize=16)
+
+        # Put legend only in the first subplot to avoid clutter
+        if idx == 1:
+            ax.legend(frameon=True, fontsize=13, edgecolor='black')
+    plt.savefig('CDF_plots.jpg', dpi=300)    
+    plt.show()
+    
+    # fig, ax = vert_pareto_plot(mean_sensitivity, confidence=True)
+    # plt.show()
     # fig, ax = vert_pareto_plot(mean_interact_sensitivity, np_plot="+10")
     # plt.show()
 # Example usage
