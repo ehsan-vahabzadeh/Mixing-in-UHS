@@ -135,7 +135,7 @@ def train_and_evaluate_model_kfold(X, Y, trial=None):
         activation = ["tanh", "relu", "sigmoid"]
         # activation = ["relu", "relu"]
         batch_size = 64
-        epochs = 10
+        epochs = 200
         kf = KFold(n_splits=5, shuffle=True, random_state=42)
         mse_list = []
         patience = 50
@@ -290,10 +290,14 @@ def train_and_evaluate_model_kfold(X, Y, trial=None):
             for ii in range(len(y_true_train)):     
                 rel_error = abs((y_true_train[ii] - y_pred_train[ii]) / y_true_train[ii])
                 relative_errors_train.append(rel_error)
-            plt.hist(relative_errors_train, bins=10, color='gray')
+            plt.hist(relative_errors_train, bins=20, color='gray', edgecolor='black')
+            plt.xticks(fontsize=fontsize_ticks)
+            plt.yticks(fontsize=fontsize_ticks)
             # plt.title("Train $R^2$ Score Distribution")
             # plt.text(0.985, 180, f"$\\mu$ = {r2_train:.3f}\n$\\sigma$ = 0.001", fontsize=10)
-            plt.xlim([0, 0.3])
+            plt.xlim([0, 0.1])
+            plt.xlabel('Train, Relative Error', fontsize=fontsize)
+            plt.ylabel('Frequency', fontsize=fontsize)
             # Subplot 2: Histogram Test
             plt.subplot(2, 2, 3)
             r2_test = r2_score(y_true_test, y_pred_test)
@@ -301,17 +305,19 @@ def train_and_evaluate_model_kfold(X, Y, trial=None):
             for ii in range(len(y_true_train)):     
                 rel_error = abs((y_true_train[ii] - y_pred_train[ii]) / y_true_train[ii])
                 relative_errors_test.append(rel_error)
-            plt.hist([relative_errors_test], bins=10, color='gray')
-            plt.title("Validation $R^2$ Score Distribution")
-            plt.text(0.985, 180, f"$\\mu$ = {r2_test:.3f}\n$\\sigma$ = 0.001", fontsize=10)
-            plt.xlim([0, 0.3])
+            plt.hist([relative_errors_test], bins=20, color='gray', edgecolor='black')
+            plt.xticks(fontsize=fontsize_ticks)
+            plt.yticks(fontsize=fontsize_ticks)
+            plt.xlabel('Test, Relative Error', fontsize=fontsize)
+            plt.ylabel('Frequency', fontsize=fontsize)
+            plt.xlim([0, 0.1])
             # Subplot 3: Scatter Train with 95% pred band
             plt.subplot(2, 2, 2)
-            sc2 = plt.scatter(y_true_train, y_pred_train, c='darkorange', alpha=0.7, edgecolor='k', s=60)
+            sc2 = plt.scatter(y_true_train, y_pred_train, c='grey', alpha=0.5, edgecolor='k', s=60)
             lims = [min(y_true_test.min(), y_pred_test.min()), max(y_true_test.max(), y_pred_test.max())]
             plt.plot(lims, lims, 'r--', lw=2)
-            plt.xlabel('Actual RF', fontsize=fontsize)
-            plt.ylabel('Predicted RF', fontsize=fontsize)
+            plt.xlabel('Simulation RF', fontsize=fontsize)
+            plt.ylabel('ANN RF', fontsize=fontsize)
             plt.xticks(fontsize=fontsize_ticks)
             plt.yticks(fontsize=fontsize_ticks)
             # plt.title('Training Set', fontsize=fontsize)
@@ -323,11 +329,11 @@ def train_and_evaluate_model_kfold(X, Y, trial=None):
 
             # Subplot 4: Scatter Test with 95% pred band
             plt.subplot(2, 2, 4)
-            plt.scatter(y_true_test, y_pred_test, c='darkorange', alpha=0.7, edgecolor='k', s=60)
+            plt.scatter(y_true_test, y_pred_test, c='grey', alpha=0.7, edgecolor='k', s=60)
             lims = [min(y_true_test.min(), y_pred_test.min()), max(y_true_test.max(), y_pred_test.max())]
             plt.plot(lims, lims, 'r--', lw=2)
-            plt.xlabel('Actual RF', fontsize=fontsize)
-            plt.ylabel('Predicted RF', fontsize=fontsize)
+            plt.xlabel('Simulation RF', fontsize=fontsize)
+            plt.ylabel('ANN RF', fontsize=fontsize)
             plt.xticks(fontsize=fontsize_ticks)
             plt.yticks(fontsize=fontsize_ticks)
             # plt.title('Test Set', fontsize=fontsize)

@@ -4,6 +4,7 @@ import numpy as np
 import os
 import matplotlib.cm as cm
 import matplotlib.colors as mcolors
+from matplotlib.ticker import MaxNLocator
 import warnings
 from pyDGSA.dgsa import dgsa
 from pyDGSA.dgsa import dgsa_interactions
@@ -228,7 +229,9 @@ def main(input_directory):
                 linestyle=line_styles[c],
                 label=f'{cluster_names[c]}'
             )
-
+            if p_index == 2:
+                ax.set_xticks([100,500,1000,1500])
+        # ax.xaxis.set_major_locator(MaxNLocator(nbins=6))
         ax.set_xlabel(param_name[idx], fontsize=16)
         ax.set_ylabel("CDF", fontsize=16)
 
