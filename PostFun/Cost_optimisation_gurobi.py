@@ -14,6 +14,7 @@ TARGET_TWH  = 150                   # energy target
 CL = 360 
 multiplier = 1
 r = 0.07
+
 FOLDER = f"optim_dataset_{CL}_H2_{H2_COST_PER_KG}"  # subfolder in INPUT_DIR
 NOC = 1 # number of cycles
 
