@@ -4,15 +4,15 @@ import pandas as pd
 import matplotlib.pyplot as plt
 
 # ---------------- user settings ----------------
-INPUT_DIR    = r"Y:\Mixing Results\July"
+INPUT_DIR    = r"Y:\Mixing Results\July\Two Term Equation"
 
 FILES = [
-    "optimal_plan_CL14_TWh5.xlsx",
-    "optimal_plan_CL60_TWh15.xlsx",
-    "optimal_plan_CL180_TWh50.xlsx",
-    "optimal_plan_CL360_TWh100.xlsx",
-    "optimal_plan_CL360_TWh150.xlsx",
-    "optimal_plan_CL360_TWh200.xlsx",
+    "optimal_plan_CL14_TWh5_Low_H24.0.xlsx",
+    "optimal_plan_CL60_TWh15_Low_H24.0.xlsx",
+    "optimal_plan_CL180_TWh50_Low_H24.0.xlsx",
+    "optimal_plan_CL360_TWh100_Low_H24.0.xlsx",
+    "optimal_plan_CL360_TWh150_Low_H24.0.xlsx",
+    "optimal_plan_CL360_TWh200_Low_H24.0.xlsx",
 ]
 # Or glob:
 # GLOB_PATTERN = "optimal_plan_CL*_TWh*.xlsx"
@@ -21,8 +21,12 @@ GLOB_PATTERN = None
 YEAR_MARKS = np.array([30], dtype=int)
 
 SCEN_COL_LABEL = "Scenario"
-LOSS_LABEL = r"Optimal Loss Cost ($\times 10^9$ USD)"
+LOSS_LABEL = r"Present-Value Loss Cost [Billion \$]"
 LCOS_LABEL     = "LCOS ($\$$/MWh)"
+Perm_LABEL     = "Permeability [mD]"
+FR_LABEL     = "Flow Rate [sm3/d]"
+CG_LABEL     = "Cushion Gas Ratio [-]"
+PR_LABEL = "Reservoir Pressure[bar]"
 # ------------------------------------------------
 
 # columns (multi-name tolerant)
@@ -31,7 +35,10 @@ COL_PRO_TWH = "Cum H2 Produced [Twh]"            # nominal
 COL_PRO_TWH_PV = "Produced TWh (PV total)"       # preferred if present
 COL_LCOS    = "LCOS"
 COL_WELLS   = "Number of Wells"
-
+COL_Perm   = "Permeability [mD]"
+COL_FR = "Flow Rate [sm3/d]"
+COL_CG     = "CG Ratio"
+COL_Press = "Reservoir Pressure[bar]"
 LOSS_CANDIDATES = ["Loss Cost [M$]", "Loss Cost [$]", "Loss Cost [£]", "Loss Cost [M£]"]
 
 def parse_CL(fname):
@@ -41,7 +48,7 @@ def parse_CL(fname):
 def label_from_filename(fname: str) -> str:
     m = re.search(r"CL(\d+)_TWh(\d+)", fname)
     # return f"{m.group(1)} d–{m.group(2)} TWh" if m else os.path.splitext(fname)[0]
-    return f"{m.group(2)} TWh" if m else os.path.splitext(fname)[0]
+    return f"{m.group(2)}" if m else os.path.splitext(fname)[0]
 def pick_loss_column(df: pd.DataFrame) -> str:
     for c in LOSS_CANDIDATES:
         if c in df.columns:
@@ -63,14 +70,30 @@ def aggregate_plan_rows(df_sheet: pd.DataFrame) -> dict:
 
     # plan LCOS: energy-weighted mean (fallback to simple mean if all weights are zero)
     lcos_vals = pd.to_numeric(df_sheet.get(COL_LCOS), errors="coerce")
-    if (w > 0).any() and lcos_vals.notna().any():
-        plan_lcos = (lcos_vals.fillna(0.0) * w).sum() / max(w.sum(), 1e-12)
-    else:
-        plan_lcos = lcos_vals.mean() if lcos_vals.notna().any() else np.nan
+    perm_vals = pd.to_numeric(df_sheet.get(COL_Perm), errors="coerce")
+    fr_vals = pd.to_numeric(df_sheet.get(COL_FR), errors="coerce")
+    cg_vals = pd.to_numeric(df_sheet.get(COL_CG), errors="coerce")
+    pr_vals = pd.to_numeric(df_sheet.get(COL_Press), errors="coerce")
+    # if (w > 0).any() and lcos_vals.notna().any():
+    #     plan_lcos = (lcos_vals.fillna(0.0) * w).sum() / max(w.sum(), 1e-12)
+    #     plan_perm = (perm_vals.fillna(0.0) * w).sum() / max(w.sum(), 1e-12)
+    #     plan_fr = (fr_vals.fillna(0.0) * w).sum() / max(w.sum(), 1e-12)
+    #     plan_cg = (cg_vals.fillna(0.0) * w).sum() / max(w.sum(), 1e-12)
+    #     plan_pr = (pr_vals.fillna(0.0) * w).sum() / max(w.sum(), 1e-12)
+    # else:
+    plan_lcos = lcos_vals.mean() if lcos_vals.notna().any() else np.nan
+    plan_perm = perm_vals.mean() if perm_vals.notna().any() else np.nan
+    plan_fr = fr_vals.mean() if fr_vals.notna().any() else np.nan
+    plan_cg = cg_vals.mean() if cg_vals.notna().any() else np.nan
+    plan_pr = pr_vals.mean() if pr_vals.notna().any() else np.nan
 
     return {
         LOSS_LABEL: total_loss,
         LCOS_LABEL: plan_lcos,
+        Perm_LABEL: plan_perm,
+        FR_LABEL: plan_fr,
+        CG_LABEL: plan_cg,
+        PR_LABEL: plan_pr,
         "wells": pd.to_numeric(df_sheet.get(COL_WELLS), errors="coerce").sum(min_count=1)
     }
 
@@ -182,7 +205,7 @@ ax.set_ylabel(LCOS_LABEL)
 ax.grid(True, linestyle=":", alpha=0.5)
 ax.legend(title=SCEN_COL_LABEL, frameon=False, bbox_to_anchor=(1.02, 1), loc="upper left")
 fig.tight_layout()
-fig.savefig("scatter_loss_vs_lcos_all_years.png", dpi=300, bbox_inches="tight")
+fig.savefig("scatter_loss_vs_lcos_all_years.png", dpi=500, bbox_inches="tight")
 plt.show()
 
 # ----------- plotting style -----------
@@ -196,7 +219,6 @@ plt.rcParams.update({
     "lines.linewidth": 2.5,
     "lines.markersize": 6,
 })
-
 # ----------- 1) BOX: Total Loss Cost by Scenario -----------
 def horizontal_boxplot(df, value_col, group_col, title, xlabel, outfile=None):
     order = (df.groupby(group_col)[value_col]
@@ -205,35 +227,55 @@ def horizontal_boxplot(df, value_col, group_col, title, xlabel, outfile=None):
                .index.tolist())
     data = [df.loc[df[group_col]==g, value_col].values for g in order]
 
-    fig, ax = plt.subplots(figsize=(10, 6))
+    fig, ax = plt.subplots(figsize=(8, 6))
     ax.boxplot(
         data, vert=False, labels=order, patch_artist=True,showfliers=False,
-        medianprops={"color":"red", "linewidth":2},
-        boxprops={"facecolor":"none", "edgecolor":"blue", "linewidth":2},
+        medianprops={"color":"black", "linewidth":2},
+        boxprops={"facecolor":"gray", "alpha":0.6, "edgecolor":"black", "linewidth":2},
         whiskerprops={"color":"black", "linewidth":1.2},
         capprops={"color":"black", "linewidth":1.2},
+        
         # flierprops={"marker":"o", "markersize":3, "markerfacecolor":"none", "markeredgecolor":"blue"}
     )
     ax.set_title(title)
     ax.set_xlabel(xlabel)
-    ax.set_ylabel("Demand")
+    ax.set_ylabel("Target Demand [TWh]")
     ax.grid(True, axis="x", linestyle=":", alpha=0.5)
-    fig.tight_layout()
+    # fig.tight_layout()
     if outfile:
-        fig.savefig(outfile, dpi=300, bbox_inches="tight")
+        fig.savefig(outfile, dpi=500, bbox_inches="tight")
     plt.show()
 
 horizontal_boxplot(
     dfL, LOSS_LABEL, SCEN_COL_LABEL,
-    title="Distribution of Optimal Total Loss Cost by Scenario",
+    title="",
     xlabel=f"{LOSS_LABEL}",
+    outfile="box_total_loss_by_scenario.png"
+)
+
+horizontal_boxplot(
+    dfL, Perm_LABEL, SCEN_COL_LABEL,
+    title="",
+    xlabel=f"{Perm_LABEL}",
+    outfile="box_total_loss_by_scenario.png"
+)
+horizontal_boxplot(
+    dfL,PR_LABEL, SCEN_COL_LABEL,
+    title="",
+    xlabel=f"{PR_LABEL}",
+    outfile="box_total_loss_by_scenario.png"
+)
+horizontal_boxplot(
+    dfL, FR_LABEL, SCEN_COL_LABEL,
+    title="",
+    xlabel=f"{FR_LABEL}",
     outfile="box_total_loss_by_scenario.png"
 )
 
 # ----------- 2) BOX: LCOS by Scenario -----------
 horizontal_boxplot(
     dfL, LCOS_LABEL, SCEN_COL_LABEL,
-    title="Distribution of LCOS by Scenario",
+    title="",
     xlabel=f"{LCOS_LABEL}",
     outfile="box_lcos_by_scenario.png"
 )
@@ -251,5 +293,5 @@ ax.set_ylabel(f"{LCOS_LABEL} ($/MWh)")
 ax.grid(True, linestyle=":", alpha=0.5)
 ax.legend(title=SCEN_COL_LABEL, frameon=False, bbox_to_anchor=(1.02, 1), loc="upper left")
 fig.tight_layout()
-fig.savefig("scatter_loss_vs_lcos_by_scenario.png", dpi=300, bbox_inches="tight")
+fig.savefig("scatter_loss_vs_lcos_by_scenario.png", dpi=500, bbox_inches="tight")
 plt.show()

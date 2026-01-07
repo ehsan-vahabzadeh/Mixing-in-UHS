@@ -89,7 +89,7 @@ def coutour_map(input_directory):
     
  
     # Plot
-    fig, ax = plt.subplots(figsize=(8, 6))
+    fig, ax = plt.subplots(figsize=(10, 8))
     boundaries = [0,0.5,1,1.5,2,2.5,3,3.5,4]
     cmap = plt.get_cmap("plasma", len(boundaries) )
     norm = mcolors.BoundaryNorm(boundaries, cmap.N)
@@ -103,11 +103,18 @@ def coutour_map(input_directory):
     cs = ax.contour(Xi, Yi, Zi_lcos, colors='white', linewidths=1.5)
     ax.clabel(cs, fmt='%1.1f', fontsize=16)
     ax.set_yscale('log')
-    ax.set_xlabel("Target H₂ Demand (TWh)")
-    ax.set_ylabel("H₂ Cost / PSA Cost Ratio")
-    ax.set_title("Contour Map: CG Ratio (filled) with LCOS Isolines")
+    yticks = [1, 10]
+    ax.set_yticks(yticks)
+    ax.set_yticklabels([str(y) for y in yticks])
+    ax.set_xticks([5,25,50,75,100,125,150,175,200])
+    
+    # ax.set_ylim((df['Ratio'].min()), (df['Ratio'].max()))
+    ax.set_xlabel("Target H$_2$ Demand [TWh]")
+    ax.set_ylabel("PCI = C$_{H_2}$ /C$_{PSA}$ [-]")
+    # ax.set_title("Contour Map: CG Ratio (filled) with LCOS Isolines")
 
     plt.tight_layout()
+    plt.savefig("Contour_Map_CG_LCOS.jpeg", dpi=500)
     plt.show()
 
 def plot_bubble_size_legend_lcos():
@@ -155,7 +162,7 @@ def plot_bubble_chart(df):
     cbar = plt.colorbar(scatter, ax=ax)
     cbar.set_label("Cushion Gas Ratio")    
     
-    ax.set_xlabel("Target H₂ Demand (TWh)")
+    ax.set_xlabel("Target H$_2$ Demand (TWh)")
     ax.set_ylabel("H₂ Cost (\$/kg) / PSA Cost (\$/kg)")
     plt.tight_layout()
     plt.show()
@@ -193,8 +200,8 @@ def plot_bubble_chart_rf(df):
     plt.show()
 
 # Set your folder containing Excel files
-FOLDER_PATH = r"Y:\Mixing Results\July"
-os.chdir("Y:\\Mixing Results\\July")
+FOLDER_PATH = r"Y:\Mixing Results\July\Two Term Equation"
+os.chdir(FOLDER_PATH)
 # Desired columns to extract
 COLS_TO_KEEP = [
     "Cum H2 Injected [Twh]",

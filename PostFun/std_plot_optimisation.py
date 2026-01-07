@@ -6,8 +6,9 @@ from matplotlib.patches import Patch
 
 # ---------- paths ----------
 INPUT_DIR   = r"Y:\Mixing Results\July"
+INPUT_DIR_all   = r"Y:\Mixing Results\July\Two Term Equation"
 MASTER_CSV  = os.path.join(INPUT_DIR, "consolidated_output - Final.csv")
-SCEN_GLOB   = os.path.join(INPUT_DIR, "optimal_plan_CL*_TWh*.xlsx")
+SCEN_GLOB   = os.path.join(INPUT_DIR_all, "optimal_plan_CL*_TWh*_Low_H24.0.xlsx")
 
 # ---------- columns in master ----------
 COL_FIELD   = "Field Name"
