@@ -20,4 +20,6 @@ print("Gamma CDF at 6:", gamma_cdf)
 plt.hist(single_data, density =True, bins=30, alpha=0.5, color='gray', edgecolor='black')
 plt.plot(gen_data, pdf_fitted, 'r-')
 plt.show()
+
+
 # print(df_cal.describe())
