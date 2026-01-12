@@ -22,12 +22,12 @@ python3 install_vahabzadeh2026a.py
 
 - To execute the simulation, head to `DUMUX/Mixing-in-UHS/build-cmake/appl/CH4/` and run
 ```bash
-make appl_2pncbio_box_CH4
-./appl_2pncbio_box_CH4 
+make appl_1pnc_box_CH4
+./appl_1pnc_box_CH4 
 ```
 The results can then be inspected via
 ```bash
-paraview appl_2pncbio_box_CH4.pvd
+paraview appl_1pnc_box_CH4.pvd
 ```
 
 ## Versions
@@ -35,7 +35,7 @@ paraview appl_2pncbio_box_CH4.pvd
  |              module name              |      branch name      |                 commit sha                 |         commit date         |
  |---------------------------------------|-----------------------|--------------------------------------------|-----------------------------|
  |              dune-subgrid             |  origin/releases/2.9  |  41ab447c59ea508c4b965be935b81928e7985a6b  |  2023-12-16 13:51:43 +0000  |
- |            vahabzadeh2025a            |      origin/main      |                      -                     |                             |
+ |            vahabzadeh2026a            |      origin/main      |                      -                     |                             |
  |          dune-localfunctions          |  origin/releases/2.9  |  f2c7cfb96327fbfd29744dccf5eac015a1dfa06f  | 2023-12-16 13:51:43 +0000  |
  |             dune-geometry             |  origin/releases/2.9  |  7d5b1d81ad997f81637ac97f753f80a64ff9cdb0  | 2023-12-16 13:50:03 +0000  |
  |              dune-common              |  origin/releases/2.9  |  ad69f2ab2d78313e1111069fdd2539104fc4dab1  | 2023-12-26 20:29:09 +0000  |
