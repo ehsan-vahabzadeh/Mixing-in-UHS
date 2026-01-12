@@ -14,13 +14,13 @@ In order to install the DuMuX module and all other necessary dune-modules, pleas
 ```bash
 mkdir your_target_folder_name
 cd your_target_folder_name
-wget https://git.iws.uni-stuttgart.de/dumux-pub/vahabzadeh2025a/-/raw/main/install_vahabzadeh2025a.py
-python3 install_vahabzadeh2025a.py
+wget https://git.iws.uni-stuttgart.de/dumux-pub/vahabzadeh2026a/-/raw/main/install_vahabzadeh2026a.py
+python3 install_vahabzadeh2026a.py
 ```
 
 ## Tests
 
-- To execute the simulation, head to `DUMUX/vahabzadeh2025a/build-cmake/appl/CH4/` and run
+- To execute the simulation, head to `DUMUX/Mixing-in-UHS/build-cmake/appl/CH4/` and run
 ```bash
 make appl_2pncbio_box_CH4
 ./appl_2pncbio_box_CH4 
