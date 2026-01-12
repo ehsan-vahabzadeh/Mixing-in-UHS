@@ -56,8 +56,8 @@ def installModule(subFolder, url, branch, revision):
 print("Installing dune-subgrid")
 installModule("dune-subgrid", "https://gitlab.dune-project.org/extensions/dune-subgrid.git", "origin/releases/2.9", "41ab447c59ea508c4b965be935b81928e7985a6b", )
 
-print("Installing vahabzadeh2024a")
-installModule("vahabzadeh2024a", "https://github.com/ehsan-vahabzadeh/Mixing-in-UHS.git", "origin/main", "origin/main", )
+print("Installing Mixing-in-UHS")
+installModule("Mixing-in-UHS", "https://github.com/ehsan-vahabzadeh/Mixing-in-UHS", "origin/main", "origin/main", )
 
 print("Installing dune-localfunctions")
 installModule("dune-localfunctions", "https://gitlab.dune-project.org/core/dune-localfunctions.git", "origin/releases/2.9", "f2c7cfb96327fbfd29744dccf5eac015a1dfa06f", )
