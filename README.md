@@ -33,23 +33,23 @@ paraview appl_1pnc_box_CH4.pvd
 The simulation outputs generated using DuMuX are post-processed to construct a comprehensive dataset describing hydrogen recovery behaviour under a wide range of reservoir and operational conditions.
 This dataset is used to train an artificial neural network (ANN) surrogate model that emulates reservoir-scale hydrogen recovery with high accuracy.
 The trained surrogate is then embedded within a techno-economic optimisation framework, where large ensembles of candidate storage scenarios are evaluated and a national-scale underground hydrogen storage portfolio is optimised using mixed-integer linear programming implemented in Gurobi.
-- postprocess_compute_pe_ng_rf_dataset.py
-Reads DuMuX JSON outputs, computes RF and derived quantities (e.g., Pe, Ng, Fo, θ, Δρ) across cycles, and exports consolidated Excel/CSV tables.
+- **`postprocess_compute_pe_ng_rf_dataset.py`**  
+  Reads DuMuX JSON outputs, computes recovery factor (RF) and derived quantities (e.g. Pe, Ng, Fo, θ, Δρ) across cycles, and exports consolidated Excel/CSV tables.
 
-- plot_pe_ng_rf_surfaces_and_fits.py
-Loads the consolidated dataset and generates the Pe–Ng–RF contour surface and RF-vs-Pe / RF-vs-Ng plots (including fitted correlations).
+- **`plot_pe_ng_rf_surfaces_and_fits.py`**  
+  Loads the consolidated dataset and generates Pe–Ng–RF contour surfaces and RF–Pe / RF–Ng plots, including fitted correlations.
 
-- doe_sample_field_data_kmeans_lhs.py
-Samples UK field properties using KMeans clustering and LHS (with temperature conditioned on pressure) to generate a realistic design-of-experiments scenario set.
+- **`doe_sample_field_data_kmeans_lhs.py`**  
+  Samples UK field properties using KMeans clustering and Latin Hypercube Sampling (LHS) to generate a realistic design-of-experiments scenario set.
 
-- build_optim_scenarios_from_ann.py
-Uses a trained ANN surrogate (plus scalers) to evaluate sampled scenarios and writes cycle-wise optimisation datasets (costs, energy, wells, RF/MRF, constraints).
+- **`build_optim_scenarios_from_ann.py`**  
+  Uses a trained ANN surrogate (with associated scalers) to evaluate sampled scenarios and generate cycle-wise optimisation datasets containing costs, energy metrics, wells, and constraints.
 
-- optimise_portfolio_gurobi.py
-Solves the national-scale portfolio optimisation in Gurobi (one scenario per reservoir, optional well limits, discounting, LCOS/cost objective) and exports the optimal plan to Excel.
+- **`optimise_portfolio_gurobi.py`**  
+  Solves the national-scale underground hydrogen storage portfolio optimisation using Gurobi, selecting cost-optimal scenarios subject to energy targets and operational constraints.
 
-- analyse_selected_vs_all_reservoirs.py
-Aggregates selected reservoirs from optimisation outputs and compares their property distributions against the full field dataset (summary stats + boxplots).
+- **`analyse_selected_vs_all_reservoirs.py`**  
+  Aggregates reservoirs selected by the optimisation and compares their property distributions against the full dataset using summary statistics and boxplots.
 
 ## Versions
 
