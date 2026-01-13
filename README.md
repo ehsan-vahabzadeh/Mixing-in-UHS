@@ -4,7 +4,7 @@ This Repository contains the code to generate the results of the paper below:
 
 Vahabzadeh E.,  Nazari F., Pourakaberian A., Niasar V.
 
-Techno-Economic Optimisation of Underground Hydrogen Storage in UK Depleted Gas Reservoirs
+Techno-Economic Optimisation of Underground Hydrogen Storage in UK Depleted Gas Reservoirs (Submitted)
 
 ## Installation
 
