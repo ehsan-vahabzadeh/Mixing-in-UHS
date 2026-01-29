@@ -272,6 +272,64 @@ def train_and_evaluate_model_kfold(X, Y, trial=None):
             plt.tight_layout()
             plt.show()
             
+            from matplotlib.lines import Line2D
+
+            cluster_colors = ['#fcc44b', '#9b3004', '#f16c09', "#f90b07", 'black']
+
+            plt.figure(figsize=(12, 10))
+            fontsize = 20
+            fontsize_ticks = 20
+
+            for i in range(len(all_train_losses)):
+                plt.plot(all_train_losses[i],
+                        linestyle='-',
+                        linewidth=2,
+                        color=cluster_colors[i])
+                plt.plot(all_val_losses[i],
+                        linestyle='--',
+                        linewidth=2,
+                        color=cluster_colors[i])
+
+            plt.xlabel("Epoch [-]", fontsize=fontsize)
+            plt.ylabel("MSE Loss [-]", fontsize=fontsize)
+            plt.xticks(fontsize=fontsize_ticks)
+            plt.yticks(fontsize=fontsize_ticks)
+            # plt.yscale('log')
+
+            ax = plt.gca()
+
+            # ---- Legend 1: Fold colors ----
+            fold_handles = [
+                Line2D([0], [0], color=cluster_colors[i], lw=5, label=f"Fold {i+1}")
+                for i in range(len(cluster_colors))
+            ]
+
+            legend_folds = ax.legend(
+                handles=fold_handles,
+                fontsize=fontsize,
+                title_fontsize=fontsize,
+                loc='upper right',
+                frameon = False
+            )
+
+            ax.add_artist(legend_folds)  # IMPORTANT
+
+            # ---- Legend 2: Line styles ----
+            style_handles = [
+                Line2D([0], [0], color='black', lw=5, linestyle='-', label='Train'),
+                Line2D([0], [0], color='black', lw=5, linestyle='--', label='Validation')
+            ]
+
+            ax.legend(
+                handles=style_handles,
+                fontsize=fontsize,
+                title_fontsize=fontsize,
+                loc='center right',
+                frameon = False
+            )
+
+            plt.tight_layout()
+            plt.show()
             # torch.save(model.state_dict(), "ann_model_withoutCG_AC.pt")
             # joblib.dump({"X_scaler": scaler, "y_scaler": y_scaler}, "scalers_withoutCG_AC.pkl")
             
@@ -282,7 +340,7 @@ def train_and_evaluate_model_kfold(X, Y, trial=None):
             # joblib.dump({"X_scaler": scaler, "y_scaler": y_scaler}, "scalers_gurobi.pkl")
 
             fig = plt.figure(figsize=(12, 10))
-
+            bins = np.linspace(0, 0.1, 21)  # 20 identical bins from 0 to 0.1
             # Subplot 1: Histogram Train
             plt.subplot(2, 2, 1)
             r2_train = r2_score(y_true_train, y_pred_train)
@@ -290,34 +348,34 @@ def train_and_evaluate_model_kfold(X, Y, trial=None):
             for ii in range(len(y_true_train)):     
                 rel_error = abs((y_true_train[ii] - y_pred_train[ii]) / y_true_train[ii])
                 relative_errors_train.append(rel_error)
-            plt.hist(relative_errors_train, bins=20, color='gray', edgecolor='black')
+            plt.hist(relative_errors_train, bins=bins, color='gray', edgecolor='black')
             plt.xticks(fontsize=fontsize_ticks)
             plt.yticks(fontsize=fontsize_ticks)
             # plt.title("Train $R^2$ Score Distribution")
             # plt.text(0.985, 180, f"$\\mu$ = {r2_train:.3f}\n$\\sigma$ = 0.001", fontsize=10)
             plt.xlim([0, 0.1])
-            plt.xlabel('Train, Relative Error', fontsize=fontsize)
-            plt.ylabel('Frequency', fontsize=fontsize)
+            plt.xlabel('Train, Relative Error [-]', fontsize=fontsize)
+            plt.ylabel('Frequency [-]', fontsize=fontsize)
             # Subplot 2: Histogram Test
             plt.subplot(2, 2, 3)
             r2_test = r2_score(y_true_test, y_pred_test)
             relative_errors_test = []
-            for ii in range(len(y_true_train)):     
-                rel_error = abs((y_true_train[ii] - y_pred_train[ii]) / y_true_train[ii])
+            for ii in range(len(y_true_test)):     
+                rel_error = abs((y_true_test[ii] - y_pred_test[ii]) / y_true_test[ii])
                 relative_errors_test.append(rel_error)
-            plt.hist([relative_errors_test], bins=20, color='gray', edgecolor='black')
+            plt.hist(relative_errors_test, bins=bins, color='gray', edgecolor='black')
             plt.xticks(fontsize=fontsize_ticks)
             plt.yticks(fontsize=fontsize_ticks)
-            plt.xlabel('Test, Relative Error', fontsize=fontsize)
-            plt.ylabel('Frequency', fontsize=fontsize)
+            plt.xlabel('Test, Relative Error [-]', fontsize=fontsize)
+            plt.ylabel('Frequency [-]', fontsize=fontsize)
             plt.xlim([0, 0.1])
             # Subplot 3: Scatter Train with 95% pred band
             plt.subplot(2, 2, 2)
             sc2 = plt.scatter(y_true_train, y_pred_train, c='grey', alpha=0.5, edgecolor='k', s=60)
             lims = [min(y_true_test.min(), y_pred_test.min()), max(y_true_test.max(), y_pred_test.max())]
             plt.plot(lims, lims, 'r--', lw=2)
-            plt.xlabel('Simulation RF', fontsize=fontsize)
-            plt.ylabel('ANN RF', fontsize=fontsize)
+            plt.xlabel('Simulation RF [-]', fontsize=fontsize)
+            plt.ylabel('ANN RF [-]', fontsize=fontsize)
             plt.xticks(fontsize=fontsize_ticks)
             plt.yticks(fontsize=fontsize_ticks)
             # plt.title('Training Set', fontsize=fontsize)
@@ -332,8 +390,8 @@ def train_and_evaluate_model_kfold(X, Y, trial=None):
             plt.scatter(y_true_test, y_pred_test, c='grey', alpha=0.7, edgecolor='k', s=60)
             lims = [min(y_true_test.min(), y_pred_test.min()), max(y_true_test.max(), y_pred_test.max())]
             plt.plot(lims, lims, 'r--', lw=2)
-            plt.xlabel('Simulation RF', fontsize=fontsize)
-            plt.ylabel('ANN RF', fontsize=fontsize)
+            plt.xlabel('Simulation RF [-]', fontsize=fontsize)
+            plt.ylabel('ANN RF [-]', fontsize=fontsize)
             plt.xticks(fontsize=fontsize_ticks)
             plt.yticks(fontsize=fontsize_ticks)
             # plt.title('Test Set', fontsize=fontsize)
