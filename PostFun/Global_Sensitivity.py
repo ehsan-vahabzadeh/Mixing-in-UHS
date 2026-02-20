@@ -175,7 +175,7 @@ def main(input_directory):
     print(mean_sensitivity)
     # mean_interact_sensitivity = dgsa_interactions(parameters, labels, parameter_names=parameter_names)
     # print(mean_interact_sensitivity)
-    fig, ax = plt.subplots(figsize=(12, 7))
+    fig, ax = plt.subplots(figsize=(7, 7))
 
     y_pos = np.arange(len(parameter_names))
 
@@ -183,7 +183,7 @@ def main(input_directory):
         mean_sensitivity.index,
         mean_sensitivity['sensitivity'].values,
         # color=['blue','blue','red','red','red','red','red'],
-        color ='grey',
+        color ='#7a0b01',
         edgecolor='black',
         height=0.55,
         xerr = mean_sensitivity['confidence'].values / mean_sensitivity['sensitivity'].values,
@@ -231,13 +231,16 @@ def main(input_directory):
             )
             if p_index == 2:
                 ax.set_xticks([100,500,1000,1500])
+            if p_index == 2 or p_index == 4:
+                ax.set_ylabel("CDF", fontsize=16)
         # ax.xaxis.set_major_locator(MaxNLocator(nbins=6))
         ax.set_xlabel(param_name[idx], fontsize=16)
-        ax.set_ylabel("CDF", fontsize=16)
+        
 
         # Put legend only in the first subplot to avoid clutter
         if idx == 1:
-            ax.legend(frameon=True, fontsize=13, edgecolor='black')
+            # ax.legend(frameon=False, fontsize=16, )
+            ax.legend(frameon=False, bbox_to_anchor=(1.05, 1), fontsize=16)
     plt.savefig('CDF_plots.jpg', dpi=300)    
     plt.show()
     
@@ -250,4 +253,46 @@ os.chdir("Y:\\Mixing Results\\July")  # Change to the directory containing your 
 input_directory = os.getcwd()
 
 
-main(input_directory)
+# main(input_directory)
+
+import matplotlib.pyplot as plt
+from matplotlib.patches import Patch
+
+# --------------------------------------------
+# Extract the TWh groups exactly as ECDF code
+# --------------------------------------------
+labels =["RF", "RF < 0.5", "0.5 < RF < 0.75", "RF > 0.75"]
+# labels = [f"{t} TWh" for t in twh_values]
+# labels.insert(0, "Reservoirs")
+# SAME COLOR SEQUENCE as ECDF
+# colors = ["black","#4d0000", "#660000", "#800000", "#b30000",
+#             "#e60000", "#ff704d", "#ff9966"]
+cluster_colors = ['black','#fcc44b','#f16c09', '#9b3004']
+# Build legend handles (rectangular patches)
+handles = [
+    Patch(facecolor=c, edgecolor="white", label=l)
+    for c, l in zip(cluster_colors[:len(labels)], labels)
+]
+
+# --------------------------------------------
+# Create legend-only figure
+# --------------------------------------------
+fig, ax = plt.subplots(figsize=(8, 1))
+
+ax.legend(
+    handles=handles,
+    loc="center",
+    frameon=False,
+    ncol=len(handles),
+    fontsize=20,
+    handlelength=3,
+    handleheight=1.5
+)
+
+ax.set_axis_off()  # remove axes
+
+plt.tight_layout()
+
+fig.savefig('legend_only_figure.jpg', dpi=400, bbox_inches="tight")
+
+plt.show()

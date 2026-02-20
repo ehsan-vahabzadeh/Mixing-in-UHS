@@ -14,6 +14,7 @@ FILES = [
     "optimal_plan_CL360_TWh150_Low_H24.0.xlsx",
     "optimal_plan_CL360_TWh200_Low_H24.0.xlsx",
 ]
+
 # greens = ["black", "peru", "darkseagreen", "mediumblue", "crimson", "mediumpurple"]
 # greens = ["#000000", "#E69F00", "#56B4E9", "#009E73", "#CC79A7", "#0072B2", "#D55E00", "#CC79A7"]
 greens = ['#470000', '#790c01', '#a03508', '#c9572a', '#f27a4a', '#ffad79']
@@ -182,7 +183,7 @@ def plot_one(metric_key, ylabel, title):
     #                frameon=True,
     #                edgecolor='black',
     #                fontsize=20)
-    # plt.show()
+    plt.show()
     plt.savefig(f"{metric_key}_vs_years.png", dpi=500, bbox_inches="tight")
 
 # ========== Figures (vs. years) ==========

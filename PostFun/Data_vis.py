@@ -4,7 +4,8 @@ import matplotlib.pyplot as plt
 import seaborn as sns
 import numpy as np
 fontsize = 18
-Color = '#a0a0a0'
+# Color = '#a0a0a0'
+Color='#7a0b01'
 # Path to your consolidated CSV
 csv_path = r"Y:\Mixing Results\Field Data\consolidated_output - Final.csv"
 
@@ -33,13 +34,13 @@ for i, col in enumerate(columns, 1):
         bins = [0,10,50,100,250,500,750,1000,1500]
         labels = ["10","50","100","250","500","750","1000","1500"]
         counts, _ = np.histogram(df[col], bins=bins)
-        plt.bar(range(len(counts)), counts,color = Color, edgecolor='black', width = 1)
+        plt.bar(range(len(counts)), counts,color = Color,alpha = 0.7, edgecolor='black', width = 1)
         plt.xticks(range(len(counts)), labels)
         
         # sns.histplot(df_clean[col], color=Color, edgecolor='black', alpha=0.5, bins=[0,10,50,100,500,1000,1500])
         # plt.subplot(2, 2, i).set_xscale('log')
     else:
-        sns.histplot(df_clean[col], color=Color, edgecolor='black', bins = 8, alpha=1)
+        sns.histplot(df_clean[col], color=Color, edgecolor='black', bins = 8, alpha=0.7)
     # plt.title(f"Distribution of {col}", fontsize=fontsize)
     plt.xlabel(col, fontsize=fontsize)
     plt.xticks(fontsize=fontsize)

@@ -342,13 +342,14 @@ def train_and_evaluate_model_kfold(X, Y, trial=None):
             fig = plt.figure(figsize=(12, 10))
             bins = np.linspace(0, 0.1, 21)  # 20 identical bins from 0 to 0.1
             # Subplot 1: Histogram Train
+            
             plt.subplot(2, 2, 1)
             r2_train = r2_score(y_true_train, y_pred_train)
             relative_errors_train = []
             for ii in range(len(y_true_train)):     
                 rel_error = abs((y_true_train[ii] - y_pred_train[ii]) / y_true_train[ii])
                 relative_errors_train.append(rel_error)
-            plt.hist(relative_errors_train, bins=bins, color='gray', edgecolor='black')
+            plt.hist(relative_errors_train, bins=bins, color='#7a0b01', alpha=0.7, edgecolor='black')
             plt.xticks(fontsize=fontsize_ticks)
             plt.yticks(fontsize=fontsize_ticks)
             # plt.title("Train $R^2$ Score Distribution")
@@ -363,7 +364,7 @@ def train_and_evaluate_model_kfold(X, Y, trial=None):
             for ii in range(len(y_true_test)):     
                 rel_error = abs((y_true_test[ii] - y_pred_test[ii]) / y_true_test[ii])
                 relative_errors_test.append(rel_error)
-            plt.hist(relative_errors_test, bins=bins, color='gray', edgecolor='black')
+            plt.hist(relative_errors_test, bins=bins, color='#7a0b01', alpha=0.7, edgecolor='black')
             plt.xticks(fontsize=fontsize_ticks)
             plt.yticks(fontsize=fontsize_ticks)
             plt.xlabel('Test, Relative Error [-]', fontsize=fontsize)
@@ -371,7 +372,7 @@ def train_and_evaluate_model_kfold(X, Y, trial=None):
             plt.xlim([0, 0.1])
             # Subplot 3: Scatter Train with 95% pred band
             plt.subplot(2, 2, 2)
-            sc2 = plt.scatter(y_true_train, y_pred_train, c='grey', alpha=0.5, edgecolor='k', s=60)
+            sc2 = plt.scatter(y_true_train, y_pred_train, c='grey', alpha=0.4, edgecolor='k', s=60)
             lims = [min(y_true_test.min(), y_pred_test.min()), max(y_true_test.max(), y_pred_test.max())]
             plt.plot(lims, lims, 'r--', lw=2)
             plt.xlabel('Simulation RF [-]', fontsize=fontsize)
@@ -383,11 +384,11 @@ def train_and_evaluate_model_kfold(X, Y, trial=None):
             plt.ylim(lims) 
             plt.text(0.05, 0.95, f'$R^2$ = {r2_train:.4f}\nMSE = {mse_train:.4f}', 
                     transform=plt.gca().transAxes, fontsize=fontsize,
-                    verticalalignment='top', bbox=dict(boxstyle='round,pad=0.3', facecolor='white', alpha=0.7))
+                    verticalalignment='top' )
 
             # Subplot 4: Scatter Test with 95% pred band
             plt.subplot(2, 2, 4)
-            plt.scatter(y_true_test, y_pred_test, c='grey', alpha=0.7, edgecolor='k', s=60)
+            plt.scatter(y_true_test, y_pred_test, c='grey', alpha=0.4, edgecolor='k', s=60)
             lims = [min(y_true_test.min(), y_pred_test.min()), max(y_true_test.max(), y_pred_test.max())]
             plt.plot(lims, lims, 'r--', lw=2)
             plt.xlabel('Simulation RF [-]', fontsize=fontsize)
@@ -399,7 +400,7 @@ def train_and_evaluate_model_kfold(X, Y, trial=None):
             plt.ylim(lims)
             plt.text(0.05, 0.95, f'$R^2$ = {r2_test:.4f}\nMSE = {mse_test:.4f}', 
                     transform=plt.gca().transAxes, fontsize=fontsize,
-                    verticalalignment='top', bbox=dict(boxstyle='round,pad=0.3', facecolor='white', alpha=0.7))
+                    verticalalignment='top')
 
             plt.tight_layout()
             plt.show()

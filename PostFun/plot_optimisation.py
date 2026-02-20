@@ -21,7 +21,7 @@ GLOB_PATTERN = None
 YEAR_MARKS = np.array([30], dtype=int)
 
 SCEN_COL_LABEL = "Scenario"
-LOSS_LABEL = r"Present-Value Loss Cost [Billion \$]"
+LOSS_LABEL = r"PV-Loss Cost [$\times 10^9$ \$]"
 LCOS_LABEL     = "LCOS ($\$$/MWh)"
 Perm_LABEL     = "Permeability [mD]"
 FR_LABEL     = "Flow Rate [sm3/d]"
@@ -221,17 +221,19 @@ plt.rcParams.update({
 })
 # ----------- 1) BOX: Total Loss Cost by Scenario -----------
 def horizontal_boxplot(df, value_col, group_col, title, xlabel, outfile=None):
+    # order = [5,15,50,100,150,200]
     order = (df.groupby(group_col)[value_col]
                .median()
                .sort_values(ascending=True)
                .index.tolist())
+    # order[0], order[1] = order[1], order[0]  # swap to have largest first
     data = [df.loc[df[group_col]==g, value_col].values for g in order]
 
     fig, ax = plt.subplots(figsize=(8, 6))
     ax.boxplot(
         data, vert=False, labels=order, patch_artist=True,showfliers=False,
         medianprops={"color":"black", "linewidth":2},
-        boxprops={"facecolor":"gray", "alpha":0.6, "edgecolor":"black", "linewidth":2},
+        boxprops={"facecolor":"#7a0b01", "alpha":0.7, "edgecolor":"black", "linewidth":2},
         whiskerprops={"color":"black", "linewidth":1.2},
         capprops={"color":"black", "linewidth":1.2},
         
