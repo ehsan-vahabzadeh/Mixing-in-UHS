@@ -36,7 +36,7 @@ for i, col in enumerate(columns, 1):
         counts, _ = np.histogram(df[col], bins=bins)
         plt.bar(range(len(counts)), counts,color = Color,alpha = 0.7, edgecolor='black', width = 1)
         plt.xticks(range(len(counts)), labels)
-        
+        plt.tick_params(axis = 'x', rotation=45)        
         # sns.histplot(df_clean[col], color=Color, edgecolor='black', alpha=0.5, bins=[0,10,50,100,500,1000,1500])
         # plt.subplot(2, 2, i).set_xscale('log')
     else:
