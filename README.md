@@ -5,12 +5,12 @@
 This repository contains the simulation code, post-processing tools, surrogate modelling, and optimisation framework for the following paper:
 
 > Vahabzadeh E., Nazari F., Pourakaberian A., Niasar V.
-> **Techno-Economic Optimisation of Underground Hydrogen Storage in UK Depleted Gas Reservoirs** (Submitted)
+> **Techno-Economic Optimisation of Underground Hydrogen Storage in UK Depleted Gas Reservoirs** (Under Review)
 
 The workflow consists of three main stages:
 
-1. **Reservoir-Scale Simulation** — Two-phase, multi-component (2PNC) flow simulations of hydrogen injection/extraction cycles in porous media using DuMuX, with different cushion gases (CH₄, CO₂, N₂, H₂).
-2. **Surrogate Modelling** — An artificial neural network (ANN) trained on dimensionless numbers (Péclet, gravity number) and operational parameters to rapidly predict hydrogen recovery factor.
+1. **Reservoir-Scale Simulation** — Single-phase, multi-component (1PNC) flow simulations of hydrogen injection/extraction cycles in porous media using DuMuX, with different cushion gases (CH₄, CO₂, N₂, H₂).
+2. **Surrogate Modelling** — An artificial neural network (ANN) trained on reservoir rock properties and operational parameters to rapidly predict hydrogen recovery factor.
 3. **Techno-Economic Optimisation** — A mixed-integer linear programme (MILP) solved with Gurobi to select cost-optimal storage portfolios across UK depleted gas reservoirs subject to national energy delivery targets.
 
 ## Repository Structure
@@ -85,7 +85,7 @@ pip install numpy pandas matplotlib scipy scikit-learn torch optuna joblib CoolP
 
 Each subdirectory under `appl/` contains a self-contained DuMuX application for a specific cushion gas type. The simulations model:
 
-- **Physics:** Two-phase (gas–water), multi-component (H₂, CH₄, CO₂, N₂, H₂O) flow with compositional dispersion (Scheidegger or full-tensor), molecular diffusion (Fick's law with Millington-Quirk effective diffusivity), and Brooks-Corey capillary pressure.
+- **Physics:** Single-phase (gas), multi-component (H₂, CH₄, CO₂, N₂) flow with compositional dispersion (Scheidegger or full-tensor), molecular diffusion (Fick's law with Millington-Quirk effective diffusivity).
 - **Geometry:** 2D axisymmetric (radial) domain with rotational extrusion, discretised with box (vertex-centred) finite volumes on a structured YaspGrid.
 - **Operations:** Configurable multi-cycle injection–extraction schedules with development (cushion gas) and operational periods, well flow rates, and cycle durations.
 
