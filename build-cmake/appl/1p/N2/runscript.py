@@ -1,1 +1,0 @@
-/home/n71743ev/DUMUX/dumux/Mixing-in-UHS/appl/1p/N2/runscript.py
