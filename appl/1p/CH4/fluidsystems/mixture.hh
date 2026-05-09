@@ -909,11 +909,11 @@ public:
 
                 case CH4Idx:
                     switch (compJIdx) {
-                        case CO2Idx:    return BinaryCoeff::CH4_CO2::HighPgasDiffCoeff(temperature, pressure, mole_frac_CH4, mole_frac_CO2, Policy::useIdealGasDensity());
+                        case CO2Idx:    return BinaryCoeff::CH4_CO2::HighPgasDiffCoeff(temperature, pressure, mole_frac_CH4, mole_frac_CO2);
                         // case CO2Idx:    return BinaryCoeff::CH4_CO2::gasDiffCoeff(temperature, pressure);
                         case H2Idx:    return BinaryCoeff::H2_CH4::HighPgasDiffCoeff(temperature, pressure, mole_frac_H2, mole_frac_CH4, Policy::useIdealGasDensity());
                         // case H2Idx:    return BinaryCoeff::H2_CH4::gasDiffCoeff(temperature, pressure);
-                        case N2Idx:     return BinaryCoeff::CH4_N2::HighPgasDiffCoeff(temperature, pressure, mole_frac_CH4, mole_frac_N2, Policy::useIdealGasDensity());
+                        case N2Idx:     return BinaryCoeff::CH4_N2::HighPgasDiffCoeff(temperature, pressure, mole_frac_CH4, mole_frac_N2);
                     }
 
                 case H2Idx:

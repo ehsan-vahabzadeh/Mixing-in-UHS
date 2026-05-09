@@ -3,7 +3,7 @@
 ################################
 
 # Name of the module
-Module: dumux-Mixing
+Module: Mixing-in-UHS
 Version: 0.1
 Maintainer: 
 # Required build dependencies

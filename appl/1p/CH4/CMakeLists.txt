@@ -10,9 +10,6 @@ dumux_add_test(NAME appl_1pnc_tpfa_CH4
               CMD_ARGS params.input)
 # set(CMAKE_BUILD_TYPE Debug)
 
-
-
-
 dumux_add_test(NAME appl_1pnc_box_CH4
               SOURCES main.cc
               COMPILE_DEFINITIONS TYPETAG=OnePTwoCTestBox ENABLECACHING=1 SCHEIDEGGER=0

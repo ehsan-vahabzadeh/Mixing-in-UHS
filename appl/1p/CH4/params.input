@@ -4,7 +4,7 @@ TEnd = 55               # [d] simulation end time
 [Grid]
 LowerLeft = 0.2 0 
 UpperRight = 1000.2 60        # [m] grid dimension
-Cells = 333 24               # [-] number of cells in dimension
+Cells = 100 20               # [-] number of cells in dimension
 
 [Problem]
 Name = CH4 # name passed to the output routines
