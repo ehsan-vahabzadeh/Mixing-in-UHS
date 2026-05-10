@@ -2368,3 +2368,935 @@ events:
         
       exitCode: 2
 ...
+
+---
+events:
+  -
+    kind: "try_compile-v1"
+    backtrace:
+      - "/usr/share/cmake-3.28/Modules/FindMPI.cmake:1278 (try_compile)"
+      - "/usr/share/cmake-3.28/Modules/FindMPI.cmake:1322 (_MPI_try_staged_settings)"
+      - "/usr/share/cmake-3.28/Modules/FindMPI.cmake:1645 (_MPI_check_lang_works)"
+      - "/usr/share/cmake-3.28/Modules/CMakeFindDependencyMacro.cmake:76 (find_package)"
+      - "/home/n71743ev/DUMUX/dumux/dumux/build-cmake/dumux-config.cmake:70 (find_dependency)"
+      - "/home/n71743ev/DUMUX/dumux/dune-common/cmake/modules/DuneModuleDependencies.cmake:257 (find_package)"
+      - "/home/n71743ev/DUMUX/dumux/dune-common/cmake/modules/DuneProject.cmake:114 (find_dune_package)"
+      - "CMakeLists.txt:37 (dune_project)"
+    description: "The MPI test test_mpi for C in mode normal"
+    directories:
+      source: "/home/n71743ev/DUMUX/dumux/Mixing-in-UHS/build-cmake/CMakeFiles/CMakeScratch/TryCompile-i1JcjR"
+      binary: "/home/n71743ev/DUMUX/dumux/Mixing-in-UHS/build-cmake/CMakeFiles/CMakeScratch/TryCompile-i1JcjR"
+    cmakeVariables:
+      CMAKE_C_FLAGS: ""
+      CMAKE_C_FLAGS_DEBUG: "-g"
+      CMAKE_EXE_LINKER_FLAGS: ""
+      CMAKE_MODULE_PATH: "/home/n71743ev/DUMUX/dumux/Mixing-in-UHS/cmake/modules;/home/n71743ev/DUMUX/dumux/dune-common/cmake/modules"
+      CMAKE_POSITION_INDEPENDENT_CODE: "ON"
+    buildResult:
+      variable: "MPI_RESULT_C_test_mpi_normal"
+      cached: true
+      stdout: |
+        Change Dir: '/home/n71743ev/DUMUX/dumux/Mixing-in-UHS/build-cmake/CMakeFiles/CMakeScratch/TryCompile-i1JcjR'
+        
+        Run Build Command(s): /usr/bin/cmake -E env VERBOSE=1 /usr/bin/gmake -f Makefile cmTC_fdfff/fast
+        gmake[2]: Entering directory '/home/n71743ev/DUMUX/dumux/Mixing-in-UHS/build-cmake/CMakeFiles/CMakeScratch/TryCompile-i1JcjR'
+        /usr/bin/gmake  -f CMakeFiles/cmTC_fdfff.dir/build.make CMakeFiles/cmTC_fdfff.dir/build
+        gmake[3]: Entering directory '/home/n71743ev/DUMUX/dumux/Mixing-in-UHS/build-cmake/CMakeFiles/CMakeScratch/TryCompile-i1JcjR'
+        Building C object CMakeFiles/cmTC_fdfff.dir/test_mpi.c.o
+        /usr/bin/cc  -isystem /home/n71743ev/opt/openmpi-5/include -fPIE -o CMakeFiles/cmTC_fdfff.dir/test_mpi.c.o -c /home/n71743ev/DUMUX/dumux/Mixing-in-UHS/build-cmake/CMakeFiles/CMakeScratch/TryCompile-i1JcjR/test_mpi.c
+        Linking C executable cmTC_fdfff
+        /usr/bin/cmake -E cmake_link_script CMakeFiles/cmTC_fdfff.dir/link.txt --verbose=1
+        /usr/bin/cc -Wl,-rpath -Wl,/home/n71743ev/opt/openmpi-5/lib -Wl,--enable-new-dtags CMakeFiles/cmTC_fdfff.dir/test_mpi.c.o -o cmTC_fdfff  -Wl,-rpath,/home/n71743ev/opt/openmpi-5/lib /home/n71743ev/opt/openmpi-5/lib/libmpi.so 
+        gmake[3]: Leaving directory '/home/n71743ev/DUMUX/dumux/Mixing-in-UHS/build-cmake/CMakeFiles/CMakeScratch/TryCompile-i1JcjR'
+        gmake[2]: Leaving directory '/home/n71743ev/DUMUX/dumux/Mixing-in-UHS/build-cmake/CMakeFiles/CMakeScratch/TryCompile-i1JcjR'
+        
+      exitCode: 0
+  -
+    kind: "try_compile-v1"
+    backtrace:
+      - "/usr/share/cmake-3.28/Modules/FindMPI.cmake:1278 (try_compile)"
+      - "/usr/share/cmake-3.28/Modules/FindMPI.cmake:1322 (_MPI_try_staged_settings)"
+      - "/usr/share/cmake-3.28/Modules/FindMPI.cmake:1645 (_MPI_check_lang_works)"
+      - "/usr/share/cmake-3.28/Modules/CMakeFindDependencyMacro.cmake:76 (find_package)"
+      - "/home/n71743ev/DUMUX/dumux/dumux/build-cmake/dumux-config.cmake:70 (find_dependency)"
+      - "/home/n71743ev/DUMUX/dumux/dune-common/cmake/modules/DuneModuleDependencies.cmake:257 (find_package)"
+      - "/home/n71743ev/DUMUX/dumux/dune-common/cmake/modules/DuneProject.cmake:114 (find_dune_package)"
+      - "CMakeLists.txt:37 (dune_project)"
+    description: "The MPI test test_mpi for CXX in mode normal"
+    directories:
+      source: "/home/n71743ev/DUMUX/dumux/Mixing-in-UHS/build-cmake/CMakeFiles/CMakeScratch/TryCompile-wISp7j"
+      binary: "/home/n71743ev/DUMUX/dumux/Mixing-in-UHS/build-cmake/CMakeFiles/CMakeScratch/TryCompile-wISp7j"
+    cmakeVariables:
+      CMAKE_CXX_FLAGS: ""
+      CMAKE_CXX_FLAGS_DEBUG: "-O0 -g -ggdb -Wall -Wextra -Wno-unused-parameter -Wno-sign-compare -DDUNE_CHECK_BOUNDS=ON"
+      CMAKE_EXE_LINKER_FLAGS: ""
+      CMAKE_MODULE_PATH: "/home/n71743ev/DUMUX/dumux/Mixing-in-UHS/cmake/modules;/home/n71743ev/DUMUX/dumux/dune-common/cmake/modules"
+      CMAKE_POSITION_INDEPENDENT_CODE: "ON"
+    buildResult:
+      variable: "MPI_RESULT_CXX_test_mpi_normal"
+      cached: true
+      stdout: |
+        Change Dir: '/home/n71743ev/DUMUX/dumux/Mixing-in-UHS/build-cmake/CMakeFiles/CMakeScratch/TryCompile-wISp7j'
+        
+        Run Build Command(s): /usr/bin/cmake -E env VERBOSE=1 /usr/bin/gmake -f Makefile cmTC_aa5e8/fast
+        gmake[2]: Entering directory '/home/n71743ev/DUMUX/dumux/Mixing-in-UHS/build-cmake/CMakeFiles/CMakeScratch/TryCompile-wISp7j'
+        /usr/bin/gmake  -f CMakeFiles/cmTC_aa5e8.dir/build.make CMakeFiles/cmTC_aa5e8.dir/build
+        gmake[3]: Entering directory '/home/n71743ev/DUMUX/dumux/Mixing-in-UHS/build-cmake/CMakeFiles/CMakeScratch/TryCompile-wISp7j'
+        Building CXX object CMakeFiles/cmTC_aa5e8.dir/test_mpi.cpp.o
+        /usr/bin/c++  -isystem /home/n71743ev/opt/openmpi-5/include -fPIE -o CMakeFiles/cmTC_aa5e8.dir/test_mpi.cpp.o -c /home/n71743ev/DUMUX/dumux/Mixing-in-UHS/build-cmake/CMakeFiles/CMakeScratch/TryCompile-wISp7j/test_mpi.cpp
+        Linking CXX executable cmTC_aa5e8
+        /usr/bin/cmake -E cmake_link_script CMakeFiles/cmTC_aa5e8.dir/link.txt --verbose=1
+        /usr/bin/c++ -Wl,-rpath -Wl,/home/n71743ev/opt/openmpi-5/lib -Wl,--enable-new-dtags CMakeFiles/cmTC_aa5e8.dir/test_mpi.cpp.o -o cmTC_aa5e8  -Wl,-rpath,/home/n71743ev/opt/openmpi-5/lib /home/n71743ev/opt/openmpi-5/lib/libmpi.so 
+        gmake[3]: Leaving directory '/home/n71743ev/DUMUX/dumux/Mixing-in-UHS/build-cmake/CMakeFiles/CMakeScratch/TryCompile-wISp7j'
+        gmake[2]: Leaving directory '/home/n71743ev/DUMUX/dumux/Mixing-in-UHS/build-cmake/CMakeFiles/CMakeScratch/TryCompile-wISp7j'
+        
+      exitCode: 0
+  -
+    kind: "try_compile-v1"
+    backtrace:
+      - "/usr/share/cmake-3.28/Modules/FindMPI.cmake:1278 (try_compile)"
+      - "/usr/share/cmake-3.28/Modules/FindMPI.cmake:1672 (_MPI_try_staged_settings)"
+      - "/usr/share/cmake-3.28/Modules/CMakeFindDependencyMacro.cmake:76 (find_package)"
+      - "/home/n71743ev/DUMUX/dumux/dumux/build-cmake/dumux-config.cmake:70 (find_dependency)"
+      - "/home/n71743ev/DUMUX/dumux/dune-common/cmake/modules/DuneModuleDependencies.cmake:257 (find_package)"
+      - "/home/n71743ev/DUMUX/dumux/dune-common/cmake/modules/DuneProject.cmake:114 (find_dune_package)"
+      - "CMakeLists.txt:37 (dune_project)"
+    description: "The MPI test test_mpi for CXX in mode MPICXX"
+    directories:
+      source: "/home/n71743ev/DUMUX/dumux/Mixing-in-UHS/build-cmake/CMakeFiles/CMakeScratch/TryCompile-35Wnhb"
+      binary: "/home/n71743ev/DUMUX/dumux/Mixing-in-UHS/build-cmake/CMakeFiles/CMakeScratch/TryCompile-35Wnhb"
+    cmakeVariables:
+      CMAKE_CXX_FLAGS: ""
+      CMAKE_CXX_FLAGS_DEBUG: "-O0 -g -ggdb -Wall -Wextra -Wno-unused-parameter -Wno-sign-compare -DDUNE_CHECK_BOUNDS=ON"
+      CMAKE_EXE_LINKER_FLAGS: ""
+      CMAKE_MODULE_PATH: "/home/n71743ev/DUMUX/dumux/Mixing-in-UHS/cmake/modules;/home/n71743ev/DUMUX/dumux/dune-common/cmake/modules"
+      CMAKE_POSITION_INDEPENDENT_CODE: "ON"
+    buildResult:
+      variable: "MPI_RESULT_CXX_test_mpi_MPICXX"
+      cached: true
+      stdout: |
+        Change Dir: '/home/n71743ev/DUMUX/dumux/Mixing-in-UHS/build-cmake/CMakeFiles/CMakeScratch/TryCompile-35Wnhb'
+        
+        Run Build Command(s): /usr/bin/cmake -E env VERBOSE=1 /usr/bin/gmake -f Makefile cmTC_a676a/fast
+        gmake[2]: Entering directory '/home/n71743ev/DUMUX/dumux/Mixing-in-UHS/build-cmake/CMakeFiles/CMakeScratch/TryCompile-35Wnhb'
+        /usr/bin/gmake  -f CMakeFiles/cmTC_a676a.dir/build.make CMakeFiles/cmTC_a676a.dir/build
+        gmake[3]: Entering directory '/home/n71743ev/DUMUX/dumux/Mixing-in-UHS/build-cmake/CMakeFiles/CMakeScratch/TryCompile-35Wnhb'
+        Building CXX object CMakeFiles/cmTC_a676a.dir/test_mpi.cpp.o
+        /usr/bin/c++  -isystem /home/n71743ev/opt/openmpi-5/include -fPIE -o CMakeFiles/cmTC_a676a.dir/test_mpi.cpp.o -c /home/n71743ev/DUMUX/dumux/Mixing-in-UHS/build-cmake/CMakeFiles/CMakeScratch/TryCompile-35Wnhb/test_mpi.cpp
+        Linking CXX executable cmTC_a676a
+        /usr/bin/cmake -E cmake_link_script CMakeFiles/cmTC_a676a.dir/link.txt --verbose=1
+        /usr/bin/c++ -Wl,-rpath -Wl,/home/n71743ev/opt/openmpi-5/lib -Wl,--enable-new-dtags CMakeFiles/cmTC_a676a.dir/test_mpi.cpp.o -o cmTC_a676a  -Wl,-rpath,/home/n71743ev/opt/openmpi-5/lib /home/n71743ev/opt/openmpi-5/lib/libmpi.so 
+        gmake[3]: Leaving directory '/home/n71743ev/DUMUX/dumux/Mixing-in-UHS/build-cmake/CMakeFiles/CMakeScratch/TryCompile-35Wnhb'
+        gmake[2]: Leaving directory '/home/n71743ev/DUMUX/dumux/Mixing-in-UHS/build-cmake/CMakeFiles/CMakeScratch/TryCompile-35Wnhb'
+        
+      exitCode: 0
+  -
+    kind: "try_compile-v1"
+    backtrace:
+      - "/home/n71743ev/DUMUX/dumux/dune-common/cmake/modules/CheckCXXFeatures.cmake:36 (try_compile)"
+      - "/home/n71743ev/DUMUX/dumux/dune-common/cmake/modules/CheckCXXFeatures.cmake:85 (dune_check_cxx_source_compiles)"
+      - "/home/n71743ev/DUMUX/dumux/dune-common/cmake/modules/DuneProject.cmake:163 (include)"
+      - "CMakeLists.txt:37 (dune_project)"
+    directories:
+      source: "/home/n71743ev/DUMUX/dumux/Mixing-in-UHS/build-cmake/CMakeFiles/CMakeTmp"
+      binary: "/home/n71743ev/DUMUX/dumux/Mixing-in-UHS/build-cmake/CMakeFiles/CMakeTmp"
+    cmakeVariables:
+      CMAKE_CXX_FLAGS: ""
+      CMAKE_CXX_FLAGS_DEBUG: "-O0 -g -ggdb -Wall -Wextra -Wno-unused-parameter -Wno-sign-compare -DDUNE_CHECK_BOUNDS=ON"
+      CMAKE_EXE_LINKER_FLAGS: ""
+      CMAKE_MODULE_PATH: "/home/n71743ev/DUMUX/dumux/Mixing-in-UHS/cmake/modules;/home/n71743ev/DUMUX/dumux/dune-common/cmake/modules"
+      CMAKE_POSITION_INDEPENDENT_CODE: "ON"
+    buildResult:
+      variable: "DUNE_HAVE_CXX_EXPERIMENTAL_IS_DETECTED"
+      cached: true
+      stdout: |
+        Change Dir: '/home/n71743ev/DUMUX/dumux/Mixing-in-UHS/build-cmake/CMakeFiles/CMakeTmp'
+        
+        Run Build Command(s): /usr/bin/cmake -E env VERBOSE=1 /usr/bin/gmake -f Makefile cmTC_4351c/fast
+        gmake[2]: Entering directory '/home/n71743ev/DUMUX/dumux/Mixing-in-UHS/build-cmake/CMakeFiles/CMakeTmp'
+        /usr/bin/gmake  -f CMakeFiles/cmTC_4351c.dir/build.make CMakeFiles/cmTC_4351c.dir/build
+        gmake[3]: Entering directory '/home/n71743ev/DUMUX/dumux/Mixing-in-UHS/build-cmake/CMakeFiles/CMakeTmp'
+        Building CXX object CMakeFiles/cmTC_4351c.dir/src_DUNE_HAVE_CXX_EXPERIMENTAL_IS_DETECTED.cxx.o
+        /usr/bin/c++   -std=gnu++17 -fPIE -o CMakeFiles/cmTC_4351c.dir/src_DUNE_HAVE_CXX_EXPERIMENTAL_IS_DETECTED.cxx.o -c /home/n71743ev/DUMUX/dumux/Mixing-in-UHS/build-cmake/CMakeFiles/CMakeTmp/src_DUNE_HAVE_CXX_EXPERIMENTAL_IS_DETECTED.cxx
+        Linking CXX executable cmTC_4351c
+        /usr/bin/cmake -E cmake_link_script CMakeFiles/cmTC_4351c.dir/link.txt --verbose=1
+        /usr/bin/c++ CMakeFiles/cmTC_4351c.dir/src_DUNE_HAVE_CXX_EXPERIMENTAL_IS_DETECTED.cxx.o -o cmTC_4351c 
+        gmake[3]: Leaving directory '/home/n71743ev/DUMUX/dumux/Mixing-in-UHS/build-cmake/CMakeFiles/CMakeTmp'
+        gmake[2]: Leaving directory '/home/n71743ev/DUMUX/dumux/Mixing-in-UHS/build-cmake/CMakeFiles/CMakeTmp'
+        
+      exitCode: 0
+  -
+    kind: "try_compile-v1"
+    backtrace:
+      - "/home/n71743ev/DUMUX/dumux/dune-common/cmake/modules/CheckCXXFeatures.cmake:36 (try_compile)"
+      - "/home/n71743ev/DUMUX/dumux/dune-common/cmake/modules/CheckCXXFeatures.cmake:92 (dune_check_cxx_source_compiles)"
+      - "/home/n71743ev/DUMUX/dumux/dune-common/cmake/modules/DuneProject.cmake:163 (include)"
+      - "CMakeLists.txt:37 (dune_project)"
+    directories:
+      source: "/home/n71743ev/DUMUX/dumux/Mixing-in-UHS/build-cmake/CMakeFiles/CMakeTmp"
+      binary: "/home/n71743ev/DUMUX/dumux/Mixing-in-UHS/build-cmake/CMakeFiles/CMakeTmp"
+    cmakeVariables:
+      CMAKE_CXX_FLAGS: ""
+      CMAKE_CXX_FLAGS_DEBUG: "-O0 -g -ggdb -Wall -Wextra -Wno-unused-parameter -Wno-sign-compare -DDUNE_CHECK_BOUNDS=ON"
+      CMAKE_EXE_LINKER_FLAGS: ""
+      CMAKE_MODULE_PATH: "/home/n71743ev/DUMUX/dumux/Mixing-in-UHS/cmake/modules;/home/n71743ev/DUMUX/dumux/dune-common/cmake/modules"
+      CMAKE_POSITION_INDEPENDENT_CODE: "ON"
+    buildResult:
+      variable: "DUNE_HAVE_CXX_UNEVALUATED_CONTEXT_LAMBDA"
+      cached: true
+      stdout: |
+        Change Dir: '/home/n71743ev/DUMUX/dumux/Mixing-in-UHS/build-cmake/CMakeFiles/CMakeTmp'
+        
+        Run Build Command(s): /usr/bin/cmake -E env VERBOSE=1 /usr/bin/gmake -f Makefile cmTC_b6a50/fast
+        gmake[2]: Entering directory '/home/n71743ev/DUMUX/dumux/Mixing-in-UHS/build-cmake/CMakeFiles/CMakeTmp'
+        /usr/bin/gmake  -f CMakeFiles/cmTC_b6a50.dir/build.make CMakeFiles/cmTC_b6a50.dir/build
+        gmake[3]: Entering directory '/home/n71743ev/DUMUX/dumux/Mixing-in-UHS/build-cmake/CMakeFiles/CMakeTmp'
+        Building CXX object CMakeFiles/cmTC_b6a50.dir/src_DUNE_HAVE_CXX_UNEVALUATED_CONTEXT_LAMBDA.cxx.o
+        /usr/bin/c++   -std=gnu++17 -fPIE -o CMakeFiles/cmTC_b6a50.dir/src_DUNE_HAVE_CXX_UNEVALUATED_CONTEXT_LAMBDA.cxx.o -c /home/n71743ev/DUMUX/dumux/Mixing-in-UHS/build-cmake/CMakeFiles/CMakeTmp/src_DUNE_HAVE_CXX_UNEVALUATED_CONTEXT_LAMBDA.cxx
+        /home/n71743ev/DUMUX/dumux/Mixing-in-UHS/build-cmake/CMakeFiles/CMakeTmp/src_DUNE_HAVE_CXX_UNEVALUATED_CONTEXT_LAMBDA.cxx:1:20: error: lambda-expression in unevaluated context only available with ‘-std=c++20’ or ‘-std=gnu++20’
+            1 | using F = decltype([](){}); int main() {return 0;}
+              |                    ^
+        gmake[3]: *** [CMakeFiles/cmTC_b6a50.dir/build.make:78: CMakeFiles/cmTC_b6a50.dir/src_DUNE_HAVE_CXX_UNEVALUATED_CONTEXT_LAMBDA.cxx.o] Error 1
+        gmake[3]: Leaving directory '/home/n71743ev/DUMUX/dumux/Mixing-in-UHS/build-cmake/CMakeFiles/CMakeTmp'
+        gmake[2]: *** [Makefile:127: cmTC_b6a50/fast] Error 2
+        gmake[2]: Leaving directory '/home/n71743ev/DUMUX/dumux/Mixing-in-UHS/build-cmake/CMakeFiles/CMakeTmp'
+        
+      exitCode: 2
+  -
+    kind: "try_compile-v1"
+    backtrace:
+      - "/home/n71743ev/DUMUX/dumux/dune-common/cmake/modules/CheckCXXFeatures.cmake:36 (try_compile)"
+      - "/home/n71743ev/DUMUX/dumux/dune-common/cmake/modules/CheckCXXFeatures.cmake:95 (dune_check_cxx_source_compiles)"
+      - "/home/n71743ev/DUMUX/dumux/dune-common/cmake/modules/DuneProject.cmake:163 (include)"
+      - "CMakeLists.txt:37 (dune_project)"
+    directories:
+      source: "/home/n71743ev/DUMUX/dumux/Mixing-in-UHS/build-cmake/CMakeFiles/CMakeTmp"
+      binary: "/home/n71743ev/DUMUX/dumux/Mixing-in-UHS/build-cmake/CMakeFiles/CMakeTmp"
+    cmakeVariables:
+      CMAKE_CXX_FLAGS: ""
+      CMAKE_CXX_FLAGS_DEBUG: "-O0 -g -ggdb -Wall -Wextra -Wno-unused-parameter -Wno-sign-compare -DDUNE_CHECK_BOUNDS=ON"
+      CMAKE_EXE_LINKER_FLAGS: ""
+      CMAKE_MODULE_PATH: "/home/n71743ev/DUMUX/dumux/Mixing-in-UHS/cmake/modules;/home/n71743ev/DUMUX/dumux/dune-common/cmake/modules"
+      CMAKE_POSITION_INDEPENDENT_CODE: "ON"
+    buildResult:
+      variable: "DUNE_HAVE_CXX_STD_IDENTITY"
+      cached: true
+      stdout: |
+        Change Dir: '/home/n71743ev/DUMUX/dumux/Mixing-in-UHS/build-cmake/CMakeFiles/CMakeTmp'
+        
+        Run Build Command(s): /usr/bin/cmake -E env VERBOSE=1 /usr/bin/gmake -f Makefile cmTC_77176/fast
+        gmake[2]: Entering directory '/home/n71743ev/DUMUX/dumux/Mixing-in-UHS/build-cmake/CMakeFiles/CMakeTmp'
+        /usr/bin/gmake  -f CMakeFiles/cmTC_77176.dir/build.make CMakeFiles/cmTC_77176.dir/build
+        gmake[3]: Entering directory '/home/n71743ev/DUMUX/dumux/Mixing-in-UHS/build-cmake/CMakeFiles/CMakeTmp'
+        Building CXX object CMakeFiles/cmTC_77176.dir/src_DUNE_HAVE_CXX_STD_IDENTITY.cxx.o
+        /usr/bin/c++   -std=gnu++17 -fPIE -o CMakeFiles/cmTC_77176.dir/src_DUNE_HAVE_CXX_STD_IDENTITY.cxx.o -c /home/n71743ev/DUMUX/dumux/Mixing-in-UHS/build-cmake/CMakeFiles/CMakeTmp/src_DUNE_HAVE_CXX_STD_IDENTITY.cxx
+        /home/n71743ev/DUMUX/dumux/Mixing-in-UHS/build-cmake/CMakeFiles/CMakeTmp/src_DUNE_HAVE_CXX_STD_IDENTITY.cxx: In function ‘int main()’:
+        /home/n71743ev/DUMUX/dumux/Mixing-in-UHS/build-cmake/CMakeFiles/CMakeTmp/src_DUNE_HAVE_CXX_STD_IDENTITY.cxx:3:21: error: ‘identity’ is not a member of ‘std’
+            3 |   int main() { std::identity{}; }
+              |                     ^~~~~~~~
+        gmake[3]: *** [CMakeFiles/cmTC_77176.dir/build.make:78: CMakeFiles/cmTC_77176.dir/src_DUNE_HAVE_CXX_STD_IDENTITY.cxx.o] Error 1
+        gmake[3]: Leaving directory '/home/n71743ev/DUMUX/dumux/Mixing-in-UHS/build-cmake/CMakeFiles/CMakeTmp'
+        gmake[2]: *** [Makefile:127: cmTC_77176/fast] Error 2
+        gmake[2]: Leaving directory '/home/n71743ev/DUMUX/dumux/Mixing-in-UHS/build-cmake/CMakeFiles/CMakeTmp'
+        
+      exitCode: 2
+...
+
+---
+events:
+  -
+    kind: "try_compile-v1"
+    backtrace:
+      - "/usr/share/cmake-3.28/Modules/FindMPI.cmake:1278 (try_compile)"
+      - "/usr/share/cmake-3.28/Modules/FindMPI.cmake:1322 (_MPI_try_staged_settings)"
+      - "/usr/share/cmake-3.28/Modules/FindMPI.cmake:1645 (_MPI_check_lang_works)"
+      - "/usr/share/cmake-3.28/Modules/CMakeFindDependencyMacro.cmake:76 (find_package)"
+      - "/home/n71743ev/DUMUX/dumux/dumux/build-cmake/dumux-config.cmake:70 (find_dependency)"
+      - "/home/n71743ev/DUMUX/dumux/dune-common/cmake/modules/DuneModuleDependencies.cmake:257 (find_package)"
+      - "/home/n71743ev/DUMUX/dumux/dune-common/cmake/modules/DuneProject.cmake:114 (find_dune_package)"
+      - "CMakeLists.txt:37 (dune_project)"
+    description: "The MPI test test_mpi for C in mode normal"
+    directories:
+      source: "/home/n71743ev/DUMUX/dumux/Mixing-in-UHS/build-cmake/CMakeFiles/CMakeScratch/TryCompile-3Zrutw"
+      binary: "/home/n71743ev/DUMUX/dumux/Mixing-in-UHS/build-cmake/CMakeFiles/CMakeScratch/TryCompile-3Zrutw"
+    cmakeVariables:
+      CMAKE_C_FLAGS: ""
+      CMAKE_C_FLAGS_DEBUG: "-g"
+      CMAKE_EXE_LINKER_FLAGS: ""
+      CMAKE_MODULE_PATH: "/home/n71743ev/DUMUX/dumux/Mixing-in-UHS/cmake/modules;/home/n71743ev/DUMUX/dumux/dune-common/cmake/modules"
+      CMAKE_POSITION_INDEPENDENT_CODE: "ON"
+    buildResult:
+      variable: "MPI_RESULT_C_test_mpi_normal"
+      cached: true
+      stdout: |
+        Change Dir: '/home/n71743ev/DUMUX/dumux/Mixing-in-UHS/build-cmake/CMakeFiles/CMakeScratch/TryCompile-3Zrutw'
+        
+        Run Build Command(s): /usr/bin/cmake -E env VERBOSE=1 /usr/bin/gmake -f Makefile cmTC_5d65c/fast
+        gmake[2]: Entering directory '/home/n71743ev/DUMUX/dumux/Mixing-in-UHS/build-cmake/CMakeFiles/CMakeScratch/TryCompile-3Zrutw'
+        /usr/bin/gmake  -f CMakeFiles/cmTC_5d65c.dir/build.make CMakeFiles/cmTC_5d65c.dir/build
+        gmake[3]: Entering directory '/home/n71743ev/DUMUX/dumux/Mixing-in-UHS/build-cmake/CMakeFiles/CMakeScratch/TryCompile-3Zrutw'
+        Building C object CMakeFiles/cmTC_5d65c.dir/test_mpi.c.o
+        /usr/bin/cc  -isystem /home/n71743ev/opt/openmpi-5/include -fPIE -o CMakeFiles/cmTC_5d65c.dir/test_mpi.c.o -c /home/n71743ev/DUMUX/dumux/Mixing-in-UHS/build-cmake/CMakeFiles/CMakeScratch/TryCompile-3Zrutw/test_mpi.c
+        Linking C executable cmTC_5d65c
+        /usr/bin/cmake -E cmake_link_script CMakeFiles/cmTC_5d65c.dir/link.txt --verbose=1
+        /usr/bin/cc -Wl,-rpath -Wl,/home/n71743ev/opt/openmpi-5/lib -Wl,--enable-new-dtags CMakeFiles/cmTC_5d65c.dir/test_mpi.c.o -o cmTC_5d65c  -Wl,-rpath,/home/n71743ev/opt/openmpi-5/lib /home/n71743ev/opt/openmpi-5/lib/libmpi.so 
+        gmake[3]: Leaving directory '/home/n71743ev/DUMUX/dumux/Mixing-in-UHS/build-cmake/CMakeFiles/CMakeScratch/TryCompile-3Zrutw'
+        gmake[2]: Leaving directory '/home/n71743ev/DUMUX/dumux/Mixing-in-UHS/build-cmake/CMakeFiles/CMakeScratch/TryCompile-3Zrutw'
+        
+      exitCode: 0
+  -
+    kind: "try_compile-v1"
+    backtrace:
+      - "/usr/share/cmake-3.28/Modules/FindMPI.cmake:1278 (try_compile)"
+      - "/usr/share/cmake-3.28/Modules/FindMPI.cmake:1322 (_MPI_try_staged_settings)"
+      - "/usr/share/cmake-3.28/Modules/FindMPI.cmake:1645 (_MPI_check_lang_works)"
+      - "/usr/share/cmake-3.28/Modules/CMakeFindDependencyMacro.cmake:76 (find_package)"
+      - "/home/n71743ev/DUMUX/dumux/dumux/build-cmake/dumux-config.cmake:70 (find_dependency)"
+      - "/home/n71743ev/DUMUX/dumux/dune-common/cmake/modules/DuneModuleDependencies.cmake:257 (find_package)"
+      - "/home/n71743ev/DUMUX/dumux/dune-common/cmake/modules/DuneProject.cmake:114 (find_dune_package)"
+      - "CMakeLists.txt:37 (dune_project)"
+    description: "The MPI test test_mpi for CXX in mode normal"
+    directories:
+      source: "/home/n71743ev/DUMUX/dumux/Mixing-in-UHS/build-cmake/CMakeFiles/CMakeScratch/TryCompile-tIZNir"
+      binary: "/home/n71743ev/DUMUX/dumux/Mixing-in-UHS/build-cmake/CMakeFiles/CMakeScratch/TryCompile-tIZNir"
+    cmakeVariables:
+      CMAKE_CXX_FLAGS: ""
+      CMAKE_CXX_FLAGS_DEBUG: "-O0 -g -ggdb -Wall -Wextra -Wno-unused-parameter -Wno-sign-compare -DDUNE_CHECK_BOUNDS=ON"
+      CMAKE_EXE_LINKER_FLAGS: ""
+      CMAKE_MODULE_PATH: "/home/n71743ev/DUMUX/dumux/Mixing-in-UHS/cmake/modules;/home/n71743ev/DUMUX/dumux/dune-common/cmake/modules"
+      CMAKE_POSITION_INDEPENDENT_CODE: "ON"
+    buildResult:
+      variable: "MPI_RESULT_CXX_test_mpi_normal"
+      cached: true
+      stdout: |
+        Change Dir: '/home/n71743ev/DUMUX/dumux/Mixing-in-UHS/build-cmake/CMakeFiles/CMakeScratch/TryCompile-tIZNir'
+        
+        Run Build Command(s): /usr/bin/cmake -E env VERBOSE=1 /usr/bin/gmake -f Makefile cmTC_206de/fast
+        gmake[2]: Entering directory '/home/n71743ev/DUMUX/dumux/Mixing-in-UHS/build-cmake/CMakeFiles/CMakeScratch/TryCompile-tIZNir'
+        /usr/bin/gmake  -f CMakeFiles/cmTC_206de.dir/build.make CMakeFiles/cmTC_206de.dir/build
+        gmake[3]: Entering directory '/home/n71743ev/DUMUX/dumux/Mixing-in-UHS/build-cmake/CMakeFiles/CMakeScratch/TryCompile-tIZNir'
+        Building CXX object CMakeFiles/cmTC_206de.dir/test_mpi.cpp.o
+        /usr/bin/c++  -isystem /home/n71743ev/opt/openmpi-5/include -fPIE -o CMakeFiles/cmTC_206de.dir/test_mpi.cpp.o -c /home/n71743ev/DUMUX/dumux/Mixing-in-UHS/build-cmake/CMakeFiles/CMakeScratch/TryCompile-tIZNir/test_mpi.cpp
+        Linking CXX executable cmTC_206de
+        /usr/bin/cmake -E cmake_link_script CMakeFiles/cmTC_206de.dir/link.txt --verbose=1
+        /usr/bin/c++ -Wl,-rpath -Wl,/home/n71743ev/opt/openmpi-5/lib -Wl,--enable-new-dtags CMakeFiles/cmTC_206de.dir/test_mpi.cpp.o -o cmTC_206de  -Wl,-rpath,/home/n71743ev/opt/openmpi-5/lib /home/n71743ev/opt/openmpi-5/lib/libmpi.so 
+        gmake[3]: Leaving directory '/home/n71743ev/DUMUX/dumux/Mixing-in-UHS/build-cmake/CMakeFiles/CMakeScratch/TryCompile-tIZNir'
+        gmake[2]: Leaving directory '/home/n71743ev/DUMUX/dumux/Mixing-in-UHS/build-cmake/CMakeFiles/CMakeScratch/TryCompile-tIZNir'
+        
+      exitCode: 0
+  -
+    kind: "try_compile-v1"
+    backtrace:
+      - "/usr/share/cmake-3.28/Modules/FindMPI.cmake:1278 (try_compile)"
+      - "/usr/share/cmake-3.28/Modules/FindMPI.cmake:1672 (_MPI_try_staged_settings)"
+      - "/usr/share/cmake-3.28/Modules/CMakeFindDependencyMacro.cmake:76 (find_package)"
+      - "/home/n71743ev/DUMUX/dumux/dumux/build-cmake/dumux-config.cmake:70 (find_dependency)"
+      - "/home/n71743ev/DUMUX/dumux/dune-common/cmake/modules/DuneModuleDependencies.cmake:257 (find_package)"
+      - "/home/n71743ev/DUMUX/dumux/dune-common/cmake/modules/DuneProject.cmake:114 (find_dune_package)"
+      - "CMakeLists.txt:37 (dune_project)"
+    description: "The MPI test test_mpi for CXX in mode MPICXX"
+    directories:
+      source: "/home/n71743ev/DUMUX/dumux/Mixing-in-UHS/build-cmake/CMakeFiles/CMakeScratch/TryCompile-AeGp4L"
+      binary: "/home/n71743ev/DUMUX/dumux/Mixing-in-UHS/build-cmake/CMakeFiles/CMakeScratch/TryCompile-AeGp4L"
+    cmakeVariables:
+      CMAKE_CXX_FLAGS: ""
+      CMAKE_CXX_FLAGS_DEBUG: "-O0 -g -ggdb -Wall -Wextra -Wno-unused-parameter -Wno-sign-compare -DDUNE_CHECK_BOUNDS=ON"
+      CMAKE_EXE_LINKER_FLAGS: ""
+      CMAKE_MODULE_PATH: "/home/n71743ev/DUMUX/dumux/Mixing-in-UHS/cmake/modules;/home/n71743ev/DUMUX/dumux/dune-common/cmake/modules"
+      CMAKE_POSITION_INDEPENDENT_CODE: "ON"
+    buildResult:
+      variable: "MPI_RESULT_CXX_test_mpi_MPICXX"
+      cached: true
+      stdout: |
+        Change Dir: '/home/n71743ev/DUMUX/dumux/Mixing-in-UHS/build-cmake/CMakeFiles/CMakeScratch/TryCompile-AeGp4L'
+        
+        Run Build Command(s): /usr/bin/cmake -E env VERBOSE=1 /usr/bin/gmake -f Makefile cmTC_180c2/fast
+        gmake[2]: Entering directory '/home/n71743ev/DUMUX/dumux/Mixing-in-UHS/build-cmake/CMakeFiles/CMakeScratch/TryCompile-AeGp4L'
+        /usr/bin/gmake  -f CMakeFiles/cmTC_180c2.dir/build.make CMakeFiles/cmTC_180c2.dir/build
+        gmake[3]: Entering directory '/home/n71743ev/DUMUX/dumux/Mixing-in-UHS/build-cmake/CMakeFiles/CMakeScratch/TryCompile-AeGp4L'
+        Building CXX object CMakeFiles/cmTC_180c2.dir/test_mpi.cpp.o
+        /usr/bin/c++  -isystem /home/n71743ev/opt/openmpi-5/include -fPIE -o CMakeFiles/cmTC_180c2.dir/test_mpi.cpp.o -c /home/n71743ev/DUMUX/dumux/Mixing-in-UHS/build-cmake/CMakeFiles/CMakeScratch/TryCompile-AeGp4L/test_mpi.cpp
+        Linking CXX executable cmTC_180c2
+        /usr/bin/cmake -E cmake_link_script CMakeFiles/cmTC_180c2.dir/link.txt --verbose=1
+        /usr/bin/c++ -Wl,-rpath -Wl,/home/n71743ev/opt/openmpi-5/lib -Wl,--enable-new-dtags CMakeFiles/cmTC_180c2.dir/test_mpi.cpp.o -o cmTC_180c2  -Wl,-rpath,/home/n71743ev/opt/openmpi-5/lib /home/n71743ev/opt/openmpi-5/lib/libmpi.so 
+        gmake[3]: Leaving directory '/home/n71743ev/DUMUX/dumux/Mixing-in-UHS/build-cmake/CMakeFiles/CMakeScratch/TryCompile-AeGp4L'
+        gmake[2]: Leaving directory '/home/n71743ev/DUMUX/dumux/Mixing-in-UHS/build-cmake/CMakeFiles/CMakeScratch/TryCompile-AeGp4L'
+        
+      exitCode: 0
+  -
+    kind: "try_compile-v1"
+    backtrace:
+      - "/home/n71743ev/DUMUX/dumux/dune-common/cmake/modules/CheckCXXFeatures.cmake:36 (try_compile)"
+      - "/home/n71743ev/DUMUX/dumux/dune-common/cmake/modules/CheckCXXFeatures.cmake:85 (dune_check_cxx_source_compiles)"
+      - "/home/n71743ev/DUMUX/dumux/dune-common/cmake/modules/DuneProject.cmake:163 (include)"
+      - "CMakeLists.txt:37 (dune_project)"
+    directories:
+      source: "/home/n71743ev/DUMUX/dumux/Mixing-in-UHS/build-cmake/CMakeFiles/CMakeTmp"
+      binary: "/home/n71743ev/DUMUX/dumux/Mixing-in-UHS/build-cmake/CMakeFiles/CMakeTmp"
+    cmakeVariables:
+      CMAKE_CXX_FLAGS: ""
+      CMAKE_CXX_FLAGS_DEBUG: "-O0 -g -ggdb -Wall -Wextra -Wno-unused-parameter -Wno-sign-compare -DDUNE_CHECK_BOUNDS=ON"
+      CMAKE_EXE_LINKER_FLAGS: ""
+      CMAKE_MODULE_PATH: "/home/n71743ev/DUMUX/dumux/Mixing-in-UHS/cmake/modules;/home/n71743ev/DUMUX/dumux/dune-common/cmake/modules"
+      CMAKE_POSITION_INDEPENDENT_CODE: "ON"
+    buildResult:
+      variable: "DUNE_HAVE_CXX_EXPERIMENTAL_IS_DETECTED"
+      cached: true
+      stdout: |
+        Change Dir: '/home/n71743ev/DUMUX/dumux/Mixing-in-UHS/build-cmake/CMakeFiles/CMakeTmp'
+        
+        Run Build Command(s): /usr/bin/cmake -E env VERBOSE=1 /usr/bin/gmake -f Makefile cmTC_754b7/fast
+        gmake[2]: Entering directory '/home/n71743ev/DUMUX/dumux/Mixing-in-UHS/build-cmake/CMakeFiles/CMakeTmp'
+        /usr/bin/gmake  -f CMakeFiles/cmTC_754b7.dir/build.make CMakeFiles/cmTC_754b7.dir/build
+        gmake[3]: Entering directory '/home/n71743ev/DUMUX/dumux/Mixing-in-UHS/build-cmake/CMakeFiles/CMakeTmp'
+        Building CXX object CMakeFiles/cmTC_754b7.dir/src_DUNE_HAVE_CXX_EXPERIMENTAL_IS_DETECTED.cxx.o
+        /usr/bin/c++   -std=gnu++17 -fPIE -o CMakeFiles/cmTC_754b7.dir/src_DUNE_HAVE_CXX_EXPERIMENTAL_IS_DETECTED.cxx.o -c /home/n71743ev/DUMUX/dumux/Mixing-in-UHS/build-cmake/CMakeFiles/CMakeTmp/src_DUNE_HAVE_CXX_EXPERIMENTAL_IS_DETECTED.cxx
+        Linking CXX executable cmTC_754b7
+        /usr/bin/cmake -E cmake_link_script CMakeFiles/cmTC_754b7.dir/link.txt --verbose=1
+        /usr/bin/c++ CMakeFiles/cmTC_754b7.dir/src_DUNE_HAVE_CXX_EXPERIMENTAL_IS_DETECTED.cxx.o -o cmTC_754b7 
+        gmake[3]: Leaving directory '/home/n71743ev/DUMUX/dumux/Mixing-in-UHS/build-cmake/CMakeFiles/CMakeTmp'
+        gmake[2]: Leaving directory '/home/n71743ev/DUMUX/dumux/Mixing-in-UHS/build-cmake/CMakeFiles/CMakeTmp'
+        
+      exitCode: 0
+  -
+    kind: "try_compile-v1"
+    backtrace:
+      - "/home/n71743ev/DUMUX/dumux/dune-common/cmake/modules/CheckCXXFeatures.cmake:36 (try_compile)"
+      - "/home/n71743ev/DUMUX/dumux/dune-common/cmake/modules/CheckCXXFeatures.cmake:92 (dune_check_cxx_source_compiles)"
+      - "/home/n71743ev/DUMUX/dumux/dune-common/cmake/modules/DuneProject.cmake:163 (include)"
+      - "CMakeLists.txt:37 (dune_project)"
+    directories:
+      source: "/home/n71743ev/DUMUX/dumux/Mixing-in-UHS/build-cmake/CMakeFiles/CMakeTmp"
+      binary: "/home/n71743ev/DUMUX/dumux/Mixing-in-UHS/build-cmake/CMakeFiles/CMakeTmp"
+    cmakeVariables:
+      CMAKE_CXX_FLAGS: ""
+      CMAKE_CXX_FLAGS_DEBUG: "-O0 -g -ggdb -Wall -Wextra -Wno-unused-parameter -Wno-sign-compare -DDUNE_CHECK_BOUNDS=ON"
+      CMAKE_EXE_LINKER_FLAGS: ""
+      CMAKE_MODULE_PATH: "/home/n71743ev/DUMUX/dumux/Mixing-in-UHS/cmake/modules;/home/n71743ev/DUMUX/dumux/dune-common/cmake/modules"
+      CMAKE_POSITION_INDEPENDENT_CODE: "ON"
+    buildResult:
+      variable: "DUNE_HAVE_CXX_UNEVALUATED_CONTEXT_LAMBDA"
+      cached: true
+      stdout: |
+        Change Dir: '/home/n71743ev/DUMUX/dumux/Mixing-in-UHS/build-cmake/CMakeFiles/CMakeTmp'
+        
+        Run Build Command(s): /usr/bin/cmake -E env VERBOSE=1 /usr/bin/gmake -f Makefile cmTC_a912e/fast
+        gmake[2]: Entering directory '/home/n71743ev/DUMUX/dumux/Mixing-in-UHS/build-cmake/CMakeFiles/CMakeTmp'
+        /usr/bin/gmake  -f CMakeFiles/cmTC_a912e.dir/build.make CMakeFiles/cmTC_a912e.dir/build
+        gmake[3]: Entering directory '/home/n71743ev/DUMUX/dumux/Mixing-in-UHS/build-cmake/CMakeFiles/CMakeTmp'
+        Building CXX object CMakeFiles/cmTC_a912e.dir/src_DUNE_HAVE_CXX_UNEVALUATED_CONTEXT_LAMBDA.cxx.o
+        /usr/bin/c++   -std=gnu++17 -fPIE -o CMakeFiles/cmTC_a912e.dir/src_DUNE_HAVE_CXX_UNEVALUATED_CONTEXT_LAMBDA.cxx.o -c /home/n71743ev/DUMUX/dumux/Mixing-in-UHS/build-cmake/CMakeFiles/CMakeTmp/src_DUNE_HAVE_CXX_UNEVALUATED_CONTEXT_LAMBDA.cxx
+        /home/n71743ev/DUMUX/dumux/Mixing-in-UHS/build-cmake/CMakeFiles/CMakeTmp/src_DUNE_HAVE_CXX_UNEVALUATED_CONTEXT_LAMBDA.cxx:1:20: error: lambda-expression in unevaluated context only available with ‘-std=c++20’ or ‘-std=gnu++20’
+            1 | using F = decltype([](){}); int main() {return 0;}
+              |                    ^
+        gmake[3]: *** [CMakeFiles/cmTC_a912e.dir/build.make:78: CMakeFiles/cmTC_a912e.dir/src_DUNE_HAVE_CXX_UNEVALUATED_CONTEXT_LAMBDA.cxx.o] Error 1
+        gmake[3]: Leaving directory '/home/n71743ev/DUMUX/dumux/Mixing-in-UHS/build-cmake/CMakeFiles/CMakeTmp'
+        gmake[2]: *** [Makefile:127: cmTC_a912e/fast] Error 2
+        gmake[2]: Leaving directory '/home/n71743ev/DUMUX/dumux/Mixing-in-UHS/build-cmake/CMakeFiles/CMakeTmp'
+        
+      exitCode: 2
+  -
+    kind: "try_compile-v1"
+    backtrace:
+      - "/home/n71743ev/DUMUX/dumux/dune-common/cmake/modules/CheckCXXFeatures.cmake:36 (try_compile)"
+      - "/home/n71743ev/DUMUX/dumux/dune-common/cmake/modules/CheckCXXFeatures.cmake:95 (dune_check_cxx_source_compiles)"
+      - "/home/n71743ev/DUMUX/dumux/dune-common/cmake/modules/DuneProject.cmake:163 (include)"
+      - "CMakeLists.txt:37 (dune_project)"
+    directories:
+      source: "/home/n71743ev/DUMUX/dumux/Mixing-in-UHS/build-cmake/CMakeFiles/CMakeTmp"
+      binary: "/home/n71743ev/DUMUX/dumux/Mixing-in-UHS/build-cmake/CMakeFiles/CMakeTmp"
+    cmakeVariables:
+      CMAKE_CXX_FLAGS: ""
+      CMAKE_CXX_FLAGS_DEBUG: "-O0 -g -ggdb -Wall -Wextra -Wno-unused-parameter -Wno-sign-compare -DDUNE_CHECK_BOUNDS=ON"
+      CMAKE_EXE_LINKER_FLAGS: ""
+      CMAKE_MODULE_PATH: "/home/n71743ev/DUMUX/dumux/Mixing-in-UHS/cmake/modules;/home/n71743ev/DUMUX/dumux/dune-common/cmake/modules"
+      CMAKE_POSITION_INDEPENDENT_CODE: "ON"
+    buildResult:
+      variable: "DUNE_HAVE_CXX_STD_IDENTITY"
+      cached: true
+      stdout: |
+        Change Dir: '/home/n71743ev/DUMUX/dumux/Mixing-in-UHS/build-cmake/CMakeFiles/CMakeTmp'
+        
+        Run Build Command(s): /usr/bin/cmake -E env VERBOSE=1 /usr/bin/gmake -f Makefile cmTC_92723/fast
+        gmake[2]: Entering directory '/home/n71743ev/DUMUX/dumux/Mixing-in-UHS/build-cmake/CMakeFiles/CMakeTmp'
+        /usr/bin/gmake  -f CMakeFiles/cmTC_92723.dir/build.make CMakeFiles/cmTC_92723.dir/build
+        gmake[3]: Entering directory '/home/n71743ev/DUMUX/dumux/Mixing-in-UHS/build-cmake/CMakeFiles/CMakeTmp'
+        Building CXX object CMakeFiles/cmTC_92723.dir/src_DUNE_HAVE_CXX_STD_IDENTITY.cxx.o
+        /usr/bin/c++   -std=gnu++17 -fPIE -o CMakeFiles/cmTC_92723.dir/src_DUNE_HAVE_CXX_STD_IDENTITY.cxx.o -c /home/n71743ev/DUMUX/dumux/Mixing-in-UHS/build-cmake/CMakeFiles/CMakeTmp/src_DUNE_HAVE_CXX_STD_IDENTITY.cxx
+        /home/n71743ev/DUMUX/dumux/Mixing-in-UHS/build-cmake/CMakeFiles/CMakeTmp/src_DUNE_HAVE_CXX_STD_IDENTITY.cxx: In function ‘int main()’:
+        /home/n71743ev/DUMUX/dumux/Mixing-in-UHS/build-cmake/CMakeFiles/CMakeTmp/src_DUNE_HAVE_CXX_STD_IDENTITY.cxx:3:21: error: ‘identity’ is not a member of ‘std’
+            3 |   int main() { std::identity{}; }
+              |                     ^~~~~~~~
+        gmake[3]: *** [CMakeFiles/cmTC_92723.dir/build.make:78: CMakeFiles/cmTC_92723.dir/src_DUNE_HAVE_CXX_STD_IDENTITY.cxx.o] Error 1
+        gmake[3]: Leaving directory '/home/n71743ev/DUMUX/dumux/Mixing-in-UHS/build-cmake/CMakeFiles/CMakeTmp'
+        gmake[2]: *** [Makefile:127: cmTC_92723/fast] Error 2
+        gmake[2]: Leaving directory '/home/n71743ev/DUMUX/dumux/Mixing-in-UHS/build-cmake/CMakeFiles/CMakeTmp'
+        
+      exitCode: 2
+...
+
+---
+events:
+  -
+    kind: "try_compile-v1"
+    backtrace:
+      - "/usr/share/cmake-3.28/Modules/FindMPI.cmake:1278 (try_compile)"
+      - "/usr/share/cmake-3.28/Modules/FindMPI.cmake:1322 (_MPI_try_staged_settings)"
+      - "/usr/share/cmake-3.28/Modules/FindMPI.cmake:1645 (_MPI_check_lang_works)"
+      - "/usr/share/cmake-3.28/Modules/CMakeFindDependencyMacro.cmake:76 (find_package)"
+      - "/home/n71743ev/DUMUX/dumux/dumux/build-cmake/dumux-config.cmake:70 (find_dependency)"
+      - "/home/n71743ev/DUMUX/dumux/dune-common/cmake/modules/DuneModuleDependencies.cmake:257 (find_package)"
+      - "/home/n71743ev/DUMUX/dumux/dune-common/cmake/modules/DuneProject.cmake:114 (find_dune_package)"
+      - "CMakeLists.txt:37 (dune_project)"
+    description: "The MPI test test_mpi for C in mode normal"
+    directories:
+      source: "/home/n71743ev/DUMUX/dumux/Mixing-in-UHS/build-cmake/CMakeFiles/CMakeScratch/TryCompile-P6MqiX"
+      binary: "/home/n71743ev/DUMUX/dumux/Mixing-in-UHS/build-cmake/CMakeFiles/CMakeScratch/TryCompile-P6MqiX"
+    cmakeVariables:
+      CMAKE_C_FLAGS: ""
+      CMAKE_C_FLAGS_DEBUG: "-g"
+      CMAKE_EXE_LINKER_FLAGS: ""
+      CMAKE_MODULE_PATH: "/home/n71743ev/DUMUX/dumux/Mixing-in-UHS/cmake/modules;/home/n71743ev/DUMUX/dumux/dune-common/cmake/modules"
+      CMAKE_POSITION_INDEPENDENT_CODE: "ON"
+    buildResult:
+      variable: "MPI_RESULT_C_test_mpi_normal"
+      cached: true
+      stdout: |
+        Change Dir: '/home/n71743ev/DUMUX/dumux/Mixing-in-UHS/build-cmake/CMakeFiles/CMakeScratch/TryCompile-P6MqiX'
+        
+        Run Build Command(s): /usr/bin/cmake -E env VERBOSE=1 /usr/bin/gmake -f Makefile cmTC_b9859/fast
+        gmake[2]: Entering directory '/home/n71743ev/DUMUX/dumux/Mixing-in-UHS/build-cmake/CMakeFiles/CMakeScratch/TryCompile-P6MqiX'
+        /usr/bin/gmake  -f CMakeFiles/cmTC_b9859.dir/build.make CMakeFiles/cmTC_b9859.dir/build
+        gmake[3]: Entering directory '/home/n71743ev/DUMUX/dumux/Mixing-in-UHS/build-cmake/CMakeFiles/CMakeScratch/TryCompile-P6MqiX'
+        Building C object CMakeFiles/cmTC_b9859.dir/test_mpi.c.o
+        /usr/bin/cc  -isystem /home/n71743ev/opt/openmpi-5/include -fPIE -o CMakeFiles/cmTC_b9859.dir/test_mpi.c.o -c /home/n71743ev/DUMUX/dumux/Mixing-in-UHS/build-cmake/CMakeFiles/CMakeScratch/TryCompile-P6MqiX/test_mpi.c
+        Linking C executable cmTC_b9859
+        /usr/bin/cmake -E cmake_link_script CMakeFiles/cmTC_b9859.dir/link.txt --verbose=1
+        /usr/bin/cc -Wl,-rpath -Wl,/home/n71743ev/opt/openmpi-5/lib -Wl,--enable-new-dtags CMakeFiles/cmTC_b9859.dir/test_mpi.c.o -o cmTC_b9859  -Wl,-rpath,/home/n71743ev/opt/openmpi-5/lib /home/n71743ev/opt/openmpi-5/lib/libmpi.so 
+        gmake[3]: Leaving directory '/home/n71743ev/DUMUX/dumux/Mixing-in-UHS/build-cmake/CMakeFiles/CMakeScratch/TryCompile-P6MqiX'
+        gmake[2]: Leaving directory '/home/n71743ev/DUMUX/dumux/Mixing-in-UHS/build-cmake/CMakeFiles/CMakeScratch/TryCompile-P6MqiX'
+        
+      exitCode: 0
+  -
+    kind: "try_compile-v1"
+    backtrace:
+      - "/usr/share/cmake-3.28/Modules/FindMPI.cmake:1278 (try_compile)"
+      - "/usr/share/cmake-3.28/Modules/FindMPI.cmake:1322 (_MPI_try_staged_settings)"
+      - "/usr/share/cmake-3.28/Modules/FindMPI.cmake:1645 (_MPI_check_lang_works)"
+      - "/usr/share/cmake-3.28/Modules/CMakeFindDependencyMacro.cmake:76 (find_package)"
+      - "/home/n71743ev/DUMUX/dumux/dumux/build-cmake/dumux-config.cmake:70 (find_dependency)"
+      - "/home/n71743ev/DUMUX/dumux/dune-common/cmake/modules/DuneModuleDependencies.cmake:257 (find_package)"
+      - "/home/n71743ev/DUMUX/dumux/dune-common/cmake/modules/DuneProject.cmake:114 (find_dune_package)"
+      - "CMakeLists.txt:37 (dune_project)"
+    description: "The MPI test test_mpi for CXX in mode normal"
+    directories:
+      source: "/home/n71743ev/DUMUX/dumux/Mixing-in-UHS/build-cmake/CMakeFiles/CMakeScratch/TryCompile-jXD8n6"
+      binary: "/home/n71743ev/DUMUX/dumux/Mixing-in-UHS/build-cmake/CMakeFiles/CMakeScratch/TryCompile-jXD8n6"
+    cmakeVariables:
+      CMAKE_CXX_FLAGS: ""
+      CMAKE_CXX_FLAGS_DEBUG: "-O0 -g -ggdb -Wall -Wextra -Wno-unused-parameter -Wno-sign-compare -DDUNE_CHECK_BOUNDS=ON"
+      CMAKE_EXE_LINKER_FLAGS: ""
+      CMAKE_MODULE_PATH: "/home/n71743ev/DUMUX/dumux/Mixing-in-UHS/cmake/modules;/home/n71743ev/DUMUX/dumux/dune-common/cmake/modules"
+      CMAKE_POSITION_INDEPENDENT_CODE: "ON"
+    buildResult:
+      variable: "MPI_RESULT_CXX_test_mpi_normal"
+      cached: true
+      stdout: |
+        Change Dir: '/home/n71743ev/DUMUX/dumux/Mixing-in-UHS/build-cmake/CMakeFiles/CMakeScratch/TryCompile-jXD8n6'
+        
+        Run Build Command(s): /usr/bin/cmake -E env VERBOSE=1 /usr/bin/gmake -f Makefile cmTC_a33df/fast
+        gmake[2]: Entering directory '/home/n71743ev/DUMUX/dumux/Mixing-in-UHS/build-cmake/CMakeFiles/CMakeScratch/TryCompile-jXD8n6'
+        /usr/bin/gmake  -f CMakeFiles/cmTC_a33df.dir/build.make CMakeFiles/cmTC_a33df.dir/build
+        gmake[3]: Entering directory '/home/n71743ev/DUMUX/dumux/Mixing-in-UHS/build-cmake/CMakeFiles/CMakeScratch/TryCompile-jXD8n6'
+        Building CXX object CMakeFiles/cmTC_a33df.dir/test_mpi.cpp.o
+        /usr/bin/c++  -isystem /home/n71743ev/opt/openmpi-5/include -fPIE -o CMakeFiles/cmTC_a33df.dir/test_mpi.cpp.o -c /home/n71743ev/DUMUX/dumux/Mixing-in-UHS/build-cmake/CMakeFiles/CMakeScratch/TryCompile-jXD8n6/test_mpi.cpp
+        Linking CXX executable cmTC_a33df
+        /usr/bin/cmake -E cmake_link_script CMakeFiles/cmTC_a33df.dir/link.txt --verbose=1
+        /usr/bin/c++ -Wl,-rpath -Wl,/home/n71743ev/opt/openmpi-5/lib -Wl,--enable-new-dtags CMakeFiles/cmTC_a33df.dir/test_mpi.cpp.o -o cmTC_a33df  -Wl,-rpath,/home/n71743ev/opt/openmpi-5/lib /home/n71743ev/opt/openmpi-5/lib/libmpi.so 
+        gmake[3]: Leaving directory '/home/n71743ev/DUMUX/dumux/Mixing-in-UHS/build-cmake/CMakeFiles/CMakeScratch/TryCompile-jXD8n6'
+        gmake[2]: Leaving directory '/home/n71743ev/DUMUX/dumux/Mixing-in-UHS/build-cmake/CMakeFiles/CMakeScratch/TryCompile-jXD8n6'
+        
+      exitCode: 0
+  -
+    kind: "try_compile-v1"
+    backtrace:
+      - "/usr/share/cmake-3.28/Modules/FindMPI.cmake:1278 (try_compile)"
+      - "/usr/share/cmake-3.28/Modules/FindMPI.cmake:1672 (_MPI_try_staged_settings)"
+      - "/usr/share/cmake-3.28/Modules/CMakeFindDependencyMacro.cmake:76 (find_package)"
+      - "/home/n71743ev/DUMUX/dumux/dumux/build-cmake/dumux-config.cmake:70 (find_dependency)"
+      - "/home/n71743ev/DUMUX/dumux/dune-common/cmake/modules/DuneModuleDependencies.cmake:257 (find_package)"
+      - "/home/n71743ev/DUMUX/dumux/dune-common/cmake/modules/DuneProject.cmake:114 (find_dune_package)"
+      - "CMakeLists.txt:37 (dune_project)"
+    description: "The MPI test test_mpi for CXX in mode MPICXX"
+    directories:
+      source: "/home/n71743ev/DUMUX/dumux/Mixing-in-UHS/build-cmake/CMakeFiles/CMakeScratch/TryCompile-C4fwr6"
+      binary: "/home/n71743ev/DUMUX/dumux/Mixing-in-UHS/build-cmake/CMakeFiles/CMakeScratch/TryCompile-C4fwr6"
+    cmakeVariables:
+      CMAKE_CXX_FLAGS: ""
+      CMAKE_CXX_FLAGS_DEBUG: "-O0 -g -ggdb -Wall -Wextra -Wno-unused-parameter -Wno-sign-compare -DDUNE_CHECK_BOUNDS=ON"
+      CMAKE_EXE_LINKER_FLAGS: ""
+      CMAKE_MODULE_PATH: "/home/n71743ev/DUMUX/dumux/Mixing-in-UHS/cmake/modules;/home/n71743ev/DUMUX/dumux/dune-common/cmake/modules"
+      CMAKE_POSITION_INDEPENDENT_CODE: "ON"
+    buildResult:
+      variable: "MPI_RESULT_CXX_test_mpi_MPICXX"
+      cached: true
+      stdout: |
+        Change Dir: '/home/n71743ev/DUMUX/dumux/Mixing-in-UHS/build-cmake/CMakeFiles/CMakeScratch/TryCompile-C4fwr6'
+        
+        Run Build Command(s): /usr/bin/cmake -E env VERBOSE=1 /usr/bin/gmake -f Makefile cmTC_915fc/fast
+        gmake[2]: Entering directory '/home/n71743ev/DUMUX/dumux/Mixing-in-UHS/build-cmake/CMakeFiles/CMakeScratch/TryCompile-C4fwr6'
+        /usr/bin/gmake  -f CMakeFiles/cmTC_915fc.dir/build.make CMakeFiles/cmTC_915fc.dir/build
+        gmake[3]: Entering directory '/home/n71743ev/DUMUX/dumux/Mixing-in-UHS/build-cmake/CMakeFiles/CMakeScratch/TryCompile-C4fwr6'
+        Building CXX object CMakeFiles/cmTC_915fc.dir/test_mpi.cpp.o
+        /usr/bin/c++  -isystem /home/n71743ev/opt/openmpi-5/include -fPIE -o CMakeFiles/cmTC_915fc.dir/test_mpi.cpp.o -c /home/n71743ev/DUMUX/dumux/Mixing-in-UHS/build-cmake/CMakeFiles/CMakeScratch/TryCompile-C4fwr6/test_mpi.cpp
+        Linking CXX executable cmTC_915fc
+        /usr/bin/cmake -E cmake_link_script CMakeFiles/cmTC_915fc.dir/link.txt --verbose=1
+        /usr/bin/c++ -Wl,-rpath -Wl,/home/n71743ev/opt/openmpi-5/lib -Wl,--enable-new-dtags CMakeFiles/cmTC_915fc.dir/test_mpi.cpp.o -o cmTC_915fc  -Wl,-rpath,/home/n71743ev/opt/openmpi-5/lib /home/n71743ev/opt/openmpi-5/lib/libmpi.so 
+        gmake[3]: Leaving directory '/home/n71743ev/DUMUX/dumux/Mixing-in-UHS/build-cmake/CMakeFiles/CMakeScratch/TryCompile-C4fwr6'
+        gmake[2]: Leaving directory '/home/n71743ev/DUMUX/dumux/Mixing-in-UHS/build-cmake/CMakeFiles/CMakeScratch/TryCompile-C4fwr6'
+        
+      exitCode: 0
+  -
+    kind: "try_compile-v1"
+    backtrace:
+      - "/home/n71743ev/DUMUX/dumux/dune-common/cmake/modules/CheckCXXFeatures.cmake:36 (try_compile)"
+      - "/home/n71743ev/DUMUX/dumux/dune-common/cmake/modules/CheckCXXFeatures.cmake:85 (dune_check_cxx_source_compiles)"
+      - "/home/n71743ev/DUMUX/dumux/dune-common/cmake/modules/DuneProject.cmake:163 (include)"
+      - "CMakeLists.txt:37 (dune_project)"
+    directories:
+      source: "/home/n71743ev/DUMUX/dumux/Mixing-in-UHS/build-cmake/CMakeFiles/CMakeTmp"
+      binary: "/home/n71743ev/DUMUX/dumux/Mixing-in-UHS/build-cmake/CMakeFiles/CMakeTmp"
+    cmakeVariables:
+      CMAKE_CXX_FLAGS: ""
+      CMAKE_CXX_FLAGS_DEBUG: "-O0 -g -ggdb -Wall -Wextra -Wno-unused-parameter -Wno-sign-compare -DDUNE_CHECK_BOUNDS=ON"
+      CMAKE_EXE_LINKER_FLAGS: ""
+      CMAKE_MODULE_PATH: "/home/n71743ev/DUMUX/dumux/Mixing-in-UHS/cmake/modules;/home/n71743ev/DUMUX/dumux/dune-common/cmake/modules"
+      CMAKE_POSITION_INDEPENDENT_CODE: "ON"
+    buildResult:
+      variable: "DUNE_HAVE_CXX_EXPERIMENTAL_IS_DETECTED"
+      cached: true
+      stdout: |
+        Change Dir: '/home/n71743ev/DUMUX/dumux/Mixing-in-UHS/build-cmake/CMakeFiles/CMakeTmp'
+        
+        Run Build Command(s): /usr/bin/cmake -E env VERBOSE=1 /usr/bin/gmake -f Makefile cmTC_4d2e2/fast
+        gmake[2]: Entering directory '/home/n71743ev/DUMUX/dumux/Mixing-in-UHS/build-cmake/CMakeFiles/CMakeTmp'
+        /usr/bin/gmake  -f CMakeFiles/cmTC_4d2e2.dir/build.make CMakeFiles/cmTC_4d2e2.dir/build
+        gmake[3]: Entering directory '/home/n71743ev/DUMUX/dumux/Mixing-in-UHS/build-cmake/CMakeFiles/CMakeTmp'
+        Building CXX object CMakeFiles/cmTC_4d2e2.dir/src_DUNE_HAVE_CXX_EXPERIMENTAL_IS_DETECTED.cxx.o
+        /usr/bin/c++   -std=gnu++17 -fPIE -o CMakeFiles/cmTC_4d2e2.dir/src_DUNE_HAVE_CXX_EXPERIMENTAL_IS_DETECTED.cxx.o -c /home/n71743ev/DUMUX/dumux/Mixing-in-UHS/build-cmake/CMakeFiles/CMakeTmp/src_DUNE_HAVE_CXX_EXPERIMENTAL_IS_DETECTED.cxx
+        Linking CXX executable cmTC_4d2e2
+        /usr/bin/cmake -E cmake_link_script CMakeFiles/cmTC_4d2e2.dir/link.txt --verbose=1
+        /usr/bin/c++ CMakeFiles/cmTC_4d2e2.dir/src_DUNE_HAVE_CXX_EXPERIMENTAL_IS_DETECTED.cxx.o -o cmTC_4d2e2 
+        gmake[3]: Leaving directory '/home/n71743ev/DUMUX/dumux/Mixing-in-UHS/build-cmake/CMakeFiles/CMakeTmp'
+        gmake[2]: Leaving directory '/home/n71743ev/DUMUX/dumux/Mixing-in-UHS/build-cmake/CMakeFiles/CMakeTmp'
+        
+      exitCode: 0
+  -
+    kind: "try_compile-v1"
+    backtrace:
+      - "/home/n71743ev/DUMUX/dumux/dune-common/cmake/modules/CheckCXXFeatures.cmake:36 (try_compile)"
+      - "/home/n71743ev/DUMUX/dumux/dune-common/cmake/modules/CheckCXXFeatures.cmake:92 (dune_check_cxx_source_compiles)"
+      - "/home/n71743ev/DUMUX/dumux/dune-common/cmake/modules/DuneProject.cmake:163 (include)"
+      - "CMakeLists.txt:37 (dune_project)"
+    directories:
+      source: "/home/n71743ev/DUMUX/dumux/Mixing-in-UHS/build-cmake/CMakeFiles/CMakeTmp"
+      binary: "/home/n71743ev/DUMUX/dumux/Mixing-in-UHS/build-cmake/CMakeFiles/CMakeTmp"
+    cmakeVariables:
+      CMAKE_CXX_FLAGS: ""
+      CMAKE_CXX_FLAGS_DEBUG: "-O0 -g -ggdb -Wall -Wextra -Wno-unused-parameter -Wno-sign-compare -DDUNE_CHECK_BOUNDS=ON"
+      CMAKE_EXE_LINKER_FLAGS: ""
+      CMAKE_MODULE_PATH: "/home/n71743ev/DUMUX/dumux/Mixing-in-UHS/cmake/modules;/home/n71743ev/DUMUX/dumux/dune-common/cmake/modules"
+      CMAKE_POSITION_INDEPENDENT_CODE: "ON"
+    buildResult:
+      variable: "DUNE_HAVE_CXX_UNEVALUATED_CONTEXT_LAMBDA"
+      cached: true
+      stdout: |
+        Change Dir: '/home/n71743ev/DUMUX/dumux/Mixing-in-UHS/build-cmake/CMakeFiles/CMakeTmp'
+        
+        Run Build Command(s): /usr/bin/cmake -E env VERBOSE=1 /usr/bin/gmake -f Makefile cmTC_35f7b/fast
+        gmake[2]: Entering directory '/home/n71743ev/DUMUX/dumux/Mixing-in-UHS/build-cmake/CMakeFiles/CMakeTmp'
+        /usr/bin/gmake  -f CMakeFiles/cmTC_35f7b.dir/build.make CMakeFiles/cmTC_35f7b.dir/build
+        gmake[3]: Entering directory '/home/n71743ev/DUMUX/dumux/Mixing-in-UHS/build-cmake/CMakeFiles/CMakeTmp'
+        Building CXX object CMakeFiles/cmTC_35f7b.dir/src_DUNE_HAVE_CXX_UNEVALUATED_CONTEXT_LAMBDA.cxx.o
+        /usr/bin/c++   -std=gnu++17 -fPIE -o CMakeFiles/cmTC_35f7b.dir/src_DUNE_HAVE_CXX_UNEVALUATED_CONTEXT_LAMBDA.cxx.o -c /home/n71743ev/DUMUX/dumux/Mixing-in-UHS/build-cmake/CMakeFiles/CMakeTmp/src_DUNE_HAVE_CXX_UNEVALUATED_CONTEXT_LAMBDA.cxx
+        /home/n71743ev/DUMUX/dumux/Mixing-in-UHS/build-cmake/CMakeFiles/CMakeTmp/src_DUNE_HAVE_CXX_UNEVALUATED_CONTEXT_LAMBDA.cxx:1:20: error: lambda-expression in unevaluated context only available with ‘-std=c++20’ or ‘-std=gnu++20’
+            1 | using F = decltype([](){}); int main() {return 0;}
+              |                    ^
+        gmake[3]: *** [CMakeFiles/cmTC_35f7b.dir/build.make:78: CMakeFiles/cmTC_35f7b.dir/src_DUNE_HAVE_CXX_UNEVALUATED_CONTEXT_LAMBDA.cxx.o] Error 1
+        gmake[3]: Leaving directory '/home/n71743ev/DUMUX/dumux/Mixing-in-UHS/build-cmake/CMakeFiles/CMakeTmp'
+        gmake[2]: *** [Makefile:127: cmTC_35f7b/fast] Error 2
+        gmake[2]: Leaving directory '/home/n71743ev/DUMUX/dumux/Mixing-in-UHS/build-cmake/CMakeFiles/CMakeTmp'
+        
+      exitCode: 2
+  -
+    kind: "try_compile-v1"
+    backtrace:
+      - "/home/n71743ev/DUMUX/dumux/dune-common/cmake/modules/CheckCXXFeatures.cmake:36 (try_compile)"
+      - "/home/n71743ev/DUMUX/dumux/dune-common/cmake/modules/CheckCXXFeatures.cmake:95 (dune_check_cxx_source_compiles)"
+      - "/home/n71743ev/DUMUX/dumux/dune-common/cmake/modules/DuneProject.cmake:163 (include)"
+      - "CMakeLists.txt:37 (dune_project)"
+    directories:
+      source: "/home/n71743ev/DUMUX/dumux/Mixing-in-UHS/build-cmake/CMakeFiles/CMakeTmp"
+      binary: "/home/n71743ev/DUMUX/dumux/Mixing-in-UHS/build-cmake/CMakeFiles/CMakeTmp"
+    cmakeVariables:
+      CMAKE_CXX_FLAGS: ""
+      CMAKE_CXX_FLAGS_DEBUG: "-O0 -g -ggdb -Wall -Wextra -Wno-unused-parameter -Wno-sign-compare -DDUNE_CHECK_BOUNDS=ON"
+      CMAKE_EXE_LINKER_FLAGS: ""
+      CMAKE_MODULE_PATH: "/home/n71743ev/DUMUX/dumux/Mixing-in-UHS/cmake/modules;/home/n71743ev/DUMUX/dumux/dune-common/cmake/modules"
+      CMAKE_POSITION_INDEPENDENT_CODE: "ON"
+    buildResult:
+      variable: "DUNE_HAVE_CXX_STD_IDENTITY"
+      cached: true
+      stdout: |
+        Change Dir: '/home/n71743ev/DUMUX/dumux/Mixing-in-UHS/build-cmake/CMakeFiles/CMakeTmp'
+        
+        Run Build Command(s): /usr/bin/cmake -E env VERBOSE=1 /usr/bin/gmake -f Makefile cmTC_273b1/fast
+        gmake[2]: Entering directory '/home/n71743ev/DUMUX/dumux/Mixing-in-UHS/build-cmake/CMakeFiles/CMakeTmp'
+        /usr/bin/gmake  -f CMakeFiles/cmTC_273b1.dir/build.make CMakeFiles/cmTC_273b1.dir/build
+        gmake[3]: Entering directory '/home/n71743ev/DUMUX/dumux/Mixing-in-UHS/build-cmake/CMakeFiles/CMakeTmp'
+        Building CXX object CMakeFiles/cmTC_273b1.dir/src_DUNE_HAVE_CXX_STD_IDENTITY.cxx.o
+        /usr/bin/c++   -std=gnu++17 -fPIE -o CMakeFiles/cmTC_273b1.dir/src_DUNE_HAVE_CXX_STD_IDENTITY.cxx.o -c /home/n71743ev/DUMUX/dumux/Mixing-in-UHS/build-cmake/CMakeFiles/CMakeTmp/src_DUNE_HAVE_CXX_STD_IDENTITY.cxx
+        /home/n71743ev/DUMUX/dumux/Mixing-in-UHS/build-cmake/CMakeFiles/CMakeTmp/src_DUNE_HAVE_CXX_STD_IDENTITY.cxx: In function ‘int main()’:
+        /home/n71743ev/DUMUX/dumux/Mixing-in-UHS/build-cmake/CMakeFiles/CMakeTmp/src_DUNE_HAVE_CXX_STD_IDENTITY.cxx:3:21: error: ‘identity’ is not a member of ‘std’
+            3 |   int main() { std::identity{}; }
+              |                     ^~~~~~~~
+        gmake[3]: *** [CMakeFiles/cmTC_273b1.dir/build.make:78: CMakeFiles/cmTC_273b1.dir/src_DUNE_HAVE_CXX_STD_IDENTITY.cxx.o] Error 1
+        gmake[3]: Leaving directory '/home/n71743ev/DUMUX/dumux/Mixing-in-UHS/build-cmake/CMakeFiles/CMakeTmp'
+        gmake[2]: *** [Makefile:127: cmTC_273b1/fast] Error 2
+        gmake[2]: Leaving directory '/home/n71743ev/DUMUX/dumux/Mixing-in-UHS/build-cmake/CMakeFiles/CMakeTmp'
+        
+      exitCode: 2
+...
+
+---
+events:
+  -
+    kind: "try_compile-v1"
+    backtrace:
+      - "/usr/share/cmake-3.28/Modules/FindMPI.cmake:1278 (try_compile)"
+      - "/usr/share/cmake-3.28/Modules/FindMPI.cmake:1322 (_MPI_try_staged_settings)"
+      - "/usr/share/cmake-3.28/Modules/FindMPI.cmake:1645 (_MPI_check_lang_works)"
+      - "/usr/share/cmake-3.28/Modules/CMakeFindDependencyMacro.cmake:76 (find_package)"
+      - "/home/n71743ev/DUMUX/dumux/dumux/build-cmake/dumux-config.cmake:70 (find_dependency)"
+      - "/home/n71743ev/DUMUX/dumux/dune-common/cmake/modules/DuneModuleDependencies.cmake:257 (find_package)"
+      - "/home/n71743ev/DUMUX/dumux/dune-common/cmake/modules/DuneProject.cmake:114 (find_dune_package)"
+      - "CMakeLists.txt:37 (dune_project)"
+    description: "The MPI test test_mpi for C in mode normal"
+    directories:
+      source: "/home/n71743ev/DUMUX/dumux/Mixing-in-UHS/build-cmake/CMakeFiles/CMakeScratch/TryCompile-U0Tsr0"
+      binary: "/home/n71743ev/DUMUX/dumux/Mixing-in-UHS/build-cmake/CMakeFiles/CMakeScratch/TryCompile-U0Tsr0"
+    cmakeVariables:
+      CMAKE_C_FLAGS: ""
+      CMAKE_C_FLAGS_DEBUG: "-g"
+      CMAKE_EXE_LINKER_FLAGS: ""
+      CMAKE_MODULE_PATH: "/home/n71743ev/DUMUX/dumux/Mixing-in-UHS/cmake/modules;/home/n71743ev/DUMUX/dumux/dune-common/cmake/modules"
+      CMAKE_POSITION_INDEPENDENT_CODE: "ON"
+    buildResult:
+      variable: "MPI_RESULT_C_test_mpi_normal"
+      cached: true
+      stdout: |
+        Change Dir: '/home/n71743ev/DUMUX/dumux/Mixing-in-UHS/build-cmake/CMakeFiles/CMakeScratch/TryCompile-U0Tsr0'
+        
+        Run Build Command(s): /usr/bin/cmake -E env VERBOSE=1 /usr/bin/gmake -f Makefile cmTC_51056/fast
+        gmake[2]: Entering directory '/home/n71743ev/DUMUX/dumux/Mixing-in-UHS/build-cmake/CMakeFiles/CMakeScratch/TryCompile-U0Tsr0'
+        /usr/bin/gmake  -f CMakeFiles/cmTC_51056.dir/build.make CMakeFiles/cmTC_51056.dir/build
+        gmake[3]: Entering directory '/home/n71743ev/DUMUX/dumux/Mixing-in-UHS/build-cmake/CMakeFiles/CMakeScratch/TryCompile-U0Tsr0'
+        Building C object CMakeFiles/cmTC_51056.dir/test_mpi.c.o
+        /usr/bin/cc  -isystem /home/n71743ev/opt/openmpi-5/include -fPIE -o CMakeFiles/cmTC_51056.dir/test_mpi.c.o -c /home/n71743ev/DUMUX/dumux/Mixing-in-UHS/build-cmake/CMakeFiles/CMakeScratch/TryCompile-U0Tsr0/test_mpi.c
+        Linking C executable cmTC_51056
+        /usr/bin/cmake -E cmake_link_script CMakeFiles/cmTC_51056.dir/link.txt --verbose=1
+        /usr/bin/cc -Wl,-rpath -Wl,/home/n71743ev/opt/openmpi-5/lib -Wl,--enable-new-dtags CMakeFiles/cmTC_51056.dir/test_mpi.c.o -o cmTC_51056  -Wl,-rpath,/home/n71743ev/opt/openmpi-5/lib /home/n71743ev/opt/openmpi-5/lib/libmpi.so 
+        gmake[3]: Leaving directory '/home/n71743ev/DUMUX/dumux/Mixing-in-UHS/build-cmake/CMakeFiles/CMakeScratch/TryCompile-U0Tsr0'
+        gmake[2]: Leaving directory '/home/n71743ev/DUMUX/dumux/Mixing-in-UHS/build-cmake/CMakeFiles/CMakeScratch/TryCompile-U0Tsr0'
+        
+      exitCode: 0
+  -
+    kind: "try_compile-v1"
+    backtrace:
+      - "/usr/share/cmake-3.28/Modules/FindMPI.cmake:1278 (try_compile)"
+      - "/usr/share/cmake-3.28/Modules/FindMPI.cmake:1322 (_MPI_try_staged_settings)"
+      - "/usr/share/cmake-3.28/Modules/FindMPI.cmake:1645 (_MPI_check_lang_works)"
+      - "/usr/share/cmake-3.28/Modules/CMakeFindDependencyMacro.cmake:76 (find_package)"
+      - "/home/n71743ev/DUMUX/dumux/dumux/build-cmake/dumux-config.cmake:70 (find_dependency)"
+      - "/home/n71743ev/DUMUX/dumux/dune-common/cmake/modules/DuneModuleDependencies.cmake:257 (find_package)"
+      - "/home/n71743ev/DUMUX/dumux/dune-common/cmake/modules/DuneProject.cmake:114 (find_dune_package)"
+      - "CMakeLists.txt:37 (dune_project)"
+    description: "The MPI test test_mpi for CXX in mode normal"
+    directories:
+      source: "/home/n71743ev/DUMUX/dumux/Mixing-in-UHS/build-cmake/CMakeFiles/CMakeScratch/TryCompile-AqwzU1"
+      binary: "/home/n71743ev/DUMUX/dumux/Mixing-in-UHS/build-cmake/CMakeFiles/CMakeScratch/TryCompile-AqwzU1"
+    cmakeVariables:
+      CMAKE_CXX_FLAGS: ""
+      CMAKE_CXX_FLAGS_DEBUG: "-O0 -g -ggdb -Wall -Wextra -Wno-unused-parameter -Wno-sign-compare -DDUNE_CHECK_BOUNDS=ON"
+      CMAKE_EXE_LINKER_FLAGS: ""
+      CMAKE_MODULE_PATH: "/home/n71743ev/DUMUX/dumux/Mixing-in-UHS/cmake/modules;/home/n71743ev/DUMUX/dumux/dune-common/cmake/modules"
+      CMAKE_POSITION_INDEPENDENT_CODE: "ON"
+    buildResult:
+      variable: "MPI_RESULT_CXX_test_mpi_normal"
+      cached: true
+      stdout: |
+        Change Dir: '/home/n71743ev/DUMUX/dumux/Mixing-in-UHS/build-cmake/CMakeFiles/CMakeScratch/TryCompile-AqwzU1'
+        
+        Run Build Command(s): /usr/bin/cmake -E env VERBOSE=1 /usr/bin/gmake -f Makefile cmTC_e5976/fast
+        gmake[2]: Entering directory '/home/n71743ev/DUMUX/dumux/Mixing-in-UHS/build-cmake/CMakeFiles/CMakeScratch/TryCompile-AqwzU1'
+        /usr/bin/gmake  -f CMakeFiles/cmTC_e5976.dir/build.make CMakeFiles/cmTC_e5976.dir/build
+        gmake[3]: Entering directory '/home/n71743ev/DUMUX/dumux/Mixing-in-UHS/build-cmake/CMakeFiles/CMakeScratch/TryCompile-AqwzU1'
+        Building CXX object CMakeFiles/cmTC_e5976.dir/test_mpi.cpp.o
+        /usr/bin/c++  -isystem /home/n71743ev/opt/openmpi-5/include -fPIE -o CMakeFiles/cmTC_e5976.dir/test_mpi.cpp.o -c /home/n71743ev/DUMUX/dumux/Mixing-in-UHS/build-cmake/CMakeFiles/CMakeScratch/TryCompile-AqwzU1/test_mpi.cpp
+        Linking CXX executable cmTC_e5976
+        /usr/bin/cmake -E cmake_link_script CMakeFiles/cmTC_e5976.dir/link.txt --verbose=1
+        /usr/bin/c++ -Wl,-rpath -Wl,/home/n71743ev/opt/openmpi-5/lib -Wl,--enable-new-dtags CMakeFiles/cmTC_e5976.dir/test_mpi.cpp.o -o cmTC_e5976  -Wl,-rpath,/home/n71743ev/opt/openmpi-5/lib /home/n71743ev/opt/openmpi-5/lib/libmpi.so 
+        gmake[3]: Leaving directory '/home/n71743ev/DUMUX/dumux/Mixing-in-UHS/build-cmake/CMakeFiles/CMakeScratch/TryCompile-AqwzU1'
+        gmake[2]: Leaving directory '/home/n71743ev/DUMUX/dumux/Mixing-in-UHS/build-cmake/CMakeFiles/CMakeScratch/TryCompile-AqwzU1'
+        
+      exitCode: 0
+  -
+    kind: "try_compile-v1"
+    backtrace:
+      - "/usr/share/cmake-3.28/Modules/FindMPI.cmake:1278 (try_compile)"
+      - "/usr/share/cmake-3.28/Modules/FindMPI.cmake:1672 (_MPI_try_staged_settings)"
+      - "/usr/share/cmake-3.28/Modules/CMakeFindDependencyMacro.cmake:76 (find_package)"
+      - "/home/n71743ev/DUMUX/dumux/dumux/build-cmake/dumux-config.cmake:70 (find_dependency)"
+      - "/home/n71743ev/DUMUX/dumux/dune-common/cmake/modules/DuneModuleDependencies.cmake:257 (find_package)"
+      - "/home/n71743ev/DUMUX/dumux/dune-common/cmake/modules/DuneProject.cmake:114 (find_dune_package)"
+      - "CMakeLists.txt:37 (dune_project)"
+    description: "The MPI test test_mpi for CXX in mode MPICXX"
+    directories:
+      source: "/home/n71743ev/DUMUX/dumux/Mixing-in-UHS/build-cmake/CMakeFiles/CMakeScratch/TryCompile-MRvMAF"
+      binary: "/home/n71743ev/DUMUX/dumux/Mixing-in-UHS/build-cmake/CMakeFiles/CMakeScratch/TryCompile-MRvMAF"
+    cmakeVariables:
+      CMAKE_CXX_FLAGS: ""
+      CMAKE_CXX_FLAGS_DEBUG: "-O0 -g -ggdb -Wall -Wextra -Wno-unused-parameter -Wno-sign-compare -DDUNE_CHECK_BOUNDS=ON"
+      CMAKE_EXE_LINKER_FLAGS: ""
+      CMAKE_MODULE_PATH: "/home/n71743ev/DUMUX/dumux/Mixing-in-UHS/cmake/modules;/home/n71743ev/DUMUX/dumux/dune-common/cmake/modules"
+      CMAKE_POSITION_INDEPENDENT_CODE: "ON"
+    buildResult:
+      variable: "MPI_RESULT_CXX_test_mpi_MPICXX"
+      cached: true
+      stdout: |
+        Change Dir: '/home/n71743ev/DUMUX/dumux/Mixing-in-UHS/build-cmake/CMakeFiles/CMakeScratch/TryCompile-MRvMAF'
+        
+        Run Build Command(s): /usr/bin/cmake -E env VERBOSE=1 /usr/bin/gmake -f Makefile cmTC_5133f/fast
+        gmake[2]: Entering directory '/home/n71743ev/DUMUX/dumux/Mixing-in-UHS/build-cmake/CMakeFiles/CMakeScratch/TryCompile-MRvMAF'
+        /usr/bin/gmake  -f CMakeFiles/cmTC_5133f.dir/build.make CMakeFiles/cmTC_5133f.dir/build
+        gmake[3]: Entering directory '/home/n71743ev/DUMUX/dumux/Mixing-in-UHS/build-cmake/CMakeFiles/CMakeScratch/TryCompile-MRvMAF'
+        Building CXX object CMakeFiles/cmTC_5133f.dir/test_mpi.cpp.o
+        /usr/bin/c++  -isystem /home/n71743ev/opt/openmpi-5/include -fPIE -o CMakeFiles/cmTC_5133f.dir/test_mpi.cpp.o -c /home/n71743ev/DUMUX/dumux/Mixing-in-UHS/build-cmake/CMakeFiles/CMakeScratch/TryCompile-MRvMAF/test_mpi.cpp
+        Linking CXX executable cmTC_5133f
+        /usr/bin/cmake -E cmake_link_script CMakeFiles/cmTC_5133f.dir/link.txt --verbose=1
+        /usr/bin/c++ -Wl,-rpath -Wl,/home/n71743ev/opt/openmpi-5/lib -Wl,--enable-new-dtags CMakeFiles/cmTC_5133f.dir/test_mpi.cpp.o -o cmTC_5133f  -Wl,-rpath,/home/n71743ev/opt/openmpi-5/lib /home/n71743ev/opt/openmpi-5/lib/libmpi.so 
+        gmake[3]: Leaving directory '/home/n71743ev/DUMUX/dumux/Mixing-in-UHS/build-cmake/CMakeFiles/CMakeScratch/TryCompile-MRvMAF'
+        gmake[2]: Leaving directory '/home/n71743ev/DUMUX/dumux/Mixing-in-UHS/build-cmake/CMakeFiles/CMakeScratch/TryCompile-MRvMAF'
+        
+      exitCode: 0
+  -
+    kind: "try_compile-v1"
+    backtrace:
+      - "/home/n71743ev/DUMUX/dumux/dune-common/cmake/modules/CheckCXXFeatures.cmake:36 (try_compile)"
+      - "/home/n71743ev/DUMUX/dumux/dune-common/cmake/modules/CheckCXXFeatures.cmake:85 (dune_check_cxx_source_compiles)"
+      - "/home/n71743ev/DUMUX/dumux/dune-common/cmake/modules/DuneProject.cmake:163 (include)"
+      - "CMakeLists.txt:37 (dune_project)"
+    directories:
+      source: "/home/n71743ev/DUMUX/dumux/Mixing-in-UHS/build-cmake/CMakeFiles/CMakeTmp"
+      binary: "/home/n71743ev/DUMUX/dumux/Mixing-in-UHS/build-cmake/CMakeFiles/CMakeTmp"
+    cmakeVariables:
+      CMAKE_CXX_FLAGS: ""
+      CMAKE_CXX_FLAGS_DEBUG: "-O0 -g -ggdb -Wall -Wextra -Wno-unused-parameter -Wno-sign-compare -DDUNE_CHECK_BOUNDS=ON"
+      CMAKE_EXE_LINKER_FLAGS: ""
+      CMAKE_MODULE_PATH: "/home/n71743ev/DUMUX/dumux/Mixing-in-UHS/cmake/modules;/home/n71743ev/DUMUX/dumux/dune-common/cmake/modules"
+      CMAKE_POSITION_INDEPENDENT_CODE: "ON"
+    buildResult:
+      variable: "DUNE_HAVE_CXX_EXPERIMENTAL_IS_DETECTED"
+      cached: true
+      stdout: |
+        Change Dir: '/home/n71743ev/DUMUX/dumux/Mixing-in-UHS/build-cmake/CMakeFiles/CMakeTmp'
+        
+        Run Build Command(s): /usr/bin/cmake -E env VERBOSE=1 /usr/bin/gmake -f Makefile cmTC_7e48d/fast
+        gmake[2]: Entering directory '/home/n71743ev/DUMUX/dumux/Mixing-in-UHS/build-cmake/CMakeFiles/CMakeTmp'
+        /usr/bin/gmake  -f CMakeFiles/cmTC_7e48d.dir/build.make CMakeFiles/cmTC_7e48d.dir/build
+        gmake[3]: Entering directory '/home/n71743ev/DUMUX/dumux/Mixing-in-UHS/build-cmake/CMakeFiles/CMakeTmp'
+        Building CXX object CMakeFiles/cmTC_7e48d.dir/src_DUNE_HAVE_CXX_EXPERIMENTAL_IS_DETECTED.cxx.o
+        /usr/bin/c++   -std=gnu++17 -fPIE -o CMakeFiles/cmTC_7e48d.dir/src_DUNE_HAVE_CXX_EXPERIMENTAL_IS_DETECTED.cxx.o -c /home/n71743ev/DUMUX/dumux/Mixing-in-UHS/build-cmake/CMakeFiles/CMakeTmp/src_DUNE_HAVE_CXX_EXPERIMENTAL_IS_DETECTED.cxx
+        Linking CXX executable cmTC_7e48d
+        /usr/bin/cmake -E cmake_link_script CMakeFiles/cmTC_7e48d.dir/link.txt --verbose=1
+        /usr/bin/c++ CMakeFiles/cmTC_7e48d.dir/src_DUNE_HAVE_CXX_EXPERIMENTAL_IS_DETECTED.cxx.o -o cmTC_7e48d 
+        gmake[3]: Leaving directory '/home/n71743ev/DUMUX/dumux/Mixing-in-UHS/build-cmake/CMakeFiles/CMakeTmp'
+        gmake[2]: Leaving directory '/home/n71743ev/DUMUX/dumux/Mixing-in-UHS/build-cmake/CMakeFiles/CMakeTmp'
+        
+      exitCode: 0
+  -
+    kind: "try_compile-v1"
+    backtrace:
+      - "/home/n71743ev/DUMUX/dumux/dune-common/cmake/modules/CheckCXXFeatures.cmake:36 (try_compile)"
+      - "/home/n71743ev/DUMUX/dumux/dune-common/cmake/modules/CheckCXXFeatures.cmake:92 (dune_check_cxx_source_compiles)"
+      - "/home/n71743ev/DUMUX/dumux/dune-common/cmake/modules/DuneProject.cmake:163 (include)"
+      - "CMakeLists.txt:37 (dune_project)"
+    directories:
+      source: "/home/n71743ev/DUMUX/dumux/Mixing-in-UHS/build-cmake/CMakeFiles/CMakeTmp"
+      binary: "/home/n71743ev/DUMUX/dumux/Mixing-in-UHS/build-cmake/CMakeFiles/CMakeTmp"
+    cmakeVariables:
+      CMAKE_CXX_FLAGS: ""
+      CMAKE_CXX_FLAGS_DEBUG: "-O0 -g -ggdb -Wall -Wextra -Wno-unused-parameter -Wno-sign-compare -DDUNE_CHECK_BOUNDS=ON"
+      CMAKE_EXE_LINKER_FLAGS: ""
+      CMAKE_MODULE_PATH: "/home/n71743ev/DUMUX/dumux/Mixing-in-UHS/cmake/modules;/home/n71743ev/DUMUX/dumux/dune-common/cmake/modules"
+      CMAKE_POSITION_INDEPENDENT_CODE: "ON"
+    buildResult:
+      variable: "DUNE_HAVE_CXX_UNEVALUATED_CONTEXT_LAMBDA"
+      cached: true
+      stdout: |
+        Change Dir: '/home/n71743ev/DUMUX/dumux/Mixing-in-UHS/build-cmake/CMakeFiles/CMakeTmp'
+        
+        Run Build Command(s): /usr/bin/cmake -E env VERBOSE=1 /usr/bin/gmake -f Makefile cmTC_fc563/fast
+        gmake[2]: Entering directory '/home/n71743ev/DUMUX/dumux/Mixing-in-UHS/build-cmake/CMakeFiles/CMakeTmp'
+        /usr/bin/gmake  -f CMakeFiles/cmTC_fc563.dir/build.make CMakeFiles/cmTC_fc563.dir/build
+        gmake[3]: Entering directory '/home/n71743ev/DUMUX/dumux/Mixing-in-UHS/build-cmake/CMakeFiles/CMakeTmp'
+        Building CXX object CMakeFiles/cmTC_fc563.dir/src_DUNE_HAVE_CXX_UNEVALUATED_CONTEXT_LAMBDA.cxx.o
+        /usr/bin/c++   -std=gnu++17 -fPIE -o CMakeFiles/cmTC_fc563.dir/src_DUNE_HAVE_CXX_UNEVALUATED_CONTEXT_LAMBDA.cxx.o -c /home/n71743ev/DUMUX/dumux/Mixing-in-UHS/build-cmake/CMakeFiles/CMakeTmp/src_DUNE_HAVE_CXX_UNEVALUATED_CONTEXT_LAMBDA.cxx
+        /home/n71743ev/DUMUX/dumux/Mixing-in-UHS/build-cmake/CMakeFiles/CMakeTmp/src_DUNE_HAVE_CXX_UNEVALUATED_CONTEXT_LAMBDA.cxx:1:20: error: lambda-expression in unevaluated context only available with ‘-std=c++20’ or ‘-std=gnu++20’
+            1 | using F = decltype([](){}); int main() {return 0;}
+              |                    ^
+        gmake[3]: *** [CMakeFiles/cmTC_fc563.dir/build.make:78: CMakeFiles/cmTC_fc563.dir/src_DUNE_HAVE_CXX_UNEVALUATED_CONTEXT_LAMBDA.cxx.o] Error 1
+        gmake[3]: Leaving directory '/home/n71743ev/DUMUX/dumux/Mixing-in-UHS/build-cmake/CMakeFiles/CMakeTmp'
+        gmake[2]: *** [Makefile:127: cmTC_fc563/fast] Error 2
+        gmake[2]: Leaving directory '/home/n71743ev/DUMUX/dumux/Mixing-in-UHS/build-cmake/CMakeFiles/CMakeTmp'
+        
+      exitCode: 2
+  -
+    kind: "try_compile-v1"
+    backtrace:
+      - "/home/n71743ev/DUMUX/dumux/dune-common/cmake/modules/CheckCXXFeatures.cmake:36 (try_compile)"
+      - "/home/n71743ev/DUMUX/dumux/dune-common/cmake/modules/CheckCXXFeatures.cmake:95 (dune_check_cxx_source_compiles)"
+      - "/home/n71743ev/DUMUX/dumux/dune-common/cmake/modules/DuneProject.cmake:163 (include)"
+      - "CMakeLists.txt:37 (dune_project)"
+    directories:
+      source: "/home/n71743ev/DUMUX/dumux/Mixing-in-UHS/build-cmake/CMakeFiles/CMakeTmp"
+      binary: "/home/n71743ev/DUMUX/dumux/Mixing-in-UHS/build-cmake/CMakeFiles/CMakeTmp"
+    cmakeVariables:
+      CMAKE_CXX_FLAGS: ""
+      CMAKE_CXX_FLAGS_DEBUG: "-O0 -g -ggdb -Wall -Wextra -Wno-unused-parameter -Wno-sign-compare -DDUNE_CHECK_BOUNDS=ON"
+      CMAKE_EXE_LINKER_FLAGS: ""
+      CMAKE_MODULE_PATH: "/home/n71743ev/DUMUX/dumux/Mixing-in-UHS/cmake/modules;/home/n71743ev/DUMUX/dumux/dune-common/cmake/modules"
+      CMAKE_POSITION_INDEPENDENT_CODE: "ON"
+    buildResult:
+      variable: "DUNE_HAVE_CXX_STD_IDENTITY"
+      cached: true
+      stdout: |
+        Change Dir: '/home/n71743ev/DUMUX/dumux/Mixing-in-UHS/build-cmake/CMakeFiles/CMakeTmp'
+        
+        Run Build Command(s): /usr/bin/cmake -E env VERBOSE=1 /usr/bin/gmake -f Makefile cmTC_d1df7/fast
+        gmake[2]: Entering directory '/home/n71743ev/DUMUX/dumux/Mixing-in-UHS/build-cmake/CMakeFiles/CMakeTmp'
+        /usr/bin/gmake  -f CMakeFiles/cmTC_d1df7.dir/build.make CMakeFiles/cmTC_d1df7.dir/build
+        gmake[3]: Entering directory '/home/n71743ev/DUMUX/dumux/Mixing-in-UHS/build-cmake/CMakeFiles/CMakeTmp'
+        Building CXX object CMakeFiles/cmTC_d1df7.dir/src_DUNE_HAVE_CXX_STD_IDENTITY.cxx.o
+        /usr/bin/c++   -std=gnu++17 -fPIE -o CMakeFiles/cmTC_d1df7.dir/src_DUNE_HAVE_CXX_STD_IDENTITY.cxx.o -c /home/n71743ev/DUMUX/dumux/Mixing-in-UHS/build-cmake/CMakeFiles/CMakeTmp/src_DUNE_HAVE_CXX_STD_IDENTITY.cxx
+        /home/n71743ev/DUMUX/dumux/Mixing-in-UHS/build-cmake/CMakeFiles/CMakeTmp/src_DUNE_HAVE_CXX_STD_IDENTITY.cxx: In function ‘int main()’:
+        /home/n71743ev/DUMUX/dumux/Mixing-in-UHS/build-cmake/CMakeFiles/CMakeTmp/src_DUNE_HAVE_CXX_STD_IDENTITY.cxx:3:21: error: ‘identity’ is not a member of ‘std’
+            3 |   int main() { std::identity{}; }
+              |                     ^~~~~~~~
+        gmake[3]: *** [CMakeFiles/cmTC_d1df7.dir/build.make:78: CMakeFiles/cmTC_d1df7.dir/src_DUNE_HAVE_CXX_STD_IDENTITY.cxx.o] Error 1
+        gmake[3]: Leaving directory '/home/n71743ev/DUMUX/dumux/Mixing-in-UHS/build-cmake/CMakeFiles/CMakeTmp'
+        gmake[2]: *** [Makefile:127: cmTC_d1df7/fast] Error 2
+        gmake[2]: Leaving directory '/home/n71743ev/DUMUX/dumux/Mixing-in-UHS/build-cmake/CMakeFiles/CMakeTmp'
+        
+      exitCode: 2
+...

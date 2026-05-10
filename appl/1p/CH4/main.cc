@@ -1,7 +1,7 @@
 // -*- mode: C++; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4 -*-
 // vi: set et ts=4 sw=4 sts=4:
 //
-// SPDX-FileCopyrightInfo: Copyright © DuMux Project contributors, see AUTHORS.md in root folder
+// SPDX-FileCopyrightInfo: Copyright ï¿½ DuMux Project contributors, see AUTHORS.md in root folder
 // SPDX-License-Identifier: GPL-3.0-or-later
 //
 /*!
@@ -9,6 +9,10 @@
  * \ingroup OnePNCTests
  * \brief Test for the 1pnc model
  */
+// This driver follows the standard DuMuX application structure.
+// DuMuX/DUNE provide the grid, discretization, assembly, and solver infrastructure;
+// the case-specific behavior is selected through the TypeTag and implemented in
+// problem.hh, properties.hh, spatialparams.hh, and the fluid system.
 
 #include <config.h>
 
@@ -59,7 +63,7 @@ int main(int argc, char** argv)
     if (mpiHelper.rank() == 0)
         DumuxMessage::print(/*firstCall=*/true);
 
-    // initialize parameter tree
+    // initialize parameter tree, Reading the inputs from params.input
     Parameters::init(argc, argv);
 
     //////////////////////////////////////////////////////////////////////
@@ -73,10 +77,10 @@ int main(int argc, char** argv)
     // run instationary non-linear problem on this grid
     ////////////////////////////////////////////////////////////
 
-    // we compute on the leaf grid view
+    // DUNE view of the active computational mesh.
     const auto& leafGridView = gridManager.grid().leafGridView();
 
-    // create the finite volume grid geometry
+    // DuMuX finite-volume/Box geometry built on the DUNE grid view.
     using GridGeometry = GetPropType<TypeTag, Properties::GridGeometry>;
     auto gridGeometry = std::make_shared<GridGeometry>(leafGridView);
 
@@ -132,11 +136,11 @@ int main(int argc, char** argv)
 
     // instantiate time loop
     
-    // the assembler with time loop for instationary problem
+    // // Assembles the global residual and numerical Jacobian for the finite-volume system.
     using Assembler = FVAssembler<TypeTag, DiffMethod::numeric>;
     auto assembler = std::make_shared<Assembler>(problem, gridGeometry, gridVariables, timeLoop, xOld);
 
-    // the linear solver
+    // Solves the sparse linear systems inside each Newton iteration.
     using LinearSolver = ILUBiCGSTABIstlSolver<LinearSolverTraits<GridGeometry>, LinearAlgebraTraitsFromAssembler<Assembler>>;
     auto linearSolver = std::make_shared<LinearSolver>(gridGeometry->gridView(), gridGeometry->dofMapper());
     

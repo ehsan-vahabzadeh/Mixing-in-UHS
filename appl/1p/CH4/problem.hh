@@ -14,6 +14,10 @@
 #ifndef DUMUX_1P2C_TEST_PROBLEM_HH
 #define DUMUX_1P2C_TEST_PROBLEM_HH
 
+#include <algorithm>
+#include <cmath>
+#include <iostream>
+
 #include <dumux/common/properties.hh>
 #include <dumux/common/parameters.hh>
 
@@ -33,20 +37,12 @@ namespace Dumux {
 /*!
  * \ingroup OnePNCTests
  * \brief Definition of a problem for the 1pnc problem:
- *  Component transport of nitrogen dissolved in the water phase.
+ *  Component transport of hydrogen in the gas phase.
  *
- * Nitrogen is dissolved in the water phase and is transported with the
- * water flow from the left side to the right.
  *
  * The model domain is specified in the input file and
  * we use homogeneous soil properties.
  * Initially, the domain is filled with pure water.
- *
- * At the left side, a Dirichlet condition defines the nitrogen mole fraction.
- * The water phase flows from the left side to the right if the applied pressure
- * gradient is >0. The nitrogen is transported with the water flow
- * and leaves the domain at the boundary, where again Dirichlet boundary
- * conditions are applied.
  *
  * This problem uses the \ref OnePNCModel model.
  */
@@ -126,17 +122,18 @@ public:
         //initialize fluid system
         FluidSystem::init();
         name_ = getParam<std::string>("Problem.Name");
-        CELLS_VEC = getParam<Dimension_vector>("Grid.Cells");
-        Upper_Right = getParam<Dimension_vector>("Grid.UpperRight");
-        Lower_Left = getParam<Dimension_vector>("Grid.LowerLeft");
-        X_max = Upper_Right[0];
-        X_min = Lower_Left[0];
-        Y_max = Upper_Right[1];
-        Y_min = Lower_Left[1];
-        Delta_x = (X_max - X_min);
-        Delta_x = Delta_x / CELLS_VEC[0];
-        Delta_y = (Y_max - Y_min);
-        Delta_y = Delta_y / CELLS_VEC[1];
+        cells_ = getParam<Dimension_vector>("Grid.Cells");
+        upperRight_ = getParam<Dimension_vector>("Grid.UpperRight");
+        lowerLeft_ = getParam<Dimension_vector>("Grid.LowerLeft");
+        // TODO: Generalize these domain helpers for  locally refined grids.
+        xMax_ = upperRight_[0];
+        xMin_ = lowerLeft_[0];
+        yMax_ = upperRight_[1];
+        yMin_ = lowerLeft_[1];
+        deltaX_ = (xMax_ - xMin_);
+        deltaX_ = deltaX_ / cells_[0];
+        deltaY_ = (yMax_ - yMin_);
+        deltaY_ = deltaY_ / cells_[1];
     }
 
     const std::string &name() const
@@ -165,7 +162,7 @@ public:
     {
         BoundaryTypes values;
         // values.setAllNeumann();
-        if(globalPos[0] > X_max - eps_)
+        if(isRightBoundary_(globalPos))
             values.setAllDirichlet();
         else
         values.setAllNeumann();
@@ -194,13 +191,14 @@ public:
                          const ElementFluxVariablesCache& elemFluxVarsCache,
                          const SubControlVolumeFace& scvf) const
     {
-        // no-flow everywhere except at the right boundary
+        // TPFA overload; the Box overload below is the main implementation used here.
         NumEqVector values(0.0);
         const auto& ipGlobal = scvf.ipGlobal();
         const auto &globalPos = scvf.ipGlobal();
         const auto& volVars = elemVolVars[scvf.insideScvIdx()];
         Scalar Time = this->time();
         NumEqVector injectionComposition_(0.0);
+
         static const Scalar cylcesDev            = getParam<double>("BoundaryConditions.CyclesDev");
         static const Scalar injectionDurationDev = getParam<double>("BoundaryConditions.InjectionDurationDev")*86400;
         static const Scalar idleDurationDev     = getParam<double>("BoundaryConditions.IdleDurationDev")*86400;
@@ -217,22 +215,19 @@ public:
         double Extractionrate_ = getParam<double>("BoundaryConditions.ProductionRate", 0.0);
         double inj_interval = getParam<double>("BoundaryConditions.Well_Height", 0.0);
 
-
-        if ((globalPos[0] < X_min + eps_) && (globalPos[1] - Y_min >= Y_max - inj_interval) && (Time < developmentDuration))
-        // if ((globalPos[1] > Y_max - eps_)  && (Time < localTimeInCycle))
+        // TODO: Move well-region definitions to input parameters so layouts do not require recompilation.
+        if (isWellBoundary_(globalPos, inj_interval) && (Time < developmentDuration))
         {
             const int cycleNumber = std::floor(Time/(injectionDurationDev+idleDurationDev));
             const Scalar localTimeInCycle = Time - cycleNumber*(injectionDurationDev+idleDurationDev);
             if(localTimeInCycle <= injectionDurationDev){
-                // values[CO2Idx] = (1-injectionComposition_[CO2Idx]) * inj_rate;
                 for (int compIdx = 0; compIdx < numComponents; ++compIdx)
                 {
-                    // values[compIdx] = injectionComposition_[compIdx] * inj_rate_dev / FluidSystem::MixingFluidSystem::molarMass(compIdx);
                     values[compIdx] = injectionComposition_[compIdx] * inj_rate_dev ;
                 }   
             }  
         }
-        if ((globalPos[0] < X_min + eps_) && (globalPos[1] - Y_min >= Y_max - inj_interval) && (Time >= developmentDuration))
+        if (isWellBoundary_(globalPos, inj_interval) && (Time >= developmentDuration))
         {
             if(localTimeInCycle < injectionDurationOp){
                 for (int compIdx = 0; compIdx < numComponents; ++compIdx)
@@ -250,9 +245,9 @@ public:
 
         }
         
-        if ((globalPos[0] > X_max - eps_))
+        if (isRightBoundary_(globalPos))
         { 
-            // set a fixed pressure on the right side of the domain
+            // Pressure outlet for the TPFA overload.
             auto init_val = initial_(globalPos);
             static const Scalar dirichletPressure = init_val[0];
             const auto& volVars = elemVolVars[scvf.insideScvIdx()];
@@ -305,6 +300,7 @@ public:
                             const ElementFluxVariablesCache &elemFluxVarsCache,
                             const SubControlVolumeFace &scvf) const
     {   
+        // Default is no-flow; the well interval and pressure outlet add boundary fluxes.
         NumEqVector values(0.0);
         // return values;
 
@@ -312,6 +308,9 @@ public:
         const auto& volVars = elemVolVars[scvf.insideScvIdx()];
         Scalar Time = this->time();
         NumEqVector injectionComposition_(0.0);
+
+        // Case schedule: development cycles inject cushion gas; operation cycles
+        // alternate between H2 injection, idle time, and extraction.
         static const Scalar cylcesDev            = getParam<double>("BoundaryConditions.CyclesDev");
         static const Scalar injectionDurationDev = getParam<double>("BoundaryConditions.InjectionDurationDev")*86400;
         static const Scalar idleDurationDev     = getParam<double>("BoundaryConditions.IdleDurationDev")*86400;
@@ -326,6 +325,7 @@ public:
         double Extractionrate_ = getParam<double>("BoundaryConditions.ProductionRate", 0.0);
         double inj_interval = getParam<double>("BoundaryConditions.Well_Height", 0.0);
         auto CushionGasType_ = getParam<std::string>("BoundaryConditions.CushionGasType");
+        // Development injection composition is selected from the input file.
         if (CushionGasType_ == "CH4")
             injectionComposition_[CH4Idx] = 1.0;
         else if (CushionGasType_ == "CO2")
@@ -337,7 +337,8 @@ public:
         else
         DUNE_THROW(Dune::InvalidStateException, "Invalid Cushion Gas Type " << CushionGasType_);
 
-        if ((globalPos[0] < X_min + eps_) && (globalPos[1] - Y_min >= Y_max - inj_interval) && (Time < developmentDuration))
+        // Development period: inject the selected cushion gas on the well boundary.
+        if (isWellBoundary_(globalPos, inj_interval) && (Time < developmentDuration))
         {
             const int cycleNumber = std::floor(Time/(injectionDurationDev+idleDurationDev));
             const Scalar localTimeInCycle = Time - cycleNumber*(injectionDurationDev+idleDurationDev);
@@ -348,7 +349,8 @@ public:
                 }   
             }  
         }
-        if ((globalPos[0] < X_min + eps_) && (globalPos[1] - Y_min >= Y_max - inj_interval) && (Time >= developmentDuration))
+        // Operation period: switch between H2 injection and extraction of the local gas mixture.
+        if (isWellBoundary_(globalPos, inj_interval) && (Time >= developmentDuration))
         {
             if(localTimeInCycle < injectionDurationOp){
                 values[H2Idx] = inj_rate_Op;  
@@ -362,9 +364,10 @@ public:
             }
 
         }
-        if ((globalPos[0] > X_max - eps_))
+        if (isRightBoundary_(globalPos))
         {               
-            // set a fixed pressure on the right side of the domain
+            // Pressure outlet for the Box method: reconstruct the pressure gradient
+            // from shape-function gradients, then distribute the phase flux by composition.
             Scalar dirichletPressure(0.0);
             auto init_val = initial_(globalPos);
             const auto &volVars = elemVolVars[scvf.insideScvIdx()];
@@ -376,7 +379,7 @@ public:
                 {
                     const auto xIp = scv.dofPosition()[0];
                     auto tmp = fluxVarsCache.gradN(scv.localDofIndex());
-                    tmp *= xIp > X_max - eps_ ? dirichletPressure
+                    tmp *= xIp > xMax_ - eps_ ? dirichletPressure
                                                 : elemVolVars[scv].pressure();
 
                         gradP += tmp;
@@ -405,8 +408,12 @@ public:
                           const Scalar,
                           std::shared_ptr<const GridGeometry> fvGridGeometry)
     {   
+        // TODO: Separate material-balance/output diagnostics from the physical problem definition.
+        // This hook runs after each accepted time step and reconstructs global
+        // inventory, boundary exchange, and material-balance diagnostics.
         Scalar t, dt, volume(0.0);
         NumEqVector inventory(0.0), inventoryPastSol(0.0), materialBalanceError(0.0);
+        NumEqVector relativeMaterialBalanceError(0.0);
         Scalar averageReservoirPressure(0.0);
         t = this->time();
         Scalar Time = t;
@@ -429,13 +436,12 @@ public:
             elemVolVars.bind(element, fvGeometry, curSol);
             elemFluxVarsCache.bind(element, fvGeometry, elemVolVars);
 
+            // Integrate current and previous component inventories over all control volumes.
             for (auto &&scv : scvs(fvGeometry))
             {
                 const FluidState &fs = elemVolVars[scv].fluidState();
                 const FluidState &fsOld = prevElemVolVars[scv].fluidState();
-                // Scalar extrusion_  = extrusionFactor_sub(element, scv, elemSol);
                 Scalar extrusion_ = Extrusion::volume(fvGeometry, scv);
-                // Scalar extrusion_ = elemVolVars[scv].extrusionFactor();
                 VolumeVariables volVars, volVarsPast;
                 volVars.update(elemSol, *this, element, scv);
                 volVarsPast.update(elemSolPast, *this, element, scv);
@@ -448,8 +454,8 @@ public:
                 volume += scv.volume();
             }
 
-            // %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-            
+            // Reconstruct well-boundary injection and production totals using the same
+            // schedule as the Neumann boundary condition.
             NumEqVector injectionComposition_(0.0);
             static const Scalar cylcesDev            = getParam<double>("BoundaryConditions.CyclesDev");
             static const Scalar injectionDurationDev = getParam<double>("BoundaryConditions.InjectionDurationDev")*86400;
@@ -475,6 +481,8 @@ public:
                 injectionComposition_[N2Idx] = 1.0;
             else
             DUNE_THROW(Dune::InvalidStateException, "Invalid Cushion Gas Type " << CushionGasType_);
+
+            // Loop over boundary faces and accumulate exchange rates over the well interval.
             for (auto&& scvf : scvfs(fvGeometry) )
             {   
                 const auto& scv = fvGeometry.scv(scvf.insideScvIdx());
@@ -482,27 +490,21 @@ public:
                 volVars.update(elemSol, *this, element, scv);
                 volVarsPast.update(elemSolPast, *this, element, scv);
                 Scalar extrusion_  = Extrusion::area(fvGeometry, scvf);
-                // if (scvf.boundary() && scvf.area() == Delta_y/2 && scvf.corner(0)[0] == X_min && scvf.corner(1)[0] == X_min)
-                if (scvf.boundary()  && scvf.area() == Delta_y/2 && scvf.center()[0] == X_min)
+                if (isWellBoundaryFace_(scvf, inj_interval))
                 {
-                    // const auto& globalPos = scvf.ipGlobal()[0];
-                    // if ((globalPos[0] - Delta_x/2 < X_min + eps_) && (globalPos[1] - Y_min >= Y_max - inj_interval) && (Time < localTimeInCycle))
-                    if ((scvf.center()[1] - Y_min >= Y_max - inj_interval) && (Time < developmentDuration))
+                    if (Time < developmentDuration)
                     {
                         const int cycleNumber = std::floor(Time/(injectionDurationDev+idleDurationDev));
                         const Scalar localTimeInCycle = Time - cycleNumber*(injectionDurationDev+idleDurationDev);
                         if(localTimeInCycle <= injectionDurationDev){
-                            // values[CO2Idx] = (1-injectionComposition_[CO2Idx]) * inj_rate;
                             for (int compIdx = 0; compIdx < numComponents; ++compIdx)
                             {
                                 
-                                // values_inj[compIdx] += injectionComposition_[compIdx] * Delta_y* inj_rate_dev / FluidSystem::MixingFluidSystem::molarMass(compIdx);
                                 values_inj[compIdx] += injectionComposition_[compIdx] * extrusion_ * inj_rate_dev;
                             }
                         }
                     }
-                    // if ((globalPos[0] - Delta_x/2 < X_min + eps_) && (globalPos[1] - Y_min >= Y_max - inj_interval) && (Time >= developmentDuration))
-                    if ((scvf.center()[1] - Y_min >= Y_max - inj_interval) && (Time >= developmentDuration))
+                    if (Time >= developmentDuration)
                     {
                         if(localTimeInCycle < injectionDurationOp){
 
@@ -521,9 +523,10 @@ public:
                 
                 }
             }
-            // %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
         }
         const auto &comm = this->gridGeometry().gridView().comm();
+            // Component-wise material-balance check:
+            // previous inventory - current inventory - injected amount + produced amount.
             materialBalanceError = inventoryPastSol - inventory - dt * values_inj + dt * values_prod;
 
             for (int compIdx = 0; compIdx < numComponents; ++compIdx)
@@ -532,6 +535,26 @@ public:
                 values_prod_dt[compIdx] = values_prod[compIdx] * dt;
             }
 
+            for (int compIdx = 0; compIdx < numComponents; ++compIdx)
+            {
+                const Scalar globalError = comm.sum(materialBalanceError[compIdx]);
+                const Scalar balanceScale = std::max(std::abs(comm.sum(inventoryPastSol[compIdx]))
+                                                     + std::abs(comm.sum(values_inj_dt[compIdx]))
+                                                     + std::abs(comm.sum(values_prod_dt[compIdx])),
+                                                     eps_);
+                relativeMaterialBalanceError[compIdx] = std::abs(globalError) / balanceScale;
+            }
+
+            if (comm.rank() == 0)
+            {
+                std::cout << "Relative material-balance error at t = " << t << " s:";
+                for (int compIdx = 0; compIdx < numComponents; ++compIdx)
+                    std::cout << " " << FluidSystem::componentName(compIdx)
+                              << "=" << relativeMaterialBalanceError[compIdx];
+                std::cout << std::endl;
+            }
+
+            // Append parallel-reduced diagnostics to the JSON output file.
             Dumux::MetaData::Collector collector;
             if (Dumux::MetaData::jsonFileExists(name()))
                 Dumux::MetaData::readJsonFile(collector, name());
@@ -603,6 +626,34 @@ public:
 
         GlobalPosition gravity_;
 private:
+    bool isRightBoundary_(const GlobalPosition& globalPos) const
+    {
+        return globalPos[0] > xMax_ - eps_;
+    }
+
+    bool isLeftBoundary_(const GlobalPosition& globalPos) const
+    {
+        return globalPos[0] < xMin_ + eps_;
+    }
+
+    bool isWithinWellInterval_(const GlobalPosition& globalPos, Scalar wellHeight) const
+    {
+        return globalPos[1] - yMin_ >= yMax_ - wellHeight;
+    }
+
+    bool isWellBoundary_(const GlobalPosition& globalPos, Scalar wellHeight) const
+    {
+        return isLeftBoundary_(globalPos) && isWithinWellInterval_(globalPos, wellHeight);
+    }
+
+    bool isWellBoundaryFace_(const SubControlVolumeFace& scvf, Scalar wellHeight) const
+    {
+        return scvf.boundary()
+               && scvf.area() == deltaY_/2
+               && scvf.center()[0] == xMin_
+               && isWithinWellInterval_(scvf.center(), wellHeight);
+    }
+
     // the internal method for the initial condition
     PrimaryVariables initial_(const GlobalPosition &globalPos) const
     {
@@ -620,19 +671,19 @@ private:
         Scalar densityG = FluidSystem::density(fs, gasPhaseIdx);
         // priVars[pressureIdx] = 75e5; // initial condition for the pressure
         // priVars[contiCH4EqIdx] = 1.0;  // initial condition for the N2 molefraction
-        priVars[pressureIdx]  = (pressure_TOP - (densityG * gravity()[dimWorld - 1] * (Y_max - (globalPos)[dimWorld - 1])));
+        priVars[pressureIdx]  = (pressure_TOP - (densityG * gravity()[dimWorld - 1] * (yMax_ - (globalPos)[dimWorld - 1])));
         return priVars;
     }
         TimeLoopPtr timeLoop_;
         static constexpr Scalar eps_ = 1e-6;
-        Dimension_vector CELLS_VEC;
-        Dimension_vector Upper_Right, Lower_Left;
-        double Delta_x = 0.0;
-        double Delta_y = 0.0;
-        double X_max = 0.0;
-        double X_min = 0;
-        double Y_max = 0.0;
-        double Y_min = 0.0;
+        Dimension_vector cells_;
+        Dimension_vector upperRight_, lowerLeft_;
+        double deltaX_ = 0.0;
+        double deltaY_ = 0.0;
+        double xMax_ = 0.0;
+        double xMin_ = 0;
+        double yMax_ = 0.0;
+        double yMin_ = 0.0;
         std::string name_;
     };
 

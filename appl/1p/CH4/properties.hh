@@ -1,7 +1,7 @@
 // -*- mode: C++; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4 -*-
 // vi: set et ts=4 sw=4 sts=4:
 //
-// SPDX-FileCopyrightInfo: Copyright © DuMux Project contributors, see AUTHORS.md in root folder
+// SPDX-FileCopyrightInfo: Copyright ï¿½ DuMux Project contributors, see AUTHORS.md in root folder
 // SPDX-License-Identifier: GPL-3.0-or-later
 //
 /**
@@ -56,13 +56,7 @@ template<class TypeTag>
 struct Problem<TypeTag, TTag::OnePTwoCTest> { using type = OnePTwoCTestProblem<TypeTag>; };
 
 // Set fluid configuration
-// template<class TypeTag>
-// struct FluidSystem<TypeTag, TTag::OnePTwoCTest>
-// {
-//     using Scalar = GetPropType<TypeTag, Properties::Scalar>;
-//     using H2ON2 = FluidSystems::H2ON2<Scalar, FluidSystems::H2ON2DefaultPolicy</*simplified=*/true>>;
-//     using type = FluidSystems::OnePAdapter<H2ON2, H2ON2::liquidPhaseIdx>;
-// };
+
 template<class TypeTag>
 struct FluidSystem<TypeTag, TTag::OnePTwoCTest>
 {
