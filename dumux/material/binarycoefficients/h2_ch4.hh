@@ -20,7 +20,7 @@
 /*!
  * \file
  *
- * \brief Binary coefficients for hydrogen and nitrogen.
+ * \brief Binary coefficients for hydrogen and methane.
  */
 #ifndef DUMUX_BINARY_COEFF_H2_CH4_HH
 #define DUMUX_BINARY_COEFF_H2_CH4_HH
@@ -39,13 +39,13 @@ namespace BinaryCoeff
 
 /*!
  * \ingroup Binarycoefficients
- * \brief Binary coefficients for hydrogen and nitrogen.
+ * \brief Binary coefficients for hydrogen and methane.
  */
 class H2_CH4
 {
 public:
     /*!
-     * \brief Henry coefficent \f$\mathrm{[N/m^2]}\f$ for molecular nitrogen in liquid hydrogen.
+     * \brief Henry coefficent \f$\mathrm{[N/m^2]}\f$ for methane in liquid hydrogen.
      *
      * \param temperature the temperature \f$\mathrm{[K]}\f$
      */
@@ -56,7 +56,7 @@ public:
     };
 
     /*!
-     * \brief Binary diffusion coefficent \f$\mathrm{[m^2/s]}\f$ for molecular hydrogen and nitrogen.
+     * \brief Binary diffusion coefficent \f$\mathrm{[m^2/s]}\f$ for molecular hydrogen and methane.
      *
      * This function estimates the diffusion coefficents in binary gases
      * using to the method proposed by Fuller. This method and is only
@@ -80,9 +80,14 @@ public:
         return fullerMethod(M, SigmaNu, temperature, pressure);
     };
     /*!
-     * \brief Binary diffusion coefficent [m^2/s] for molecular nitrogen and oxygen.
+     * \brief High-pressure binary gas diffusion coefficient \f$\mathrm{[m^2/s]}\f$ for H2-CH4.
      *
-     * \copybody fullerMethod()
+     * Starts from the Fuller low-pressure estimate and applies the dense-fluid
+     * correction of Riazi and Whitson using mixture viscosity and density ratios.
+     *
+     * Reference: Riazi, M. R. and Whitson, C. H. (1993), "Estimating diffusion
+     * coefficients of dense fluids", Industrial & Engineering Chemistry Research,
+     * 32(12), 3081-3088.
      */
     template <class Scalar>
     static Scalar HighPgasDiffCoeff(Scalar temperature, Scalar pressure, Scalar X1, Scalar X2, bool idealgas)
@@ -106,8 +111,10 @@ public:
         const Scalar AF[2] = { Comp1::acentricFactor(), Comp2::acentricFactor() };
         Scalar Weigh_Mu_Low[2] = {0 , 0};
         Scalar Weigh_Mu_High[2] = {0 , 0};
+        // Low-pressure reference diffusivity from Fuller.
         Scalar LowP_Diff = fullerMethod(M, SigmaNu, temperature, pressure);
 
+        // Wilke-type mixture viscosities at low and high pressure.
         Weigh_Mu_Low[0] = pow((1.0+sqrt((Mu_low[0] / Mu_low[1])) * pow((M[1] / M[0]), 1.0/4.0)),2) / (sqrt((8 *(1+(M[0] / M[1])))));
         Weigh_Mu_Low[1] = pow((1 + sqrt((Mu_low[1] / Mu_low[0])) * pow((M[0] / M[1]), 1.0/4.0)),2) / (sqrt((8 *(1+(M[1] / M[0])))));
         Scalar LowP_Visc = Mu_low[0]/(1+(X2/X1) * Weigh_Mu_Low[0]) + Mu_low[1]/(1+(X1/X2)*Weigh_Mu_Low[1]);
@@ -116,6 +123,7 @@ public:
         Weigh_Mu_High[1] = pow((1 + sqrt((Mu_high[1] / Mu_high[0])) * pow((M[0] / M[1]), 1.0/4.0)),2) / (sqrt((8 *(1+(M[1] / M[0])))));
         Scalar HighP_Visc = Mu_high[0]/(1+(X2/X1) * Weigh_Mu_High[0]) + Mu_high[1]/(1+(X1/X2)*Weigh_Mu_High[1]);
 
+        // Riazi-Whitson dense-fluid correction using viscosity and density ratios.
         Scalar b = -0.27 - 0.38 *(X1 * AF[0] + X2 * AF[1]); 
         Scalar c = -0.05 + 0.1 *(X1 * AF[0] + X2 * AF[1]);
         Scalar Pr = pressure / (X1 * Pc[0] + X2 * Pc[1]);
@@ -134,7 +142,7 @@ public:
         return HighP_Diff;
     };
     /*!
-     * \brief Diffusion coefficent \f$\mathrm{[m^2/s]}\f$ for molecular nitrogen in liquid hydrogen.
+     * \brief Diffusion coefficent \f$\mathrm{[m^2/s]}\f$ for methane in liquid hydrogen.
      *
      * \param temperature the temperature \f$\mathrm{[K]}\f$
      * \param pressure the phase pressure \f$\mathrm{[Pa]}\f$

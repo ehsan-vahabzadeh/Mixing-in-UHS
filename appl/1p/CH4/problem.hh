@@ -199,6 +199,8 @@ public:
         Scalar Time = this->time();
         NumEqVector injectionComposition_(0.0);
 
+        // TODO: Extract the well schedule and injection composition into a shared helper
+        // used by neumann() and postTimeStep() to avoid duplicated timing logic.
         static const Scalar cylcesDev            = getParam<double>("BoundaryConditions.CyclesDev");
         static const Scalar injectionDurationDev = getParam<double>("BoundaryConditions.InjectionDurationDev")*86400;
         static const Scalar idleDurationDev     = getParam<double>("BoundaryConditions.IdleDurationDev")*86400;
@@ -300,6 +302,9 @@ public:
                             const ElementFluxVariablesCache &elemFluxVarsCache,
                             const SubControlVolumeFace &scvf) const
     {   
+        // TODO: Extract the well schedule and injection composition into a shared helper
+        // used by neumann() and postTimeStep() to avoid duplicated timing logic.
+        
         // Default is no-flow; the well interval and pressure outlet add boundary fluxes.
         NumEqVector values(0.0);
         // return values;

@@ -19,10 +19,17 @@
 /*!
  * \file
  * \ingroup Fluidsystems
- * \brief @copydoc Dumux::FluidSystems::H2OH2CH4CO2N2
+ * \brief H2O-CH4-H2-CO2-N2 fluid system for high-pressure gas mixing.
  */
+#ifndef DUMUX_MIXING_IN_UHS_FLUIDSYSTEMS_MIXTURE_HH
+#define DUMUX_MIXING_IN_UHS_FLUIDSYSTEMS_MIXTURE_HH
+
+#include <algorithm>
 #include <cassert>
+#include <cmath>
 #include <iomanip>
+#include <string>
+#include <vector>
 
 #include <dumux/common/exceptions.hh>
 
@@ -60,7 +67,7 @@ namespace Dumux {
 namespace FluidSystems {
 /*!
  * \ingroup Fluidsystems
- * \brief Policy for the H2O-H2-CH4-CO2-N2 fluid system
+ * \brief Policy for switching between simplified and real-gas property relations.
  */
 template<bool fastButSimplifiedRelations = false>
 struct MixingFluidSystemDefaultPolicy
@@ -74,8 +81,13 @@ struct MixingFluidSystemDefaultPolicy
 /*!
  * \ingroup Fluidsystems
  *
- * \brief A two-phase fluid system with two components water \f$(\mathrm{H_2O})\f$
- *        Nitrogen \f$(\mathrm{N_2})\f$ for non-equilibrium models.
+ * \brief Two-phase fluid system with water and a multicomponent gas phase
+ *        \f$(\mathrm{CH_4})\f$, \f$(\mathrm{H_2})\f$, \f$(\mathrm{CO_2})\f$,
+ *        and \f$(\mathrm{N_2})\f$.
+ *
+ * The gas-phase density uses a Peng-Robinson compressibility correction unless
+ * the policy selects ideal-gas behavior. Gas viscosity and binary diffusion use
+ * pair/component-specific high-pressure correlations where available.
  */
 template <class Scalar, class Policy = MixingFluidSystemDefaultPolicy<>>
 class MixingFluidSystem
@@ -175,9 +187,8 @@ public:
     static bool isIdealMixture(int phaseIdx)
     {
         assert(0 <= phaseIdx && phaseIdx < numPhases);
-        // we assume Henry's and Raoult's laws for the water phase and
-        // and no interaction between gas molecules of different
-        // components, so all phases are ideal mixtures!
+        // Keep the fluid system non-ideal so DuMuX asks for fugacity
+        // coefficients instead of assuming composition-independent behavior.
         return false;
     }
 
@@ -335,7 +346,13 @@ public:
                    "H2OCH4CO2N2H2FluidSystem::criticalMolarVolume()");
     }
 
-//PENG ROBINSON CUBIC EOS
+    /*!
+     * \brief Gas-phase compressibility factor from a Peng-Robinson cubic EOS.
+     *
+     * The implementation builds pure-component PR parameters, applies classical
+     * quadratic mixing for \f$a_m\f$ and linear mixing for \f$b_m\f$, solves the
+     * cubic EOS, and returns the largest positive root as the gas-phase Z-factor.
+     */
     template <class FluidState>
     static Scalar zFactor(const FluidState &fluidState)
     {
@@ -346,7 +363,6 @@ public:
             Scalar temperature = fluidState.temperature(gasPhaseIdx);
             Scalar pressure = fluidState.pressure(gasPhaseIdx);
 
-            Scalar Pc_mix, Tc_mix; //mixture critical temperature
             Scalar Rconst=8.314;//gas constant
             Scalar aconst[numComponents];
             Scalar bconst[numComponents];
@@ -354,19 +370,9 @@ public:
             Scalar alpha[numComponents];
             Scalar Tr[numComponents];
 
-            //calculate the reduced temperature and pressure of every component
+            // Pure-component PR parameters.
             for (int i=0; i<numComponents; ++i){
                 Tr[i]=temperature/criticalTemperature(i);
-            }
-
-            //calculate the mixture critical temperature and pressure
-            for (int i=0; i<numComponents; ++i){
-                Pc_mix+=fluidState.moleFraction(gasPhaseIdx, i)*criticalPressure(i);
-                Tc_mix+=fluidState.moleFraction(gasPhaseIdx, i)*criticalTemperature(i);
-            }
-
-            //calculate the constants for every component
-            for (int i=0; i<numComponents; ++i){
                 bconst[i] = 0.0778*Rconst*criticalTemperature(i)/criticalPressure(i);
                 kappa[i] = 0.37464 + 1.54226* acentricFactor(i) - 0.2669*acentricFactor(i)*acentricFactor(i);
                 alpha[i] = pow(1+kappa[i]*(1-pow(Tr[i],0.5)),2.0);
@@ -376,7 +382,8 @@ public:
 
 
             Scalar BIC[numComponents][numComponents];
-            //initialization
+            // Binary interaction coefficients for PR mixing.
+            // TODO: Move BIC data to a documented table or input file and cite the source.
             for (int compIIdx=0;compIIdx<numComponents;compIIdx++){
             	for (int compJIdx=0; compJIdx<numComponents;compJIdx++){
                     if (compIIdx == H2OIdx)
@@ -389,14 +396,14 @@ public:
             BIC[CO2Idx][CO2Idx] = 0.01;
             BIC[N2Idx][N2Idx] = 0.00373228;
 
-            for (int i=0; i<=numComponents;++i){
-            	for (int j=numComponents; j>i; --j){
-            		BIC[j][i] = BIC[i][j];
-            	}
+            for (int i=0; i<numComponents; ++i){
+                for (int j=i + 1; j<numComponents; ++j){
+                    BIC[j][i] = BIC[i][j];
+                }
             }
 
             Scalar a_mix[numComponents][numComponents];
-            //initialization of a(i,j) values
+            // Cross interaction terms a(i,j) for quadratic mixing.
             for (int i=0;i<numComponents; ++i){
                 for (int j=0;j<numComponents; ++j){
                     a_mix[i][j] =0;
@@ -411,7 +418,7 @@ public:
 
             Scalar sumYiAmix[numComponents];
 
-            //initialization of sigma yi*a(i,j) values
+            // Mixture attraction parameter a_m.
             for (int i=0; i<numComponents;++i){
                 sumYiAmix[i]=0;
             }
@@ -424,17 +431,17 @@ public:
                 am += fluidState.moleFraction(gasPhaseIdx,i)*sumYiAmix[i];
             }
 
-            //calculate bm
+            // Mixture co-volume parameter b_m.
             Scalar bm=0;
             for (int i=0; i<numComponents;++i){
                 bm += fluidState.moleFraction(gasPhaseIdx,i)*bconst[i];
             }
 
-            //calculate Am and Bm
+            // Reduced PR parameters and cubic equation coefficients.
             Scalar Am=am*pressure/(Rconst*Rconst*temperature*temperature);
             Scalar Bm = bm*pressure/(Rconst*temperature);
 
-            //calculate roots of the cubic equation
+            // Solve the cubic equation analytically.
             Scalar TwoPi = 6.2831853071;
             Scalar eps= 1e-14;
             Scalar x[3];
@@ -474,7 +481,7 @@ public:
                 if(fabs(x[2])<eps)
                 {x[2] = x[1];}
             }
-            //find the maximum root / Z-factor
+            // Gas phase: use the largest positive root as the Z-factor.
             Scalar temp = 0;
 
             for (int i = 0; i < 3; ++i) {
@@ -491,6 +498,8 @@ public:
     template <class FluidState>
     static std::vector<double> Fugacity_Coefficient(const FluidState &fluidState)
     {
+        // TODO: Replace these pure-component PR fugacity coefficients with full
+        // mixture PR fugacity coefficients if phase-equilibrium accuracy is needed.
         // Scalar PHI[numComponents]; 
         Scalar temperature = fluidState.temperature(gasPhaseIdx);
         Scalar pressure = fluidState.pressure(gasPhaseIdx); 
@@ -579,7 +588,8 @@ public:
         }
         case gasPhaseIdx:
         {
-            // assume ideal gas
+            // Gas density is ideal-gas density corrected by the mixture PR Z-factor
+            // unless the policy explicitly selects ideal-gas behavior.
             Scalar avgMolarMass =
                 fluidState.moleFraction(gasPhaseIdx, H2OIdx)*H2O::molarMass() +
                 fluidState.moleFraction(gasPhaseIdx, CH4Idx)*CH4::molarMass() +
@@ -587,17 +597,10 @@ public:
                 fluidState.moleFraction(gasPhaseIdx, CO2Idx)*CO2::molarMass() +
                 fluidState.moleFraction(gasPhaseIdx, N2Idx)*N2::molarMass();
             if (Policy::useIdealGasDensity())
-                // return IdealGas::molarDensity(temperature, pressure) * H2::molarMass();
                 return IdealGas::molarDensity(temperature, pressure) * avgMolarMass;
-
             Scalar density = 0;
-            // return density;
-            // if (fluidState.moleFraction(gasPhaseIdx, H2Idx)>0.49 && fluidState.moleFraction(gasPhaseIdx, H2Idx)<0.5)
-            //     Scalar AAAA=1;
             return density = IdealGas::density(avgMolarMass, temperature, pressure)/zFactor(fluidState);
-            // return IdealGas::density(avgMolarMass, temperature, pressure);
-            // return IdealGas::molarDensity(313, 60e5) * H2::molarMass();
-            
+
         };
         }
 
@@ -638,14 +641,8 @@ public:
             {   //assume ideal gas
                 return IdealGas::molarDensity(T,p);
             }
-            Scalar molarDensity_real=0;
-            // Scalar avgMolarMass =
-            //     fluidState.moleFraction(gasPhaseIdx, H2OIdx)*H2O::molarMass() +
-            //     fluidState.moleFraction(gasPhaseIdx, CH4Idx)*CH4::molarMass() +
-            //     fluidState.moleFraction(gasPhaseIdx, H2Idx)*H2::molarMass() +
-            //     fluidState.moleFraction(gasPhaseIdx, CO2Idx)*CO2::molarMass() +
-            //     fluidState.moleFraction(gasPhaseIdx, N2Idx)*N2::molarMass();
-
+            // Real-gas molar density from ideal-gas molar density corrected by Z.
+            Scalar molarDensity_real= 0;
             molarDensity_real= IdealGas::molarDensity(T,p)/zFactor(fluidState);
             return molarDensity_real;
         }
@@ -677,7 +674,7 @@ public:
         if (phaseIdx == liquidPhaseIdx)
 
             // assume pure water for the liquid phase
-            // TODO: viscosity of mixture
+            // TODO: Add a liquid-mixture viscosity model if dissolved-gas effects become important.
             return H2O::liquidViscosity(temperature, pressure);
         else {
             /* Wilke method. See:
@@ -693,6 +690,8 @@ public:
              */
             // Wilke method (Reid et al.):
             Scalar muResult = 0;
+            // Component viscosities use high-pressure gas correlations where available,
+            // then Wilke's rule mixes them using the local gas composition.
             const Scalar mu[numComponents] = {
                 h2oGasViscosityInMixture(temperature, pressure),
                 CH4::gasViscosityHighP(temperature, pressure),
@@ -700,14 +699,6 @@ public:
                 CO2::gasViscosityHighP(temperature, pressure),
                 N2::gasViscosityHighP(temperature, pressure)
             };
-            // const Scalar mu_lp[numComponents] = {
-            //     h2oGasViscosityInMixture(temperature, pressure),
-            //     CO2::gasViscosity(temperature, pressure),
-            //     H2::gasViscosity(temperature, pressure),
-            //     CH4::gasViscosity(temperature, pressure),
-            //     N2::gasViscosity(temperature, pressure)
-            // };
-
             Scalar sumx = 0.0;
             using std::max;
             for (int compIdx = 0; compIdx < numComponents; ++compIdx)
@@ -787,6 +778,8 @@ public:
             // return 0;
         }
 
+        // TODO: Replace these liquid-phase placeholder coefficients with
+        // Henry/Raoult-law based expressions if the aqueous phase is used actively.
         switch (compIdx) {
             // case H2OIdx: return H2O::vaporPressure(temperature)/pressure;
             case H2OIdx: return 1e-7;
@@ -876,7 +869,6 @@ public:
         if (compIIdx > compJIdx)
             std::swap(compIIdx, compJIdx);
 
-         auto mole_frac_H2O = fluidState.moleFraction(phaseIdx,H2OIdx);
          auto mole_frac_CH4 = fluidState.moleFraction(phaseIdx,CH4Idx);
          auto mole_frac_H2 = fluidState.moleFraction(phaseIdx,H2Idx);
          auto mole_frac_CO2 = fluidState.moleFraction(phaseIdx,CO2Idx);
@@ -894,6 +886,10 @@ public:
             default: return 1e-10;
             }
         case gasPhaseIdx:
+                // Pair-specific high-pressure gas diffusion coefficients are used
+                // where available; remaining pairs fall back to the standard
+                // low-pressure-style correlations/default values below.
+                // TODO: Replace fallback constants with documented correlations or input parameters.
                 // if (fluidState.moleFraction(phaseIdx,compIIdx) < 1e-10 && fluidState.moleFraction(phaseIdx,compJIdx) < 1e-10)
                 //     return 1e-6; // no diffusion if one component is not present
                 switch (compIIdx) {
@@ -955,5 +951,4 @@ public:
 
 } // end namespace Dumux
 
-// #endif
-
+#endif // DUMUX_MIXING_IN_UHS_FLUIDSYSTEMS_MIXTURE_HH
