@@ -1,9 +1,5 @@
 # Mixing-in-UHS: Techno-Economic Optimisation of Underground Hydrogen Storage
 
-For an interview-oriented walkthrough of the DuMuX/DUNE code structure and the
-custom modelling contributions, see
-[`README_CODE_PRESENTATION.md`](README_CODE_PRESENTATION.md).
-
 ## Summary
 
 This repository contains the simulation code, post-processing tools, surrogate modelling, and optimisation framework for the following paper:

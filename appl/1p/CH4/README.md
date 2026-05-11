@@ -1,40 +1,231 @@
-# Biochemical - Case Description
-This simulation case allows testing the implemented model of bio-geo-reactive transport during UHS on a simple geometric structure. In the following, the implemented model is briefly explained.
+# CH4 One-Phase Multicomponent Simulation
 
-![image](assets/H2Fraction.gif)
+This folder contains the main single-phase CH4 cushion-gas case for the
+Mixing-in-UHS DuMuX module.
 
+The case uses DuMuX/DUNE framework infrastructure for the grid, finite-volume
+discretization, assembly, nonlinear solve, and output. The local code in this
+folder configures the physical problem and connects the custom gas-mixture,
+transport, and dispersion extensions used by this simulation.
 
-## Fluid and solid system
-The fluidsystem comprises two phases (water and gas), which are composed of six components: water ($\mathrm{H_2O}$), methane ($\mathrm{CH_4}$), hydrogen ($\mathrm{H_2}$), carbon dioxide ($\mathrm{CO_2}$), nitrogen ($\mathrm{N_2}$), and hydrogen sulfur ($\mathrm{H_2S}$). Apart from the chemical components, the methanogenic archaea are implemented as an additional pseudo component, which does not affect the fluids' viscosity and density. The characteristic growth parameters are based on [recent literature values](https://www.earthdoc.org/content/papers/10.3997/2214-4609.202035171) and are defined as follows:
+## Simulation Structure
 
+```text
+appl/1p/CH4/
+├── CMakeLists.txt
+├── params.input
+├── main.cc
+├── properties.hh
+├── problem.hh
+├── spatialparams.hh
+├── fluidsystems/
+│   └── mixture.hh
+├── runscript.py
+└── vtk-merge-multi.py
+```
 
-|Parameter| Symbol | Value |
-| :---      | :---:       | :---:   |
-|Maximal growth rate | $\psi^\mathrm{growth}_\mathrm{max}$ | $1.338\cdot 10^{-4} \mathrm{1/s}$ |
-|$\mathrm{H_2}$ half velocity constant | $\alpha_\mathrm{H_2}$ | $3.6\cdot 10^{-7}$ |
-|$\mathrm{CO_2}$ half velocity constant | $\alpha_\mathrm{CO_2}$ | $1.98\cdot 10^{-6}$ |
-|Yield coefficient | $Y$ | $3.9\cdot 10^{11}$ $\mathrm{1/mol}$ |
-|Initial number of bacteria | $n^*$ | $1\cdot 10^8$ $\mathrm{m^{-3}}$|
+Related custom framework extensions are outside this folder:
 
-Regarding the solid system, three components are introduced: pyrite, pyrrhotite, and one inert component, quartz. At the current state, the geochemical reaction rate is defined artificially.
+```text
+dumux/flux/box/dispersionflux.hh
+dumux/material/fluidmatrixinteractions/dispersiontensors/scheidegger.hh
+dumux/material/binarycoefficients/h2_ch4.hh
+dumux/porousmediumflow/compositional/localresidual.hh
+```
 
+## What DuMuX/DUNE Provides
 
-## Spatial discretization
-The grid composes of a cartesian (YASP) grid with the dimensions $\mathrm{1550m x 1550m x 50m}$. The discretization is defined with 31x31x10 cells. The distribution of petrophysical properties is homogeneous with $\phi = 0.2$, $k_x = k_y = 100\mathrm{mD}$, and $k_z = 10\mathrm{mD}$.
+The simulation relies on standard DuMuX/DUNE machinery for:
 
-## Fluid-matrix interactions
-The fluid-matrix interactions regarding advective flux are defined by the model of Brooks & Corey with the following parameters:
+- DUNE structured grid infrastructure, here through `Dune::YaspGrid`
+- DuMuX one-phase multicomponent model infrastructure
+- Box finite-volume grid geometry and sub-control-volume faces
+- Darcy advection and Fickian molecular diffusion interfaces
+- residual assembly, Newton iteration, linear solve, and time stepping
+- VTK output and grid-variable management
 
-| Parameter | Value |
-| :---:       | :---:   |
-| $S_{wc}$ | 0.2|
-| $S_{gr}$ | 0.1 |
-| $\lambda$ | 2 |
-| $p_{ce}$  | 0 |
+The custom code configures and extends this framework rather than replacing it.
 
-## Initialization
-The initialization is performed based on the hydrostatic equilibrium with $p_{\text{init}} = 100\mathrm{bar}$ at the top of the formation. The saturation is at connate water saturation, and the gas is composed of methane and a minor part of $\mathrm{H_2O}$ in thermodynamic equilibrium. The initial volume fraction of pyrite is initially set to 5%. The temperature is set to $T = 40{^\circ}C$.
+## Local Case Files
 
-## Operation schedule
-A simplified storage operation is defined as 30 days of injection, 30 days idle, 30 days of production, and 15 days idle.  The operation is
-rate controlled with identical rates for injection and production ($1\cdot 10^6\mathrm{Sm^3/d}$ 95% $\mathrm{H_2}$, 5% $\mathrm{CO_2}$).
+### `properties.hh`
+
+This is the main wiring file for the case. It uses DuMuX type tags and
+properties to select:
+
+- `OnePNC` as the base one-phase multicomponent model
+- `BoxModel` as the discretization used in the active case
+- `Dune::YaspGrid<2>` as the structured grid
+- rotational extrusion for axisymmetric radial geometry
+- `OnePTwoCTestProblem` from `problem.hh`
+- the custom `MixingFluidSystem` wrapped by `OnePAdapter`
+- `FicksLaw` for molecular diffusion
+- `ScheideggersDispersionTensor` for compositional dispersion
+- molar component balances through `UseMoles = true`
+
+This file is a useful first stop because it shows how the simulation is built
+from framework pieces and local model choices.
+
+### `main.cc`
+
+This is the standard DuMuX simulation driver. It:
+
+- initializes DuMuX/DUNE runtime services
+- reads input parameters
+- creates the grid through `GridManager`
+- obtains the leaf grid view
+- builds grid geometry, problem, and grid variables
+- initializes the solution vector
+- sets up VTK output
+- creates the assembler, linear solver, and Newton solver
+- advances the time loop
+
+Most of this file is standard simulation orchestration. The specific modelling
+choices come from `properties.hh` and the type tag selected at compile time.
+
+### `problem.hh`
+
+This file defines the physical setup for the CH4 case:
+
+- initial pressure and gas composition
+- boundary conditions
+- injection and production schedule
+- well-region helper functions
+- Neumann fluxes for injection/production
+- material-balance diagnostics
+- JSON/post-processing output
+
+This is where the operating scenario is expressed in DuMuX problem-class form.
+
+### `spatialparams.hh`
+
+This file contains medium properties such as porosity and permeability. These
+are queried by the framework during volume-variable and flux calculations.
+
+### `fluidsystems/mixture.hh`
+
+This is the custom high-pressure gas mixture model used by the case. It defines
+a multicomponent fluid system for:
+
+- H2O
+- CH4
+- H2
+- CO2
+- N2
+
+Important local property logic includes:
+
+- Peng-Robinson gas compressibility factor for density correction
+- component Z-factor helper used by the dispersion model
+- Wilke-style gas-mixture viscosity with high-pressure component viscosities
+- high-pressure binary diffusion coefficient selection
+- fallback values where documented correlations still need to be added
+
+## Custom Transport And Property Extensions
+
+### `dumux/flux/box/dispersionflux.hh`
+
+This is the Box-method compositional dispersion flux implementation.
+
+For each component, the implemented face flux has the structure:
+
+```text
+J_k_disp = -rho_alpha * (n^T D_disp grad x_k) * area * S_alpha * phi
+```
+
+where `D_disp` comes from the selected dispersion model, `grad x_k` is
+reconstructed with Box shape-function gradients, and `n` is the face normal.
+
+Useful code points:
+
+- `gradX.axpy(x, gradN)` reconstructs the component-fraction gradient
+- `vtmv(n, D, gradX)` computes the normal tensor flux through the face
+- `faceTensorAverage(...)` gives a consistent face tensor if inside/outside
+  extrusion factors differ
+
+### `dumux/material/fluidmatrixinteractions/dispersiontensors/scheidegger.hh`
+
+This file computes the dispersion matrix used by the Box flux. It reconstructs
+a local face velocity, assigns longitudinal and transverse dispersivities, and
+returns the directional Scheidegger-type matrix.
+
+The current modes include:
+
+- no dispersion
+- grid-size based dispersivity
+- a case-specific H2/CH4 Z-ratio correction using Peng-Robinson component
+  compressibility factors
+
+### `dumux/porousmediumflow/compositional/localresidual.hh`
+
+This file adds the dispersion flux to the component conservation equations.
+
+The residual follows the usual finite-volume structure:
+
+```text
+storage change + net face fluxes - sources
+```
+
+The local extension is the addition of:
+
+```cpp
+const auto dispersionFluxes = fluxVars.compositionalDispersionFlux(phaseIdx);
+for (int compIdx = 0; compIdx < numComponents; ++compIdx)
+    flux[conti0EqIdx + compIdx] += dispersionFluxes[compIdx];
+```
+
+So `dispersionflux.hh` computes the face rate, and `localresidual.hh` inserts
+that rate into the component balances.
+
+### `dumux/material/binarycoefficients/h2_ch4.hh`
+
+This is a focused example of high-pressure binary diffusion. The H2-CH4
+implementation starts from a low-pressure gas diffusivity estimate and applies
+a dense-fluid correction in the style of:
+
+```text
+Riazi, M. R. and Whitson, C. H. (1993).
+"Estimating diffusion coefficients of dense fluids."
+Industrial & Engineering Chemistry Research, 32(12), 3081-3088.
+```
+
+This connects the transport model to pressure-dependent gas properties.
+
+## Build And Run
+
+From the configured DUNE/DuMuX workspace:
+
+```bash
+cmake --build Mixing-in-UHS/build-cmake --target appl_1pnc_box_CH4 -j2
+```
+
+The executable is created in:
+
+```text
+Mixing-in-UHS/build-cmake/appl/1p/CH4/
+```
+
+Run from that directory:
+
+```bash
+cd Mixing-in-UHS/build-cmake/appl/1p/CH4
+./appl_1pnc_box_CH4 params.input
+```
+
+The main input file is:
+
+```text
+appl/1p/CH4/params.input
+```
+
+## Notes And Limitations
+
+- Some empirical constants should eventually be moved to documented input
+  tables.
+- Dispersion mode 2 is case-specific and should be documented as a named model
+  with a clear calibration range.
+- Binary diffusion fallback values should be replaced by documented
+  correlations or input-controlled values.
+- Material-balance diagnostics and JSON output could be separated more cleanly
+  from the physical problem class.
+- Build outputs under `build-cmake/` should not be committed.
