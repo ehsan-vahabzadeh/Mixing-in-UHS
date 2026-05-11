@@ -19,12 +19,13 @@
 /*!
  * \file
  * \ingroup Fluidmatrixinteractions
- * \copydoc Dumux::ScheideggersDispersionTensor
+ * \brief Scheidegger-type hydrodynamic dispersion model.
  */
 #ifndef DUMUX_MATERIAL_FLUIDMATRIX_DISPERSIONTENSORS_SCHEIDEGGER_HH
 #define DUMUX_MATERIAL_FLUIDMATRIX_DISPERSIONTENSORS_SCHEIDEGGER_HH
 
 #include <algorithm>
+#include <array>
 #include <cmath>
 #include <dune/common/math.hh>
 #include <dune/common/std/type_traits.hh>
@@ -48,7 +49,11 @@ static constexpr bool hasVelocityInSpatialParams()
 
 /*!
  * \ingroup Fluidmatrixinteractions
- * \brief Scheidegger's dispersion tensor
+ * \brief Velocity-dependent longitudinal/transverse dispersion model.
+ *
+ * The model reconstructs a local face velocity, assigns longitudinal and
+ * transverse dispersivities for the current case, and returns the directional
+ * dispersion matrix required by the Box flux calculation.
  */
 template<class TypeTag>
 class ScheideggersDispersionTensor
@@ -59,15 +64,13 @@ class ScheideggersDispersionTensor
     using SubControlVolumeFace = typename GridGeometry::SubControlVolumeFace;
     using ElementVolumeVariables = typename GetPropType<TypeTag, Properties::GridVolumeVariables>::LocalView;
 
+    using FluidSystem = GetPropType<TypeTag, Properties::FluidSystem>;
     using Scalar = GetPropType<TypeTag, Properties::Scalar>;
     using GridView = typename GetPropType<TypeTag, Properties::GridGeometry>::GridView;
     static const int dimWorld = GridView::dimensionworld;
     using DimWorldMatrix = Dune::FieldMatrix<Scalar, dimWorld, dimWorld>;
 
     using FluxVariables = GetPropType<TypeTag, Properties::FluxVariables>;
-    using FluidState = GetPropType<TypeTag, Properties::FluidState>;
-    using SolidState = GetPropType<TypeTag, Properties::SolidState>;
-    using FluidSystem = GetPropType<TypeTag, Properties::FluidSystem>;
     using FluxTraits = typename Dumux::FluxTraits<FluxVariables>;
     static constexpr bool stationaryVelocityField = FluxTraits::hasStationaryVelocityField();
 
@@ -79,81 +82,65 @@ public:
                                                         const ElementVolumeVariables& elemVolVars,
                                                         const ElementFluxVariablesCache& elemFluxVarsCache,
                                                         const int phaseIdx,
-                                                        const int compIdx)
+                                                        [[maybe_unused]] const int compIdx)
     {
-        DimWorldMatrix dispersionTensor(0.0);
-        // static const Scalar injectionDurationOp = getParam<double>("BoundaryConditions.InjectionDurationOp")*86400;
-        static const int DispersionMode = getParam<int>("Problem.DispersionMode", 1);
-        // auto time = problem.time();
-        // Get the velocity either from the reconstruction, or from the spatialparams
-        auto velocity = dispersionVelocity_(problem, scvf, fvGeometry, elemVolVars, elemFluxVarsCache,phaseIdx);
-        // std::array<Scalar,2> dispersivity  = {0,0};
-        Scalar alphaL = 0.0, alphaT = 0.0;
-        // Scalar Z_ratio = 0.0, DiffCoeff = 0.0;
-        // Scalar Porosity = 0.0, Peclet = 0.0;
-        // Scalar velocity_mag = std::sqrt(std::pow(velocity[0],2)+std::pow(velocity[1],2));
-        // Scalar u_x = std::abs(velocity[0]);
-        if (DispersionMode != 0 ) {
+        static const int dispersionMode = getParam<int>("Problem.DispersionMode", 1);
+
+        const auto velocity = dispersionVelocity_(problem, scvf, fvGeometry, elemVolVars, elemFluxVarsCache, phaseIdx);
+        Scalar longitudinalDispersivity = 0.0;
+        Scalar transverseDispersivity = 0.0;
+
+        if (dispersionMode == 1 || dispersionMode == 2)
+        {
             for (auto&& scv : scvs(fvGeometry))
             {
-                // const FluidState &fs = elemVolVars[scv].fluidState();
-                // const SolidState &ss = elemVolVars[scv].solidState();
-                // Porosity = elemVolVars[scv].porosity();
-                // u_x = u_x / Porosity;
-                
-                auto globalpos1 = fvGeometry.geometry(scv).corner(0);
-                auto globalpos2 = fvGeometry.geometry(scv).corner(3);
-                // if (DispersionMode == 2 ) {
-                //     alphaL = 2 * (globalpos2[0] - globalpos1[0]);
-                //     alphaT = 2 * (globalpos2[1] - globalpos1[1]);
-                //     // auto Phi = FluidSystem::MixingFluidSystem::Fugacity_Coefficient(fs);
-                //     auto Z = FluidSystem::MixingFluidSystem::Z_factor(fs);
-                //     auto DiffCoeff = FluidSystem::MixingFluidSystem::binaryDiffusionCoefficient(fs,phaseIdx,1,2);
-                //     // Phi_ratio = Phi[1]/Phi[2];
-                //     if (time <= injectionDurationOp)
-                //         Z_ratio = Z[2]/Z[1];
-                //     else if (time > injectionDurationOp)
-                //         Z_ratio = Z[1]/Z[2];
-                //     // Peclet = velocity_mag * 2*(globalpos2[0] - globalpos1[0]) / DiffCoeff; 
-                //     Scalar log_ux = log10(u_x); 
-                //     Scalar CF = 0;
-                //     // if (log_Pe <= 0 || Peclet < 5)
-                //     if (Z_ratio < 0.6)
-                //         Z_ratio = 0.6;
-                //     else if (Z_ratio > 1.6)
-                //         Z_ratio = 1.6;
+                const auto lowerCorner = fvGeometry.geometry(scv).corner(0);
+                const auto upperCorner = fvGeometry.geometry(scv).corner(3);
 
-                //     CF = 132.069 * exp(-4.883 * Z_ratio);
-                //     // if (u_x == 0 || u_x< 5.5e-5 || u_x > 1.0e-2 || Z_ratio > 1.6 || Z_ratio < 0.6)
-                //     //     CF = 0;
-                //     // else  
-                //     //     CF = 132.069 * exp(-4.883 * Z_ratio);
+                // Current case-specific choice: longitudinal dispersivity is
+                // twice the local cell length, transverse dispersivity is 10%
+                // of the longitudinal value.
+                longitudinalDispersivity = 2.0 * (upperCorner[0] - lowerCorner[0]);
 
-                //     // if(CF > 0)
-                //     alphaL = alphaL * CF;
-                //     alphaT = alphaL /10.0;
-                //     if(CF > 3)
-                //         Scalar AAAAA=1;
-                // }
-                if (DispersionMode == 1) {
-                    // dispersivity = problem.spatialParams().dispersionTensor(globalpos1, phaseIdx, compIdx);
-                    alphaL = 2 * (globalpos2[0] - globalpos1[0]);
-		    //alphaL = 1;
-                    alphaT = alphaL / 10.0;
-                    // alphaT = 2 * (globalpos2[1] - globalpos1[1]);
+                if (dispersionMode == 2)
+                {
+                    // Case-specific correction used in the UHS runs: scale the
+                    // grid-size dispersivity with an H2/CH4 Peng-Robinson Z-ratio.
+                    // TODO: Move this empirical correction into a named model with
+                    // its reference, calibration range, and component pair exposed.
+                    using MultiPhaseFluidSystem = typename FluidSystem::MultiPhaseFluidSystem;
+
+                    const auto& fluidState = elemVolVars[scv].fluidState();
+                    const Scalar temperature = fluidState.temperature(phaseIdx);
+                    const Scalar pressure = fluidState.pressure(phaseIdx);
+                    const auto zFactor = MultiPhaseFluidSystem::componentZFactors(temperature, pressure);
+
+                    static const Scalar injectionDuration =
+                        getParam<Scalar>("BoundaryConditions.InjectionDurationOp")*86400.0;
+
+                    const Scalar h2Z = zFactor[MultiPhaseFluidSystem::H2Idx];
+                    const Scalar ch4Z = zFactor[MultiPhaseFluidSystem::CH4Idx];
+                    const Scalar minZ = Scalar(1e-12);
+                    Scalar zRatio = problem.time() <= injectionDuration
+                        ? h2Z/std::max(ch4Z, minZ)
+                        : ch4Z/std::max(h2Z, minZ);
+
+                    zRatio = std::max(Scalar(0.6), std::min(Scalar(1.6), zRatio));
+                    const Scalar correctionFactor = 132.069*std::exp(-4.883*zRatio);
+                    longitudinalDispersivity *= correctionFactor;
                 }
-                
+
+                transverseDispersivity = longitudinalDispersivity / 10.0;
                 break;
             }
-            
         }
-        
-        
-        std::array<Scalar,2> dispersivity  = {alphaL,alphaT};
-        
-        // collect the dispersion alphas at this location
-       
+        else if (dispersionMode != 0)
+        {
+            // TODO: Implement additional dispersion modes as separate, documented models.
+            DUNE_THROW(Dune::InvalidStateException, "Unsupported Problem.DispersionMode " << dispersionMode);
+        }
 
+        const std::array<Scalar,2> dispersivity = {longitudinalDispersivity, transverseDispersivity};
         return scheideggerTensor_(dispersivity, velocity);
     }
 
@@ -165,13 +152,9 @@ public:
                                                   const ElementFluxVariablesCache& elemFluxVarsCache,
                                                   const int phaseIdx)
     {
-        DimWorldMatrix dispersionTensor(0.0);
-
-        // Get the velocity either from the reconstruction, or from the spatialparams
+        // Thermal dispersion keeps the standard spatial-parameter dispersivities.
         auto velocity = dispersionVelocity_(problem, scvf, fvGeometry, elemVolVars, elemFluxVarsCache, phaseIdx);
-
-        // collect the dispersion alphas at this location
-        std::array<Scalar,2> dispersivity = problem.spatialParams().dispersionAlphas(scvf.center(), phaseIdx); //TODO: fix this?
+        std::array<Scalar,2> dispersivity = problem.spatialParams().dispersionAlphas(scvf.center(), phaseIdx);
 
         return scheideggerTensor_(dispersivity, velocity);
     }
@@ -186,7 +169,7 @@ private:
                                                                    [[maybe_unused]] const ElementFluxVariablesCache& elemFluxVarsCache,
                                                                    const int phaseIdx)
     {
-        // Calculate Darcy's velocity
+        // Reconstruct the local face velocity used to orient hydrodynamic dispersion.
         Dune::FieldVector<Scalar, dimWorld> velocity(0.0);
         if constexpr (stationaryVelocityField)
         {
@@ -202,17 +185,17 @@ private:
                 const auto& fluxVarsCache = elemFluxVarsCache[scvf];
                 const auto& shapeValues = fluxVarsCache.shapeValues();
 
-                // get inside and outside permeability tensors and calculate the harmonic mean
+                // Average porosity and permeability across the face.
                 const auto& insideVolVars = elemVolVars[scvf.insideScvIdx()];
                 const auto& outsideVolVars = elemVolVars[scvf.outsideScvIdx()];
-                Scalar PHI_I = insideVolVars.porosity();
-                Scalar PHI_J = outsideVolVars.porosity();
-                Scalar PHI_average = 0.5*(PHI_I+PHI_J);
+                const Scalar insidePorosity = insideVolVars.porosity();
+                const Scalar outsidePorosity = outsideVolVars.porosity();
+                const Scalar averagePorosity = 0.5*(insidePorosity + outsidePorosity);
                 const auto K = faceTensorAverage(insideVolVars.permeability(),
                                                  outsideVolVars.permeability(),
                                                  scvf.unitOuterNormal());
 
-                // evaluate gradP - rho*g at integration point
+                // Box reconstruction of grad(p) - rho*g at the face.
                 Dune::FieldVector<Scalar, dimWorld> gradP(0.0);
                 Scalar rho(0.0);
                 static const bool enableGravity = getParamFromGroup<bool>(problem.paramGroup(), "Problem.EnableGravity");
@@ -222,40 +205,21 @@ private:
 
                     if (enableGravity)
                         rho += volVars.density(phaseIdx)*shapeValues[scv.indexInElement()][0];
-                    // the global shape function gradient
+
                     gradP.axpy(volVars.pressure(phaseIdx), fluxVarsCache.gradN(scv.indexInElement()));
                 }
 
                 if (enableGravity)
                     gradP.axpy(-rho, problem.spatialParams().gravity(scvf.center()));
 
-                // if (std::abs(gradP[0]) > 1e-3)
-                //     Scalar AAA = 0.0;
-            //    static const Scalar upwindWeight = getParamFromGroup<Scalar>(elemVolVars.gridVolVars().problem().paramGroup(), "Flux.UpwindWeight");
-
-                
+                // Current 2D implementation uses the diagonal permeability entries,
+                // then converts Darcy velocity to pore velocity with average porosity.
+                // TODO: Generalize this reconstruction for full anisotropic tensors.
                 velocity = gradP;
-                using std::signbit;
-                // if (signbit(velocity[0])){
-                //     velocity[0] *=  1.0/(upwindWeight*PHI_J+ (1.0 - upwindWeight)*PHI_I);
-                //     velocity[0] *=  (upwindWeight*outsideVolVars.mobility(phaseIdx)+ (1.0 - upwindWeight)*insideVolVars.mobility(phaseIdx));
-                // }else{
-                //     velocity[0] *=  1.0/(upwindWeight*PHI_I+ (1.0 - upwindWeight)*PHI_J);
-                //     velocity[0] *=  (upwindWeight*insideVolVars.mobility(phaseIdx)+ (1.0 - upwindWeight)*outsideVolVars.mobility(phaseIdx));
-                // }
-                // if (signbit(velocity[1])){
-                //     velocity[1] *=  1.0/(upwindWeight*PHI_J+ (1.0 - upwindWeight)*PHI_I);
-                //     velocity[1] *=  -1.0*(upwindWeight*outsideVolVars.mobility(phaseIdx)+ (1.0 - upwindWeight)*insideVolVars.mobility(phaseIdx));
-                // }else{
-                //     velocity[1] *=  1.0/(upwindWeight*PHI_I+ (1.0 - upwindWeight)*PHI_J);
-                //     velocity[1] *= -1.0* (upwindWeight*insideVolVars.mobility(phaseIdx)+ (1.0 - upwindWeight)*outsideVolVars.mobility(phaseIdx));
-                // }
                 velocity[0] *= K[0][0];
                 velocity[1] *= K[1][1];
-                // velocity *= K;
-                // velocity[0] =std::abs(velocity[0]);velocity[1] =std::abs(velocity[1]);
-                velocity[0] *= 1.0 / PHI_average;
-                velocity[1] *= 1.0 / PHI_average;
+                velocity[0] *= 1.0 / averagePorosity;
+                velocity[1] *= 1.0 / averagePorosity;
                 velocity *= -0.5 * (insideVolVars.mobility(phaseIdx) + outsideVolVars.mobility(phaseIdx));
             }
             else
@@ -270,22 +234,19 @@ private:
     {
         DimWorldMatrix scheideggerTensor(0.0);
 
-        //matrix multiplication of the velocity at the interface: vv^T
+        const Scalar vNorm = velocity.two_norm();
+        if (vNorm < 1e-20)
+            return scheideggerTensor;
+
+        // Directional contribution from the local velocity.
         for (int i=0; i < dimWorld; i++)
             for (int j = 0; j < dimWorld; j++)
                 scheideggerTensor[i][j] = velocity[i]*velocity[j];
 
-        //normalize velocity product --> vv^T/||v||, [m/s]
-        Scalar vNorm = velocity.two_norm();
-
         scheideggerTensor /= vNorm;
-        if (vNorm < 1e-20)
-            scheideggerTensor = 0;
-
-        //multiply with dispersivity difference: vv^T/||v||*(alphaL - alphaT), [m^2/s] --> alphaL = longitudinal disp., alphaT = transverse disp.
         scheideggerTensor *= (dispersivity[0] - dispersivity[1]);
 
-        //add ||v||*alphaT to the main diagonal:vv^T/||v||*(alphaL - alphaT) + ||v||*alphaT, [m^2/s]
+        // Transverse contribution on the main diagonal.
         for (int i = 0; i < dimWorld; i++)
             scheideggerTensor[i][i] += vNorm*dispersivity[1];
 
@@ -297,4 +258,3 @@ private:
 } // end namespace Dumux
 
 #endif
-

@@ -39,6 +39,9 @@ namespace Dumux {
  * \ingroup PorousmediumflowModels
  * \brief Element-wise calculation of the local residual for problems
  *        using compositional fully implicit model.
+ *
+ * This version follows the standard DuMuX compositional residual structure and
+ * adds the optional compositional dispersion flux to the component balances.
  */
 template<class TypeTag>
 class CompositionalLocalResidual: public GetPropType<TypeTag, Properties::BaseLocalResidual>
@@ -95,10 +98,10 @@ public:
         const auto massOrMoleDensity = [](const auto& volVars, const int phaseIdx)
         { return useMoles ? volVars.molarDensity(phaseIdx) : volVars.density(phaseIdx); };
 
-        const auto massOrMoleFraction= [](const auto& volVars, const int phaseIdx, const int compIdx)
+        const auto massOrMoleFraction = [](const auto& volVars, const int phaseIdx, const int compIdx)
         { return useMoles ? volVars.moleFraction(phaseIdx, compIdx) : volVars.massFraction(phaseIdx, compIdx); };
 
-        // compute storage term of all components within all phases
+        // Storage/accumulation term: sum over phases of phi*S_alpha*rho_alpha*x_alpha^k.
         for (int phaseIdx = 0; phaseIdx < numPhases; ++phaseIdx)
         {
             for (int compIdx = 0; compIdx < numComponents; ++compIdx)
@@ -121,12 +124,13 @@ public:
             EnergyLocalResidual::fluidPhaseStorage(storage, problem, scv, volVars, phaseIdx);
         }
 
-        //! The energy storage in the solid matrix
+        //! The energy storage in the solid matrix. Zero for the isothermal model.
         EnergyLocalResidual::solidPhaseStorage(storage, scv, volVars);
 
         return storage;
     }
-/*!
+
+    /*!
      * \brief Evaluates the total flux of all conservation quantities
      *        over a face of a sub-control volume.
      *
@@ -145,18 +149,35 @@ public:
                             const ElementFluxVariablesCache& elemFluxVarsCache) const
     {
         FluxVariables fluxVars;
-        // Scalar flux_H2(0.0);
         fluxVars.init(problem, element, fvGeometry, elemVolVars, scvf, elemFluxVarsCache);
-        static constexpr auto referenceSystemFormulation = FluxVariables::MolecularDiffusionType::referenceSystemFormulation();
-        // get upwind weights into local scope
-        NumEqVector flux(0.0),diffusive_flux(0.0);
+        static constexpr auto referenceSystemFormulationDiffusion =
+            FluxVariables::MolecularDiffusionType::referenceSystemFormulation();
+
+        NumEqVector flux(0.0);
+
         const auto massOrMoleDensity = [](const auto& volVars, const int phaseIdx)
         { return useMoles ? volVars.molarDensity(phaseIdx) : volVars.density(phaseIdx); };
 
-        const auto massOrMoleFraction= [](const auto& volVars, const int phaseIdx, const int compIdx)
+        const auto massOrMoleFraction = [](const auto& volVars, const int phaseIdx, const int compIdx)
         { return useMoles ? volVars.moleFraction(phaseIdx, compIdx) : volVars.massFraction(phaseIdx, compIdx); };
 
-        // advective fluxes
+        // Molecular diffusion may be formulated in mass- or molar-averaged form.
+        // Convert it to the equation units selected by ModelTraits::useMoles().
+        const auto adaptDiffusiveFluxUnits = [](const Scalar referenceFlux, const Scalar molarMass,
+                                                const ReferenceSystemFormulation referenceSystemFormulation)
+        {
+            if (referenceSystemFormulation == ReferenceSystemFormulation::massAveraged)
+                return useMoles ? referenceFlux/molarMass
+                                : referenceFlux;
+            else if (referenceSystemFormulation == ReferenceSystemFormulation::molarAveraged)
+                return useMoles ? referenceFlux
+                                : referenceFlux*molarMass;
+            else
+                DUNE_THROW(Dune::NotImplemented, "other reference systems than mass and molar averaged are not implemented");
+        };
+
+        // Face flux contribution for each phase: advection + molecular diffusion
+        // plus the custom hydrodynamic dispersion contribution below.
         for (int phaseIdx = 0; phaseIdx < numPhases; ++phaseIdx)
         {
             const auto diffusiveFluxes = fluxVars.molecularDiffusionFlux(phaseIdx);
@@ -165,56 +186,38 @@ public:
                 // get equation index
                 const auto eqIdx = conti0EqIdx + compIdx;
 
-                // the physical quantities for which we perform upwinding
+                // Upwinded transported quantity for advective component flux.
                 const auto upwindTerm = [&massOrMoleDensity, &massOrMoleFraction, phaseIdx, compIdx] (const auto& volVars)
                 {
-                    return massOrMoleDensity(volVars, phaseIdx)*massOrMoleFraction(volVars, phaseIdx, compIdx)*volVars.mobility(phaseIdx); 
+                    return massOrMoleDensity(volVars, phaseIdx)*massOrMoleFraction(volVars, phaseIdx, compIdx)*volVars.mobility(phaseIdx);
                 };
 
+                // Advective fluxes are added only to the component balances.
                 if (eqIdx != replaceCompEqIdx)
                     flux[eqIdx] += fluxVars.advectiveFlux(phaseIdx, upwindTerm);
 
-                // diffusive fluxes (only for the component balances)
-                // flux_H2 = flux[2];
-                if(eqIdx != replaceCompEqIdx)
-                {
-                    //check for the reference system and adapt units of the diffusive flux accordingly.
-                    if (referenceSystemFormulation == ReferenceSystemFormulation::massAveraged)
-                        flux[eqIdx] += useMoles ? diffusiveFluxes[compIdx]/FluidSystem::molarMass(compIdx)
-                                            : diffusiveFluxes[compIdx];
-                    else if (referenceSystemFormulation == ReferenceSystemFormulation::molarAveraged){
-                        // diffusive_flux[compIdx] = useMoles ? diffusiveFluxes[compIdx]
-                        //                         : diffusiveFluxes[compIdx]*FluidSystem::molarMass(compIdx);
-                        flux[eqIdx] += useMoles ? diffusiveFluxes[compIdx]
-                                            : diffusiveFluxes[compIdx]*FluidSystem::molarMass(compIdx);
-                    }
-                    else
-                        DUNE_THROW(Dune::NotImplemented, "other reference systems than mass and molar averaged are not implemented");
-                }
+                // Molecular diffusive fluxes are added only to the component balances.
+                if (eqIdx != replaceCompEqIdx)
+                    flux[eqIdx] += adaptDiffusiveFluxUnits(diffusiveFluxes[compIdx],
+                                                           FluidSystem::molarMass(compIdx),
+                                                           referenceSystemFormulationDiffusion);
             }
-            
+
             // in case one balance is substituted by the total mole balance
             if (useTotalMoleOrMassBalance)
             {
-                // the physical quantities for which we perform upwinding
+                // Upwinded transported quantity for advective total mass/mole flux.
                 const auto upwindTerm = [&massOrMoleDensity, phaseIdx] (const auto& volVars)
-                { 
+                {
                     return massOrMoleDensity(volVars, phaseIdx)*volVars.mobility(phaseIdx);
-                     };
+                };
 
                 flux[replaceCompEqIdx] += fluxVars.advectiveFlux(phaseIdx, upwindTerm);
 
-                for(int compIdx = 0; compIdx < numComponents; ++compIdx)
-                {
-                    //check for the reference system and adapt units of the diffusive flux accordingly.
-                    if (referenceSystemFormulation == ReferenceSystemFormulation::massAveraged)
-                        flux[replaceCompEqIdx] += useMoles ? diffusiveFluxes[compIdx]/FluidSystem::molarMass(compIdx) : diffusiveFluxes[compIdx];
-                    else if (referenceSystemFormulation == ReferenceSystemFormulation::molarAveraged)
-                        flux[replaceCompEqIdx] += useMoles ? diffusiveFluxes[compIdx]
-                                                : diffusiveFluxes[compIdx]*FluidSystem::molarMass(compIdx);
-                    else
-                        DUNE_THROW(Dune::NotImplemented, "other reference systems than mass and molar averaged are not implemented");
-                }
+                for (int compIdx = 0; compIdx < numComponents; ++compIdx)
+                    flux[replaceCompEqIdx] += adaptDiffusiveFluxUnits(diffusiveFluxes[compIdx],
+                                                                       FluidSystem::molarMass(compIdx),
+                                                                       referenceSystemFormulationDiffusion);
             }
 
             //! Add advective phase energy fluxes. For isothermal model the contribution is zero.
@@ -222,20 +225,13 @@ public:
 
             if constexpr (ModelTraits::enableCompositionalDispersion())
             {
-                // if constexpr (FVElementGeometry::GridGeometry::discMethod == DiscretizationMethods::box && numPhases == 1)
-                // if constexpr (FVElementGeometry::GridGeometry::discMethod == DiscretizationMethods::box)
-                // {
+                // Custom extension: add hydrodynamic dispersion to the component
+                // balances, analogous to the molecular diffusion contribution.
+                // The flux implementation computes the face rate for each component.
                 const auto dispersionFluxes = fluxVars.compositionalDispersionFlux(phaseIdx);
-                // const int eIdxGlobal = problem.gridGeometry().elementMapper().index(element);
                 for (int compIdx = 0; compIdx < numComponents; ++compIdx)
-                {
-                    flux[compIdx] += dispersionFluxes[compIdx];
-                }
+                    flux[conti0EqIdx + compIdx] += dispersionFluxes[compIdx];
             }
-            else{
-                DUNE_THROW(Dune::NotImplemented, "Dispersion Fluxes are only implemented for single phase flows using the Box method.");
-            }
-
         }
 
         //! Add diffusive and dispersive energy fluxes. For isothermal model the contribution is zero.
@@ -243,7 +239,7 @@ public:
         EnergyLocalResidual::heatDispersionFlux(flux, fluxVars);
 
         return flux;
-    }   
+    }
 
 protected:
     Implementation *asImp_()
@@ -256,4 +252,3 @@ protected:
 } // end namespace Dumux
 
 #endif
-

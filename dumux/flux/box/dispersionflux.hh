@@ -19,8 +19,11 @@
 /*!
  * \file
  * \ingroup BoxFlux
- * \brief This file contains the data which is required to calculate
- *        dispersive fluxes.
+ * \brief Box-method flux implementation for hydrodynamic dispersion.
+ *
+ * This adds a compositional dispersion flux of the form
+ * \f$-\rho D_\mathrm{disp}\nabla x_\kappa\f$ across Box sub-control-volume
+ * faces, using a dispersion tensor supplied by the selected model.
  */
 #ifndef DUMUX_DISCRETIZATION_BOX_DISPERSION_FLUX_HH
 #define DUMUX_DISCRETIZATION_BOX_DISPERSION_FLUX_HH
@@ -43,7 +46,7 @@ class DispersionFluxImplementation;
 
 /*!
  * \ingroup BoxFlux
- * \brief Specialization of a dispersion flux for the box method
+ * \brief Specialization of compositional and thermal dispersion fluxes for the Box method.
  */
 template <class TypeTag, ReferenceSystemFormulation referenceSystem>
 class DispersionFluxImplementation<TypeTag, DiscretizationMethods::Box, referenceSystem>
@@ -103,12 +106,13 @@ public:
                                                            const int phaseIdx,
                                                            const ElementFluxVariablesCache& elemFluxVarsCache)
     {
+        // J_k^disp = -rho_alpha * (n^T D_disp grad x_k) * A * S_alpha * phi.
         ComponentFluxVector componentFlux(0.0);
-    static constexpr auto referenceSystemFormulation = Dumux::ReferenceSystemFormulation::molarAveraged;
+        static constexpr auto referenceSystemFormulation = Dumux::ReferenceSystemFormulation::molarAveraged;
         const auto& fluxVarsCache = elemFluxVarsCache[scvf];
         const auto& shapeValues = fluxVarsCache.shapeValues();
 
-        // density interpolation
+        // Interpolate mass or molar density to the integration point.
         Scalar rhoMassOrMole(0.0);
         for (auto&& scv : scvs(fvGeometry))
         {
@@ -118,14 +122,16 @@ public:
 
         const auto& insideVolVars = elemVolVars[scvf.insideScvIdx()];
         const auto& outsideVolVars = elemVolVars[scvf.outsideScvIdx()];
-        Scalar SI = insideVolVars.saturation(phaseIdx);
-        Scalar SJ = outsideVolVars.saturation(phaseIdx);
-        Scalar S_average = 0.5*(SI+SJ);
-        Scalar PHI_I = insideVolVars.porosity();
-        Scalar PHI_J = outsideVolVars.porosity();
-        Scalar PHI_average = 0.5*(PHI_I+PHI_J);
+        const Scalar insideSaturation = insideVolVars.saturation(phaseIdx);
+        const Scalar outsideSaturation = outsideVolVars.saturation(phaseIdx);
+        const Scalar averageSaturation = 0.5*(insideSaturation + outsideSaturation);
+        const Scalar insidePorosity = insideVolVars.porosity();
+        const Scalar outsidePorosity = outsideVolVars.porosity();
+        const Scalar averagePorosity = 0.5*(insidePorosity + outsidePorosity);
+
         for (int compIdx = 0; compIdx < numComponents; compIdx++)
         {
+            // Evaluate the selected dispersion tensor and account for extrusion.
             const auto& dispersionTensor = [&]()
             {
                 const auto& tensor =
@@ -140,13 +146,12 @@ public:
                     const auto insideTensor = insideVolVars.extrusionFactor() * tensor;
                     const auto outsideTensor = outsideVolVars.extrusionFactor() * tensor;
 
-                    // the resulting averaged dispersion tensor
+                    // Average tensors consistently across the face normal.
                     return faceTensorAverage(insideTensor, outsideTensor, scvf.unitOuterNormal());
                 }
             }();
-            // if (abs(dispersionTensor[0][0]) > 1e-5)
-            //     Scalar BBB = 1;
-            // the mole/mass fraction gradient
+
+            // Box gradient reconstruction of the component mass/mole fraction.
             Dune::FieldVector<Scalar, dimWorld> gradX(0.0);
             for (auto&& scv : scvs(fvGeometry))
             {
@@ -154,10 +159,8 @@ public:
                 gradX.axpy(x, fluxVarsCache.gradN(scv.indexInElement()));
             }
 
-            // compute the dispersion flux
-            componentFlux[compIdx] = -1.0 * rhoMassOrMole * vtmv(scvf.unitOuterNormal(), dispersionTensor, gradX)*Extrusion::area(fvGeometry, scvf) *S_average * PHI_average;
-            // if (abs(componentFlux[compIdx]) > 1e-6)
-            //     Scalar AAAA = 1;
+            // Normal dispersive component flux through the sub-control-volume face.
+            componentFlux[compIdx] = -1.0 * rhoMassOrMole * vtmv(scvf.unitOuterNormal(), dispersionTensor, gradX)*Extrusion::area(fvGeometry, scvf) * averageSaturation * averagePorosity;
             if (BalanceEqOpts::mainComponentIsBalanced(phaseIdx) && !FluidSystem::isTracerFluidSystem())
                 componentFlux[phaseIdx] -= componentFlux[compIdx];
         }

@@ -523,25 +523,23 @@ public:
     template <class FluidState>
     static std::vector<double> Z_factor(const FluidState &fluidState)
     {
-        // Scalar PHI[numComponents]; 
-        Scalar temperature = fluidState.temperature(gasPhaseIdx);
-        Scalar pressure = fluidState.pressure(gasPhaseIdx); 
-        std::vector<double> Z(numComponents);  
-        for (int i=0; i<numComponents; ++i)
-            Z[i]=0;
-        if (Policy::useIdealGasDensity()){
-            for (int i=0; i<numComponents; ++i)
-                Z[i]=1;
-            return Z;
-        }        
-        else {
-            Z[H2OIdx] = H2O::z_factor(temperature,pressure);
-            Z[CH4Idx] = CH4::z_factor(temperature,pressure);
-            Z[CO2Idx] = CO2::z_factor(temperature,pressure);
-            Z[N2Idx] = N2::z_factor(temperature,pressure);
-            Z[H2Idx] = H2::z_factor(temperature,pressure);
-            return Z;
-        }
+        const Scalar temperature = fluidState.temperature(gasPhaseIdx);
+        const Scalar pressure = fluidState.pressure(gasPhaseIdx);
+        return componentZFactors(temperature, pressure);
+    }
+
+    static std::vector<double> componentZFactors(Scalar temperature, Scalar pressure)
+    {
+        std::vector<double> z(numComponents, 1.0);
+        if (Policy::useIdealGasDensity())
+            return z;
+
+        z[H2OIdx] = H2O::z_factor(temperature, pressure);
+        z[CH4Idx] = CH4::z_factor(temperature, pressure);
+        z[CO2Idx] = CO2::z_factor(temperature, pressure);
+        z[N2Idx] = N2::z_factor(temperature, pressure);
+        z[H2Idx] = H2::z_factor(temperature, pressure);
+        return z;
     }
 
     using Base::density;
