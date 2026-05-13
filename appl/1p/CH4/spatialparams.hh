@@ -1,7 +1,7 @@
 // -*- mode: C++; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4 -*-
 // vi: set et ts=4 sw=4 sts=4:
 //
-// SPDX-FileCopyrightInfo: Copyright © DuMux Project contributors, see AUTHORS.md in root folder
+// SPDX-FileCopyrightInfo: Copyright ï¿½ DuMux Project contributors, see AUTHORS.md in root folder
 // SPDX-License-Identifier: GPL-3.0-or-later
 //
 /*!
@@ -76,7 +76,6 @@ public:
         // K[2][2] = referencePermeability_/10;
         return K;
     }
-
     /*!
      * \brief Defines the porosity \f$\mathrm{[-]}\f$.
      *

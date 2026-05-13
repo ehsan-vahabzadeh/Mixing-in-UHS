@@ -106,7 +106,7 @@ public:
                                                            const int phaseIdx,
                                                            const ElementFluxVariablesCache& elemFluxVarsCache)
     {
-        // J_k^disp = -rho_alpha * (n^T D_disp grad x_k) * A * S_alpha * phi.
+        
         ComponentFluxVector componentFlux(0.0);
         static constexpr auto referenceSystemFormulation = Dumux::ReferenceSystemFormulation::molarAveraged;
         const auto& fluxVarsCache = elemFluxVarsCache[scvf];
@@ -131,25 +131,26 @@ public:
 
         for (int compIdx = 0; compIdx < numComponents; compIdx++)
         {
-            // Evaluate the selected dispersion tensor and account for extrusion.
-            const auto& dispersionTensor = [&]()
+            // Get the dispersion model for this component and scale it with the
+            // geometric extrusion used by the Box face integration.
+            const auto tensor =
+                ModelTraits::CompositionalDispersionModel::compositionalDispersionTensor(problem, scvf, fvGeometry,
+                                                                                         elemVolVars, elemFluxVarsCache,
+                                                                                         phaseIdx, compIdx);
+
+            DimWorldMatrix dispersionTensor;
+            if (Dune::FloatCmp::eq(insideVolVars.extrusionFactor(), outsideVolVars.extrusionFactor(), 1e-6))
             {
-                const auto& tensor =
-                    ModelTraits::CompositionalDispersionModel::compositionalDispersionTensor(problem, scvf, fvGeometry,
-                                                                                             elemVolVars, elemFluxVarsCache,
-                                                                                             phaseIdx, compIdx);
+                dispersionTensor = insideVolVars.extrusionFactor() * tensor;
+            }
+            else
+            {
+                const auto insideTensor = insideVolVars.extrusionFactor() * tensor;
+                const auto outsideTensor = outsideVolVars.extrusionFactor() * tensor;
 
-                if (Dune::FloatCmp::eq(insideVolVars.extrusionFactor(), outsideVolVars.extrusionFactor(), 1e-6))
-                    return insideVolVars.extrusionFactor()*tensor;
-                else
-                {
-                    const auto insideTensor = insideVolVars.extrusionFactor() * tensor;
-                    const auto outsideTensor = outsideVolVars.extrusionFactor() * tensor;
-
-                    // Average tensors consistently across the face normal.
-                    return faceTensorAverage(insideTensor, outsideTensor, scvf.unitOuterNormal());
-                }
-            }();
+                // Average tensors consistently across the face normal.
+                dispersionTensor = faceTensorAverage(insideTensor, outsideTensor, scvf.unitOuterNormal());
+            }
 
             // Box gradient reconstruction of the component mass/mole fraction.
             Dune::FieldVector<Scalar, dimWorld> gradX(0.0);
@@ -160,6 +161,7 @@ public:
             }
 
             // Normal dispersive component flux through the sub-control-volume face.
+            // J_k^disp = -rho_alpha * (n^T D_disp grad x_k) * A * S_alpha * phi.
             componentFlux[compIdx] = -1.0 * rhoMassOrMole * vtmv(scvf.unitOuterNormal(), dispersionTensor, gradX)*Extrusion::area(fvGeometry, scvf) * averageSaturation * averagePorosity;
             if (BalanceEqOpts::mainComponentIsBalanced(phaseIdx) && !FluidSystem::isTracerFluidSystem())
                 componentFlux[phaseIdx] -= componentFlux[compIdx];
