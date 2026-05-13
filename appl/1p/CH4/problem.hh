@@ -246,7 +246,7 @@ public:
             }
 
         }
-        
+
         if (isRightBoundary_(globalPos))
         { 
             // Pressure outlet for the TPFA overload.
@@ -304,7 +304,7 @@ public:
     {   
         // TODO: Extract the well schedule and injection composition into a shared helper
         // used by neumann() and postTimeStep() to avoid duplicated timing logic.
-        
+
         // Default is no-flow; the well interval and pressure outlet add boundary fluxes.
         NumEqVector values(0.0);
         // return values;
@@ -369,39 +369,39 @@ public:
             }
 
         }
-        if (isRightBoundary_(globalPos))
-        {               
-            // Pressure outlet for the Box method: reconstruct the pressure gradient
-            // from shape-function gradients, then distribute the phase flux by composition.
-            Scalar dirichletPressure(0.0);
-            auto init_val = initial_(globalPos);
-            const auto &volVars = elemVolVars[scvf.insideScvIdx()];
-            const auto &fluxVarsCache = elemFluxVarsCache[scvf];
-            dirichletPressure = init_val[0];
-            // evaluate the pressure gradient
-            GlobalPosition gradP(0.0);
-                for (const auto &scv : scvs(fvGeometry))
-                {
-                    const auto xIp = scv.dofPosition()[0];
-                    auto tmp = fluxVarsCache.gradN(scv.localDofIndex());
-                    tmp *= xIp > xMax_ - eps_ ? dirichletPressure
-                                                : elemVolVars[scv].pressure();
+        // if (isRightBoundary_(globalPos))
+        // {               
+        //     // Pressure outlet for the Box method: reconstruct the pressure gradient
+        //     // from shape-function gradients, then distribute the phase flux by composition.
+        //     Scalar dirichletPressure(0.0);
+        //     auto init_val = initial_(globalPos);
+        //     const auto &volVars = elemVolVars[scvf.insideScvIdx()];
+        //     const auto &fluxVarsCache = elemFluxVarsCache[scvf];
+        //     dirichletPressure = init_val[0];
+        //     // evaluate the pressure gradient
+        //     GlobalPosition gradP(0.0);
+        //         for (const auto &scv : scvs(fvGeometry))
+        //         {
+        //             const auto xIp = scv.dofPosition()[0];
+        //             auto tmp = fluxVarsCache.gradN(scv.localDofIndex());
+        //             tmp *= xIp > xMax_ - eps_ ? dirichletPressure
+        //                                         : elemVolVars[scv].pressure();
 
-                        gradP += tmp;
+        //                 gradP += tmp;
 
 
-                }
+        //         }
 
-            auto phaseFlux = vtmv(scvf.unitOuterNormal(), volVars.permeability(), gradP);
+        //     auto phaseFlux = vtmv(scvf.unitOuterNormal(), volVars.permeability(), gradP);
         
-            phaseFlux *= -1*volVars.mobility();
-            phaseFlux *= useMoles ? volVars.molarDensity() : volVars.density();
+        //     phaseFlux *= -1*volVars.mobility();
+        //     phaseFlux *= useMoles ? volVars.molarDensity() : volVars.density();
 
-            for (int compIdx = 0; compIdx < numComponents; ++compIdx)
-            {
-                values[compIdx] = ((phaseFlux * volVars.moleFraction(0, compIdx)));
-            }
-        }
+        //     for (int compIdx = 0; compIdx < numComponents; ++compIdx)
+        //     {
+        //         values[compIdx] = ((phaseFlux * volVars.moleFraction(0, compIdx)));
+        //     }
+        // }
 
         return values;
     }
@@ -418,7 +418,6 @@ public:
         // inventory, boundary exchange, and material-balance diagnostics.
         Scalar t, dt, volume(0.0);
         NumEqVector inventory(0.0), inventoryPastSol(0.0), materialBalanceError(0.0);
-        NumEqVector relativeMaterialBalanceError(0.0);
         Scalar averageReservoirPressure(0.0);
         t = this->time();
         Scalar Time = t;
@@ -444,20 +443,27 @@ public:
             // Integrate current and previous component inventories over all control volumes.
             for (auto &&scv : scvs(fvGeometry))
             {
-                const FluidState &fs = elemVolVars[scv].fluidState();
+                const FluidState &fs    = elemVolVars[scv].fluidState();
                 const FluidState &fsOld = prevElemVolVars[scv].fluidState();
                 Scalar extrusion_ = Extrusion::volume(fvGeometry, scv);
                 VolumeVariables volVars, volVarsPast;
                 volVars.update(elemSol, *this, element, scv);
                 volVarsPast.update(elemSolPast, *this, element, scv);
+
                 for (int compIdx = 0; compIdx < numComponents; ++compIdx)
                 {
-                    inventory[compIdx] += volVars.porosity() * extrusion_  * ((fs.saturation(gasPhaseIdx) * fs.molarDensity(gasPhaseIdx) * fs.moleFraction(gasPhaseIdx, compIdx) + fs.saturation(liquidPhaseIdx) * fs.molarDensity(liquidPhaseIdx) * fs.moleFraction(liquidPhaseIdx, compIdx)));
-                    inventoryPastSol[compIdx] += volVarsPast.porosity() * extrusion_  * ((fsOld.saturation(gasPhaseIdx) * fsOld.molarDensity(gasPhaseIdx) * fsOld.moleFraction(gasPhaseIdx, compIdx) + fsOld.saturation(liquidPhaseIdx) * fsOld.molarDensity(liquidPhaseIdx) * fsOld.moleFraction(liquidPhaseIdx, compIdx)));
+                    inventory[compIdx] += volVars.porosity() * extrusion_ * (
+                        fs.saturation(gasPhaseIdx)    * fs.molarDensity(gasPhaseIdx)    * fs.moleFraction(gasPhaseIdx, compIdx)
+                        + fs.saturation(liquidPhaseIdx) * fs.molarDensity(liquidPhaseIdx) * fs.moleFraction(liquidPhaseIdx, compIdx));
+
+                    inventoryPastSol[compIdx] += volVarsPast.porosity() * extrusion_ * (
+                        fsOld.saturation(gasPhaseIdx)    * fsOld.molarDensity(gasPhaseIdx)    * fsOld.moleFraction(gasPhaseIdx, compIdx)
+                        + fsOld.saturation(liquidPhaseIdx) * fsOld.molarDensity(liquidPhaseIdx) * fsOld.moleFraction(liquidPhaseIdx, compIdx));
                 }
                 averageReservoirPressure += fs.pressure(gasPhaseIdx) * scv.volume();
                 volume += scv.volume();
             }
+            
 
             // Reconstruct well-boundary injection and production totals using the same
             // schedule as the Neumann boundary condition.
@@ -530,52 +536,85 @@ public:
             }
         }
         const auto &comm = this->gridGeometry().gridView().comm();
-            // Component-wise material-balance check:
-            // previous inventory - current inventory - injected amount + produced amount.
-            materialBalanceError = inventoryPastSol - inventory - dt * values_inj + dt * values_prod;
+        // Component-wise material-balance check:
+        // previous inventory - current inventory - injected amount + produced amount.
+        materialBalanceError = inventoryPastSol - inventory - dt * values_inj - dt * values_prod;
 
-            for (int compIdx = 0; compIdx < numComponents; ++compIdx)
-             {
-                values_inj_dt[compIdx] = values_inj[compIdx] * dt;
-                values_prod_dt[compIdx] = values_prod[compIdx] * dt;
-            }
+        for (int compIdx = 0; compIdx < numComponents; ++compIdx)
+        {
+            values_inj_dt[compIdx] = values_inj[compIdx] * dt;
+            values_prod_dt[compIdx] = values_prod[compIdx] * dt;
+        }
 
-            for (int compIdx = 0; compIdx < numComponents; ++compIdx)
-            {
-                const Scalar globalError = comm.sum(materialBalanceError[compIdx]);
-                const Scalar balanceScale = std::max(std::abs(comm.sum(inventoryPastSol[compIdx]))
-                                                     + std::abs(comm.sum(values_inj_dt[compIdx]))
-                                                     + std::abs(comm.sum(values_prod_dt[compIdx])),
-                                                     eps_);
-                relativeMaterialBalanceError[compIdx] = std::abs(globalError) / balanceScale;
-            }
+        NumEqVector globalInventory(0.0), globalMaterialBalanceError(0.0);
+        NumEqVector globalValuesInj(0.0), globalValuesProd(0.0);
+        NumEqVector globalValuesInjDt(0.0), globalValuesProdDt(0.0);
+        for (int compIdx = 0; compIdx < numComponents; ++compIdx)
+        {
+            globalInventory[compIdx] = comm.sum(inventory[compIdx]);
+            globalMaterialBalanceError[compIdx] = comm.sum(materialBalanceError[compIdx]);
+            globalValuesInj[compIdx] = comm.sum(values_inj[compIdx]);
+            globalValuesProd[compIdx] = comm.sum(values_prod[compIdx]);
+            globalValuesInjDt[compIdx] = comm.sum(values_inj_dt[compIdx]);
+            globalValuesProdDt[compIdx] = comm.sum(values_prod_dt[compIdx]);
+        }
 
-            if (comm.rank() == 0)
-            {
-                std::cout << "Relative material-balance error at t = " << t << " s:";
-                for (int compIdx = 0; compIdx < numComponents; ++compIdx)
-                    std::cout << " " << FluidSystem::componentName(compIdx)
-                              << "=" << relativeMaterialBalanceError[compIdx];
-                std::cout << std::endl;
-            }
+        // The stopping criterion is applied only to H2. Other components may
+        // exchange with prescribed-composition boundaries and are still written
+        // below for diagnostics.
+        const Scalar h2MassBalanceErrorAbsolute = std::abs(globalMaterialBalanceError[H2Idx]);
+        const Scalar h2Inventory = std::abs(globalInventory[H2Idx]);
+        const Scalar relativeH2MassBalanceError = (h2Inventory > 0.0)
+            ? h2MassBalanceErrorAbsolute / h2Inventory
+            : 0.0;
 
-            // Append parallel-reduced diagnostics to the JSON output file.
-            Dumux::MetaData::Collector collector;
-            if (Dumux::MetaData::jsonFileExists(name()))
-                Dumux::MetaData::readJsonFile(collector, name());
-            collector["time"].push_back(t);
-            collector["averageReservoirPressure"].push_back(comm.sum(averageReservoirPressure) / comm.sum(volume));
-            for (auto compIdx = 0; compIdx < numComponents; ++compIdx)
-            {
-                collector["inventory"][FluidSystem::componentName(compIdx)].push_back(comm.sum(inventory[compIdx]));
-                collector["materialBalanceError"][FluidSystem::componentName(compIdx)].push_back(comm.sum(materialBalanceError[compIdx]));
-                collector["InjectionValues"][FluidSystem::componentName(compIdx)].push_back(comm.sum(values_inj[compIdx]));
-                collector["ProductionValues"][FluidSystem::componentName(compIdx)].push_back(comm.sum(values_prod[compIdx]));
-                collector["InjectionValues_dt"][FluidSystem::componentName(compIdx)].push_back(comm.sum(values_inj_dt[compIdx]));
-                collector["ProductionValues_dt"][FluidSystem::componentName(compIdx)].push_back(comm.sum(values_prod_dt[compIdx]));
-            }
-            
-            Dumux::MetaData::writeJsonFile(collector, name());
+        static const Scalar relativeMaterialBalanceTolerance =
+            getParam<Scalar>("Problem.RelativeMaterialBalanceTolerance", 1e-6);
+
+        if (comm.rank() == 0)
+        {
+            std::cout << "Relative H2 mass-balance error at t = " << t << " s: "
+                      << relativeH2MassBalanceError
+                      << " tolerance=" << relativeMaterialBalanceTolerance
+                      << " absoluteError=" << h2MassBalanceErrorAbsolute
+                      << " h2Inventory=" << h2Inventory
+                      << std::endl;
+        }
+
+        if (!std::isfinite(relativeH2MassBalanceError)
+            || relativeH2MassBalanceError > relativeMaterialBalanceTolerance)
+        {
+            DUNE_THROW(Dune::InvalidStateException,
+                       "Relative H2 mass-balance error exceeded tolerance at t = "
+                       << t << " s. Error = " << relativeH2MassBalanceError
+                       << ", absolute error = " << h2MassBalanceErrorAbsolute
+                       << ", H2 inventory = " << h2Inventory
+                       << ", tolerance = " << relativeMaterialBalanceTolerance);
+        }
+
+        // Append parallel-reduced diagnostics to the JSON output file.
+        Dumux::MetaData::Collector collector;
+        if (Dumux::MetaData::jsonFileExists(name()))
+            Dumux::MetaData::readJsonFile(collector, name());
+        collector["time"].push_back(t);
+        collector["averageReservoirPressure"].push_back(comm.sum(averageReservoirPressure) / comm.sum(volume));
+        collector["relativeMassBalanceError"].push_back(relativeH2MassBalanceError);
+        collector["globalMassBalanceErrorAbsolute"].push_back(h2MassBalanceErrorAbsolute);
+        collector["totalInventory"].push_back(h2Inventory);
+        collector["relativeH2MassBalanceError"].push_back(relativeH2MassBalanceError);
+        collector["globalH2MassBalanceErrorAbsolute"].push_back(h2MassBalanceErrorAbsolute);
+        collector["h2Inventory"].push_back(h2Inventory);
+        for (auto compIdx = 0; compIdx < numComponents; ++compIdx)
+        {
+            collector["inventory"][FluidSystem::componentName(compIdx)].push_back(globalInventory[compIdx]);
+            collector["materialBalanceError"][FluidSystem::componentName(compIdx)].push_back(globalMaterialBalanceError[compIdx]);
+            collector["InjectionValues"][FluidSystem::componentName(compIdx)].push_back(globalValuesInj[compIdx]);
+            collector["ProductionValues"][FluidSystem::componentName(compIdx)].push_back(globalValuesProd[compIdx]);
+            collector["InjectionValues_dt"][FluidSystem::componentName(compIdx)].push_back(globalValuesInjDt[compIdx]);
+            collector["ProductionValues_dt"][FluidSystem::componentName(compIdx)].push_back(globalValuesProdDt[compIdx]);
+        }
+
+        Dumux::MetaData::writeJsonFile(collector, name());
     }
 
     /*!

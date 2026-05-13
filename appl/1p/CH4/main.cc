@@ -103,7 +103,7 @@ int main(int argc, char** argv)
     using Scalar = GetPropType<TypeTag, Properties::Scalar>;
     auto tEnd = getParam<Scalar>("TimeLoop.TEnd") * 86400;
     auto dt = getParam<Scalar>("TimeLoop.DtInitial");
-    Scalar maxDt = getParam<Scalar>("TimeLoop.MaxTimeStepSize");
+    Scalar maxDt = getParam<Scalar>("TimeLoop.MaxTimeStepSize") * 86400;
     auto timeLoop = std::make_shared<TimeLoop<Scalar>>(0.0, dt, tEnd);
     // Scalar PostFun_dt = getParam<Scalar>("TimeLoop.PostFun_dt") * 86400;
     // Scalar VTK_dt = getParam<Scalar>("TimeLoop.VTK_dt") * 86400;

@@ -1,4 +1,4 @@
-# CH4 One-Phase Multicomponent Simulation
+# Single-Phase Multicomponent Simulation
 
 This folder contains the main single-phase CH4 cushion-gas case for the
 Mixing-in-UHS DuMuX module.

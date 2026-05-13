@@ -1,7 +1,7 @@
 [TimeLoop]
 DtInitial = 1000                   # [s] initial timestep size
 TEnd = 55               # [d] simulation end time 
-
+MaxTimeStepSize = 1     #[d]
 [Grid]
 LowerLeft = 0.2 0 
 UpperRight = 1000.2 60        # [m] grid dimension
@@ -12,6 +12,7 @@ Name = CH4 # name passed to the output routines
 EnableGravity = true
 DispersionMode = 1 # 0 No Dispersion - 1 grid size alpha - 2 Nazari's work
 InitialTemperature = 333.15
+RelativeMaterialBalanceTolerance = 1e-3 # [-] stop if relative material-balance error exceeds this value
 
 [BoundaryConditions]
 Pressure_TOP = 60e5
