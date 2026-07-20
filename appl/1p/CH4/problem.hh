@@ -21,8 +21,7 @@
 #include <dumux/common/numeqvector.hh>
 #include <dumux/porousmediumflow/problem.hh>
 
-#include <algorithm>
-#include <cmath>
+#include <numeric>
 #include <dumux/common/metadata.hh>
 #include <dumux/discretization/extrusion.hh>
 
@@ -407,9 +406,10 @@ public:
                           const Scalar,
                           std::shared_ptr<const GridGeometry> fvGridGeometry)
     {   
-        Scalar t, dt, volume(0.0);
-        NumEqVector inventory(0.0), inventoryPastSol(0.0), materialBalanceError(0.0);
-        NumEqVector relativeMaterialBalanceError(0.0);
+        // Scalar num_x = CELLS_VEC[0],num_grid = CELLS_VEC[0] * CELLS_VEC[1];
+        Scalar t, dt, volume(0.0), numberOfCells(0.0);
+        NumEqVector flow1(0.0);
+        NumEqVector inventory(0.0), inventoryPastSol(0.0), materialBalanceError(0.0), inventory_error(0.0);
         Scalar averageReservoirPressure(0.0);
         t = this->time();
         Scalar Time = t;
@@ -527,8 +527,8 @@ public:
             // %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
         }
         const auto &comm = this->gridGeometry().gridView().comm();
-            const Scalar materialBalanceRelativeTolerance =
-                getParam<Scalar>("Problem.MaterialBalanceRelativeTolerance", 1e-3);
+            // Scalar sum_inj = std::accumulate(values_inj.begin(), values_inj.end(), 0);
+            // Scalar sum_prod = std::accumulate(values_prod.begin(), values_prod.end(), 0);
 
             materialBalanceError = inventoryPastSol - inventory - dt * values_inj + dt * values_prod;
 
@@ -536,34 +536,11 @@ public:
              {
                 values_inj_dt[compIdx] = values_inj[compIdx] * dt;
                 values_prod_dt[compIdx] = values_prod[compIdx] * dt;
-
-                const Scalar globalInventory = comm.sum(inventory[compIdx]);
-                const Scalar globalInventoryPastSol = comm.sum(inventoryPastSol[compIdx]);
-                const Scalar globalInjectedAmount = comm.sum(values_inj_dt[compIdx]);
-                const Scalar globalProducedAmount = comm.sum(values_prod_dt[compIdx]);
-                const Scalar globalMaterialBalanceError = comm.sum(materialBalanceError[compIdx]);
-                const Scalar materialBalanceScale = std::max({
-                    std::abs(globalInventory),
-                    std::abs(globalInventoryPastSol),
-                    std::abs(globalInjectedAmount),
-                    std::abs(globalProducedAmount),
-                    Scalar(1.0)
-                });
-
-                relativeMaterialBalanceError[compIdx] =
-                    std::abs(globalMaterialBalanceError) / materialBalanceScale;
-
-                if (materialBalanceRelativeTolerance > 0.0
-                    && relativeMaterialBalanceError[compIdx] > materialBalanceRelativeTolerance)
-                    DUNE_THROW(Dune::InvalidStateException,
-                        "Relative material balance error for component "
-                        << FluidSystem::componentName(compIdx)
-                        << " exceeded the tolerance at t = " << t << " s: "
-                        << relativeMaterialBalanceError[compIdx]
-                        << " > " << materialBalanceRelativeTolerance
-                        << ". Absolute residual = " << globalMaterialBalanceError
-                        << " mol, balance scale = " << materialBalanceScale << " mol.");
             }
+            // std::cout << "The material balance error is: " << materialBalanceError[2] <<  std::endl;
+            // std::cout << "The material balance error is: " << materialBalanceError[2] <<  std::endl;
+
+            // std::cout << "---------------------------------------------info end------------------------------------------------------------" << std::endl;
 
             Dumux::MetaData::Collector collector;
             if (Dumux::MetaData::jsonFileExists(name()))

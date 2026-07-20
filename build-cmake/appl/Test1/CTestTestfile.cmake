@@ -1,0 +1,10 @@
+# CMake generated Testfile for 
+# Source directory: /home/n71743ev/DUMUX/dumux/Mixing-in-UHS/appl/Test1
+# Build directory: /home/n71743ev/DUMUX/dumux/Mixing-in-UHS/build-cmake/appl/Test1
+# 
+# This file includes the relevant testing commands required for 
+# testing this directory and lists subdirectories to be tested as well.
+add_test(appl_2pncgeobio_biogeochemical_tpfanobio "/home/n71743ev/DUMUX/dumux/Mixing-in-UHS/build-cmake/appl/Test1/appl_2pncgeobio_biogeochemical_tpfanobio" "params.input")
+set_tests_properties(appl_2pncgeobio_biogeochemical_tpfanobio PROPERTIES  LABELS "" PROCESSORS "1" REQUIRED_FILES "/home/n71743ev/DUMUX/dumux/Mixing-in-UHS/build-cmake/appl/Test1/appl_2pncgeobio_biogeochemical_tpfanobio" SKIP_RETURN_CODE "77" TIMEOUT "300" WORKING_DIRECTORY "/home/n71743ev/DUMUX/dumux/Mixing-in-UHS/build-cmake/appl/Test1" _BACKTRACE_TRIPLES "/home/n71743ev/DUMUX/dumux/dune-common/cmake/modules/DuneTestMacros.cmake;417;add_test;/home/n71743ev/DUMUX/dumux/dumux/cmake/modules/DumuxTestMacros.cmake;210;dune_add_test;/home/n71743ev/DUMUX/dumux/Mixing-in-UHS/appl/Test1/CMakeLists.txt;5;dumux_add_test;/home/n71743ev/DUMUX/dumux/Mixing-in-UHS/appl/Test1/CMakeLists.txt;0;")
+add_test(appl_2pncgeobio_biogeochemical_boxnobio "/home/n71743ev/DUMUX/dumux/Mixing-in-UHS/build-cmake/appl/Test1/appl_2pncgeobio_biogeochemical_boxnobio" "params.input")
+set_tests_properties(appl_2pncgeobio_biogeochemical_boxnobio PROPERTIES  LABELS "" PROCESSORS "1" REQUIRED_FILES "/home/n71743ev/DUMUX/dumux/Mixing-in-UHS/build-cmake/appl/Test1/appl_2pncgeobio_biogeochemical_boxnobio" SKIP_RETURN_CODE "77" TIMEOUT "300" WORKING_DIRECTORY "/home/n71743ev/DUMUX/dumux/Mixing-in-UHS/build-cmake/appl/Test1" _BACKTRACE_TRIPLES "/home/n71743ev/DUMUX/dumux/dune-common/cmake/modules/DuneTestMacros.cmake;417;add_test;/home/n71743ev/DUMUX/dumux/dumux/cmake/modules/DumuxTestMacros.cmake;210;dune_add_test;/home/n71743ev/DUMUX/dumux/Mixing-in-UHS/appl/Test1/CMakeLists.txt;17;dumux_add_test;/home/n71743ev/DUMUX/dumux/Mixing-in-UHS/appl/Test1/CMakeLists.txt;0;")
