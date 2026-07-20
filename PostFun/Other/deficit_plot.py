@@ -1,0 +1,211 @@
+import re
+import pandas as pd
+import numpy as np
+import matplotlib.pyplot as plt
+
+raw = """
+Bar0  -44.28571428571428
+Bar1  2.539682539682545
+Bar2  9.841269841269838
+Bar3  37.619047619047606
+Bar4  -13.174603174603172
+Bar5  10.317460317460313
+Bar6  -5.079365079365081
+Bar7  2.539682539682545
+Bar8  -16.66666666666666
+Bar9  -6.984126984126979
+Bar10  8.888888888888886
+Bar11  4.920634920634921
+Bar12  11.269841269841269
+Bar13  -3.0158730158730123
+Bar14  7.7777777777777715
+Bar15  -13.968253968253967
+Bar16  -5.238095238095239
+Bar17  -8.41269841269841
+Bar18  6.19047619047619
+Bar19  -35.07936507936507
+Bar20  2.2222222222222214
+Bar21  19.047619047619044
+Bar22  -8.095238095238093
+Bar23  3.333333333333325
+Bar24  22.22222222222222
+Bar25  -1.7460317460317434
+Bar26  30
+Bar27  -30
+Bar28  -4.761904761904763
+Bar29  3.333333333333325
+Bar30  -14.761904761904763
+Bar31  2.2222222222222214
+Bar32  -7.936507936507933
+Bar33  27.14285714285714
+Bar34  -4.603174603174603
+Bar35  11.269841269841269
+Bar36  -2.698412698412696
+Bar37  3.9682539682539613
+Bar38  -14.920634920634921
+Bar39  42.222222222222214
+Bar40  -5.555555555555557
+Bar41  5.714285714285712
+Bar42  9.841269841269838
+Bar43  -29.206349206349202
+Bar44  13.650793650793645
+Bar45  3.333333333333325
+Bar46  -5.238095238095239
+Bar47  -14.444444444444445
+Bar48  10.158730158730158
+Bar49  16.349206349206348
+Bar50  -1.5873015873015923
+Bar51  -3.1746031746031704
+Bar52  -0.47619047619047805
+Bar53  4.444444444444436
+Bar54  -9.523809523809526
+Bar55  16.03174603174603
+Bar56  13.333333333333329
+Bar57  0.7936507936507944
+Bar58  1.5873015873015852
+Bar59  24.76190476190476
+Bar60  3.4920634920634868
+Bar61  3.1746031746031704
+Bar62  -12.222222222222218
+Bar63  -8.57142857142857
+Bar64  6.031746031746032
+Bar65  2.3809523809523867
+Bar66  3.80952380952381
+Bar67  -19.841269841269842
+Bar68  3.0158730158730087
+Bar69  -9.365079365079366
+Bar70  -3.650793650793652
+Bar71  -1.7460317460317434
+Bar72  6.031746031746032
+Bar73  12.698412698412689
+Bar74  17.301587301587304
+Bar75  -7.301587301587297
+Bar76  2.2222222222222214
+Bar77  -1.1111111111111143
+Bar78  23.809523809523803
+Bar79  6.8253968253968225
+Bar80  -0.7936507936507944
+Bar81  -13.968253968253967
+Bar82  16.03174603174603
+Bar83  -31.11111111111111
+Bar84  4.920634920634921
+Bar85  10.476190476190474
+Bar86  1.746031746031747
+Bar87  1.4285714285714306
+Bar88  17.619047619047613
+Bar89  -23.33333333333332
+Bar90  -6.349206349206344
+Bar91  -18.09523809523809
+Bar92  3.9682539682539613
+Bar93  -14.285714285714285
+Bar94  -3.1746031746031704
+Bar95  -9.206349206349207
+Bar96  -8.730158730158728
+Bar97  13.968253968253961
+Bar98  -6.666666666666661
+Bar99  4.1269841269841265
+Bar100  5.8730158730158735
+Bar101  1.904761904761905
+Bar102  -2.539682539682534
+Bar103  -20.158730158730158
+Bar104  4.285714285714285
+Bar105  -2.380952380952376
+Bar106  16.66666666666667
+Bar107  2.857142857142861
+Bar108  -4.285714285714285
+Bar109  13.492063492063487
+Bar110  -11.428571428571422
+Bar111  15.396825396825392
+Bar112  2.2222222222222214
+Bar113  9.841269841269838
+Bar114  -1.5873015873015923
+Bar115  -26.82539682539682
+Bar116  12.857142857142854
+Bar117  -4.603174603174603
+Bar118  -35.71428571428571
+Bar119  -18.730158730158728
+Bar120  7.460317460317462
+Bar121  -10.793650793650796
+Bar122  -23.015873015873005
+Bar123  5.714285714285712
+Bar124  9.523809523809522
+Bar125  23.492063492063487
+Bar126  -26.031746031746025
+Bar127  5.555555555555557
+Bar128  4.285714285714285
+Bar129  -4.285714285714285
+Bar130  -23.49206349206348
+Bar131  11.11111111111111
+Bar132  -7.619047619047617
+Bar133  19.047619047619044
+Bar134  5.8730158730158735
+Bar135  -14.444444444444445
+Bar136  -8.57142857142857
+Bar137  4.920634920634921
+Bar138  -2.539682539682534
+Bar139  3.4920634920634868
+Bar140  4.920634920634921
+Bar141  17.619047619047613
+Bar142  -9.841269841269842
+Bar143  -1.7460317460317434
+Bar144  -2.0634920634920597
+Bar145  -21.428571428571423
+"""
+
+pairs = re.findall(r"Bar(\d+)\s+(-?\d+(?:\.\d+)?)", raw)
+pairs = sorted([(int(i), float(v)) for i, v in pairs], key=lambda x: x[0])
+values = [v for _, v in pairs]
+
+n = len(values)
+start_year = 1985
+years = [start_year + (i // 4) for i in range(n)]
+quarters = [(i % 4) + 1 for i in range(n)]
+
+dfq = pd.DataFrame({"Year": years, "Quarter": quarters, "Energy_TWh": values})
+dfq["Half"] = np.where(dfq["Quarter"] <= 2, 1, 2)
+
+semi = dfq.groupby(["Year", "Half"], as_index=False)["Energy_TWh"].sum()
+semi["Date"] = pd.to_datetime(semi["Year"].astype(str) + semi["Half"].map({1: "-01-01", 2: "-07-01"}))
+semi = semi.sort_values("Date")
+
+annual = dfq.groupby("Year", as_index=False)["Energy_TWh"].sum()
+annual["Date"] = pd.to_datetime(annual["Year"].astype(str) + "-01-01")
+annual = annual.sort_values("Date")
+
+counts = dfq.groupby("Year")["Quarter"].count()
+incomplete_years = counts[counts < 4].index.tolist()
+
+# ---- Colors: surplus blue, deficit red ----
+semi_colors = np.where(semi["Energy_TWh"] >= 0, "#2066a8", "#ae282c")
+annual_colors = np.where(annual["Energy_TWh"] >= 0, "#2066a8", "#ae282c")
+
+# ---- Plot 6-month bins ----
+# plt.figure(figsize=(14, 4.2))
+# plt.bar(semi["Date"], semi["Energy_TWh"], width=160, color=semi_colors)
+# plt.axhline(0, linewidth=0.8)
+# plt.title("Energy Surplus/Deficit (6-month bins) from 1985")
+# plt.ylabel("Energy (TWh)")
+# plt.xlabel("Year")
+# plt.gcf().autofmt_xdate()
+# plt.tight_layout()
+# plt.show()
+
+# ---- Plot annual totals ----
+plt.figure(figsize=(8, 5))
+plt.bar(annual["Date"], annual["Energy_TWh"], width=360, color=annual_colors, edgecolor="k", linewidth=0.8)
+plt.axhline(0, linewidth=1, color="black")
+plt.title("Energy Surplus/Deficit by Year", fontsize = 16)
+plt.ylabel("Energy [TWh]", fontsize = 16)
+plt.xlabel("Year", fontsize = 16)
+plt.xticks(fontsize = 16)
+plt.yticks(fontsize = 16)
+from matplotlib.patches import Patch
+legend_handles = [
+    Patch(facecolor="tab:blue", label="Surplus"),
+    Patch(facecolor="tab:red",  label="Deficit")
+]
+plt.legend(handles=legend_handles, loc="upper right", fontsize=14, frameon = False)
+plt.gcf().autofmt_xdate()
+plt.tight_layout()
+plt.show()
+

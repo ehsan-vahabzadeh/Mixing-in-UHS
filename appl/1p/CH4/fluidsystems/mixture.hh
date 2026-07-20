@@ -681,17 +681,11 @@ public:
             return H2O::liquidViscosity(temperature, pressure);
         else {
             /* Wilke method. See:
-             *
-             * S.O.Ochs: "Development of a multiphase multicomponent
-             * model for PEMFC - Technical report: IRTG-NUPUS",
-             * University of Stuttgart, 2008
-             *
-             * and:
-             *
              * See: R. Reid, et al.: The Properties of Gases and Liquids, 4th
              * edition, McGraw-Hill, 1987, 407-410
              */
             // Wilke method (Reid et al.):
+            // TODO: Remove the manual assignment of the viscosities and replace it by a loop.
             Scalar muResult = 0;
             const Scalar mu[numComponents] = {
                 h2oGasViscosityInMixture(temperature, pressure),
@@ -700,13 +694,6 @@ public:
                 CO2::gasViscosityHighP(temperature, pressure),
                 N2::gasViscosityHighP(temperature, pressure)
             };
-            // const Scalar mu_lp[numComponents] = {
-            //     h2oGasViscosityInMixture(temperature, pressure),
-            //     CO2::gasViscosity(temperature, pressure),
-            //     H2::gasViscosity(temperature, pressure),
-            //     CH4::gasViscosity(temperature, pressure),
-            //     N2::gasViscosity(temperature, pressure)
-            // };
 
             Scalar sumx = 0.0;
             using std::max;

@@ -4,7 +4,7 @@ TEnd = 55               # [d] simulation end time
 [Grid]
 LowerLeft = 0.2 0 
 UpperRight = 1000.2 60        # [m] grid dimension
-Cells = 333 24               # [-] number of cells in dimension
+Cells = 100 20               # [-] number of cells in dimension
 
 [Problem]
 Name = CH4 # name passed to the output routines
@@ -12,6 +12,7 @@ EnableGravity = true
 UseNitscheTypeBc = true
 DispersionMode = 1
 InitialTemperature = 333.15
+MaterialBalanceRelativeTolerance = 1e-3 # [-] stop if component-wise relative material balance error exceeds this value; <= 0 disables the check
 
 [BoundaryConditions]
 Pressure_TOP = 60e5
