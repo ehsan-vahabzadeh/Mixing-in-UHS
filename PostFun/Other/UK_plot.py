@@ -12,7 +12,7 @@ from matplotlib.colors import LinearSegmentedColormap, ListedColormap, BoundaryN
 # =======================
 # SETTINGS
 # =======================
-INPUT_DIR = r"Y:\Mixing Results\July\Two Term Equation\_map_inputs"
+INPUT_DIR = r"Y:\Mixing Results\July\Two Term Equation\DR_07\_map_inputs"
 SUMMARY_CSV = os.path.join(INPUT_DIR, "per_target_reservoir_summary.csv")
 
 # Different base colour per target (white -> colour)
@@ -195,7 +195,7 @@ for t in targets:
 
     plt.tight_layout()
     out = os.path.join(INPUT_DIR, f"uk_map_target_{int(t)}TWh.png")
-    plt.savefig(out, dpi=300, bbox_inches="tight")
+    # plt.savefig(out, dpi=300, bbox_inches="tight")
     plt.show()
 
     print(f"Saved: {out}")

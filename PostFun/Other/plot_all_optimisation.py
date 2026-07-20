@@ -4,7 +4,9 @@ import pandas as pd
 import matplotlib.pyplot as plt
 
 # ---------------- user settings ----------------
-INPUT_DIR    = r"Y:\Mixing Results\July\Two Term Equation"
+INPUT_DIR    = r"Y:\Mixing Results\July\Two Term Equation\DR_07"
+OUTPUT_DIR   = INPUT_DIR
+FIG_DPI      = 600
 
 FILES = [
     "optimal_plan_CL14_TWh5_Low_H24.0.xlsx",
@@ -131,6 +133,10 @@ if not scenarios:
 
 # ----------- plotting style -----------
 plt.rcParams.update({
+    "figure.dpi": 160,
+    "savefig.dpi": FIG_DPI,
+    "savefig.bbox": "tight",
+    "savefig.facecolor": "white",
     "font.size": 20,
     "axes.labelsize": 20,
     "axes.titlesize": 20,
@@ -139,12 +145,30 @@ plt.rcParams.update({
     "ytick.labelsize": 20,
     "lines.linewidth": 3,
     "lines.markersize": 7,
+    "pdf.fonttype": 42,
+    "ps.fonttype": 42,
 })
 
-def plot_one(metric_key, ylabel, title):
-    
-    fig, ax = plt.subplots(figsize=(6, 6))   # square figure
+def save_figure(fig: plt.Figure, filename: str) -> None:
+    os.makedirs(OUTPUT_DIR, exist_ok=True)
+    stem, ext = os.path.splitext(filename)
+    if ext:
+        filename = stem
 
+    png_path = os.path.join(OUTPUT_DIR, f"{filename}.png")
+    pdf_path = os.path.join(OUTPUT_DIR, f"{filename}.pdf")
+    fig.savefig(png_path, dpi=FIG_DPI, bbox_inches="tight", facecolor="white")
+    fig.savefig(pdf_path, bbox_inches="tight", facecolor="white")
+    print(f"Saved: {png_path}")
+    print(f"Saved: {pdf_path}")
+
+def show_or_close(fig: plt.Figure) -> None:
+    if plt.get_backend().lower() == "agg":
+        plt.close(fig)
+    else:
+        plt.show()
+
+def plot_metric(ax, metric_key, ylabel, title, show_legend=False):
     for i, df in enumerate(scenarios):
         s = df["scenario"].iloc[0]
         ax.plot(df["year"], df[metric_key],
@@ -156,37 +180,43 @@ def plot_one(metric_key, ylabel, title):
 
     ax.set_xlabel("Time [years]")
     ax.set_ylabel(ylabel)
+    ax.set_title(title)
     ax.set_xticks(YEAR_MARKS)
+    ax.grid(True, linestyle=":", alpha=0.45)
+    ax.set_box_aspect(1)
+    if show_legend:
+        ax.legend(frameon=True, edgecolor="black", ncol=2, fontsize=14)
 
-    # ================================
-    # FORCE THE AXES BOX TO BE SQUARE
-    # ================================
-    ax.set_box_aspect(1)        # <-- THE KEY LINE
-    # ================================
-    # import matplotlib.patches as mpatches
-    # patches = []
-    # for i, df in enumerate(scenarios):
-    #     s = df["scenario"].iloc[0]
-    #     patches.append(mpatches.Patch(color=greens[i], label=s))
+def plot_one(metric_key, ylabel, title):
+    fig, ax = plt.subplots(figsize=(6, 6))
+    plot_metric(ax, metric_key, ylabel, title, show_legend=True)
+    fig.tight_layout()
+    save_figure(fig, f"{metric_key}_vs_years")
+    show_or_close(fig)
 
-    # ax.legend(handles=patches, frameon=True , ncol = 6, edgecolor = 'black', fontsize=14)
-    # fig.tight_layout()
-    # plt.show()
+def plot_core_metrics_subplot():
+    fig, axes = plt.subplots(1, 3, figsize=(18, 6), sharex=True)
+    plot_metric(axes[0], "lcos", "LCOS [$/MWh]", "LCOS", show_legend=False)
+    plot_metric(axes[1], "eff", "RF [-]", "RF", show_legend=False)
+    plot_metric(axes[2], "cg", "Cushion Gas Ratio [-]", "Cushion Gas Ratio", show_legend=False)
 
-    # fig_legend = plt.figure(figsize=(8, 1))  # adjust width/height
-    # ax = fig_legend.add_subplot(111)
-    # ax.axis('off')
-
-    # legend = ax.legend(handles=patches,
-    #                loc='center',
-    #                ncol=len(patches),   # force horizontal layout
-    #                frameon=True,
-    #                edgecolor='black',
-    #                fontsize=20)
-    plt.show()
-    plt.savefig(f"{metric_key}_vs_years.png", dpi=500, bbox_inches="tight")
+    handles, labels = axes[0].get_legend_handles_labels()
+    fig.legend(
+        handles,
+        labels,
+        loc="lower center",
+        bbox_to_anchor=(0.5, -0.03),
+        ncol=len(labels),
+        frameon=True,
+        edgecolor="black",
+        fontsize=16,
+    )
+    fig.tight_layout(rect=(0, 0.10, 1, 1))
+    save_figure(fig, "lcos_rf_cg_ratio_vs_years")
+    show_or_close(fig)
 
 # ========== Figures (vs. years) ==========
+plot_core_metrics_subplot()
 plot_one("eff",   "RF [-]", "Scenario efficiency vs. Project Horizon")
 plot_one("lcos",  "LCOS [$/MWh]",                         "LCOS vs. Project Horizon")
 plot_one("wells", "Total wells selected [-]",             "Wells vs. Project Horizon")

@@ -20,8 +20,390 @@ import joblib
 torch.manual_seed(42)
 np.random.seed(42)
 DOF_LIMIT = 24000
+PLOT_CACHE_VERSION = 2
+DEFAULT_PLOT_CACHE_FILE = "ann_training_plot_cache.json"
 
-def train_and_evaluate_model_kfold(X, Y, trial=None):
+
+def parameter_plot_output_dir(plot_cache_path=None):
+    env_dir = os.environ.get("ANN_PLOT_OUTPUT_DIR")
+    if env_dir:
+        return os.path.abspath(env_dir)
+    return os.getcwd()
+
+def relative_error(y_true, y_pred):
+    y_true = np.asarray(y_true, dtype=float)
+    y_pred = np.asarray(y_pred, dtype=float)
+    return np.abs((y_true - y_pred) / np.where(y_true == 0, np.nan, y_true))
+
+
+def as_float_list(values):
+    return np.asarray(values, dtype=float).tolist()
+
+
+def write_plot_cache(
+    path,
+    feature_names,
+    n_samples,
+    X_train_raw,
+    X_test_raw,
+    y_true_train,
+    y_pred_train,
+    y_true_test,
+    y_pred_test,
+    all_train_losses,
+    all_val_losses,
+    output_dir=None,
+):
+    output_dir = output_dir or parameter_plot_output_dir(path)
+    cache = {
+        "version": PLOT_CACHE_VERSION,
+        "output_dir": output_dir,
+        "feature_names": list(feature_names),
+        "n_samples": int(n_samples),
+        "X_train_raw": as_float_list(X_train_raw),
+        "X_test_raw": as_float_list(X_test_raw),
+        "y_true_train": as_float_list(y_true_train),
+        "y_pred_train": as_float_list(y_pred_train),
+        "y_true_test": as_float_list(y_true_test),
+        "y_pred_test": as_float_list(y_pred_test),
+        "all_train_losses": [as_float_list(losses) for losses in all_train_losses],
+        "all_val_losses": [as_float_list(losses) for losses in all_val_losses],
+    }
+
+    cache_dir = output_dir
+    if cache_dir:
+        os.makedirs(cache_dir, exist_ok=True)
+    with open(path, "w") as f:
+        json.dump(cache, f)
+    print(f"Saved ANN plotting cache: {path}")
+
+
+def load_plot_cache(path, feature_names, n_samples):
+    if not path or not os.path.exists(path):
+        return None
+
+    with open(path, "r") as f:
+        cache = json.load(f)
+
+    if cache.get("version") != PLOT_CACHE_VERSION:
+        print(f"Ignoring ANN plotting cache with old version: {path}")
+        return None
+    if cache.get("feature_names") != list(feature_names):
+        print(f"Ignoring ANN plotting cache with different input columns: {path}")
+        return None
+    if cache.get("n_samples") != int(n_samples):
+        print(f"Ignoring ANN plotting cache with different sample count: {path}")
+        return None
+
+    cache["_cache_path"] = os.path.abspath(path)
+    return cache
+
+
+def plot_test_porosity_vs_permeability(X_test_raw, feature_names, fontsize=20, fontsize_ticks=20):
+    feature_lookup = {name: idx for idx, name in enumerate(feature_names)}
+    if "Permeability" not in feature_lookup or "porosity" not in feature_lookup:
+        print("Skipping porosity-permeability test plot; required columns are missing.")
+        return
+
+    x_raw = np.asarray(X_test_raw, dtype=float)
+    permeability = x_raw[:, feature_lookup["Permeability"]]
+    porosity = x_raw[:, feature_lookup["porosity"]]
+    mask = np.isfinite(permeability) & np.isfinite(porosity) & (permeability > 0)
+
+    fig, ax = plt.subplots(figsize=(8.5, 7.5))
+    ax.scatter(permeability[mask], porosity[mask], c='grey', alpha=0.45, edgecolor='k', s=70)
+    ax.set_xscale("log")
+    ax.set_xlabel("Permeability [mD]", fontsize=fontsize)
+    ax.set_ylabel("Porosity [-]", fontsize=fontsize)
+    ax.tick_params(axis="both", labelsize=fontsize_ticks)
+    ax.grid(True, alpha=0.25)
+    plt.tight_layout()
+    plt.show()
+
+
+def plot_cached_training_diagnostics(cache, fontsize=20, fontsize_ticks=20):
+    output_dir = parameter_plot_output_dir(cache.get("_cache_path"))
+    feature_names = cache["feature_names"]
+    y_true_train = np.asarray(cache["y_true_train"], dtype=float)
+    y_pred_train = np.asarray(cache["y_pred_train"], dtype=float)
+    y_true_test = np.asarray(cache["y_true_test"], dtype=float)
+    y_pred_test = np.asarray(cache["y_pred_test"], dtype=float)
+    X_test_raw = np.asarray(cache["X_test_raw"], dtype=float)
+    all_train_losses = cache.get("all_train_losses", [])
+    all_val_losses = cache.get("all_val_losses", [])
+
+    r2_train = r2_score(y_true_train, y_pred_train)
+    r2_test = r2_score(y_true_test, y_pred_test)
+    mse_train = mean_squared_error(y_true_train, y_pred_train)
+    mse_test = mean_squared_error(y_true_test, y_pred_test)
+
+    plt.figure(figsize=(18, 6))
+
+    plt.subplot(1, 3, 1)
+    plt.scatter(y_true_train, y_pred_train, c='royalblue', alpha=0.7, edgecolor='k', s=60)
+    lims = [min(y_true_train.min(), y_pred_train.min()), max(y_true_train.max(), y_pred_train.max())]
+    plt.plot(lims, lims, 'r--', lw=2)
+    plt.xlabel('Actual RF', fontsize=fontsize)
+    plt.ylabel('Predicted RF', fontsize=fontsize)
+    plt.xticks(fontsize=fontsize_ticks)
+    plt.yticks(fontsize=fontsize_ticks)
+    plt.title('Training Set', fontsize=fontsize)
+    plt.xlim(lims)
+    plt.ylim(lims)
+    plt.grid(True)
+    plt.text(0.05, 0.95, f'$R^2$ = {r2_train:.4f}\nMSE = {mse_train:.4f}',
+             transform=plt.gca().transAxes, fontsize=fontsize,
+             verticalalignment='top', bbox=dict(boxstyle='round,pad=0.3', facecolor='white', alpha=0.7))
+
+    plt.subplot(1, 3, 2)
+    plt.scatter(y_true_test, y_pred_test, c='darkorange', alpha=0.7, edgecolor='k', s=60)
+    lims = [min(y_true_test.min(), y_pred_test.min()), max(y_true_test.max(), y_pred_test.max())]
+    plt.plot(lims, lims, 'r--', lw=2)
+    plt.xlabel('Actual RF (Test)', fontsize=fontsize)
+    plt.ylabel('Predicted RF (Test)', fontsize=fontsize)
+    plt.xticks(fontsize=fontsize_ticks)
+    plt.yticks(fontsize=fontsize_ticks)
+    plt.title('Test Set', fontsize=fontsize)
+    plt.xlim(lims)
+    plt.ylim(lims)
+    plt.grid(True)
+    plt.text(0.05, 0.95, f'$R^2$ = {r2_test:.4f}\nMSE = {mse_test:.4f}',
+             transform=plt.gca().transAxes, fontsize=fontsize,
+             verticalalignment='top', bbox=dict(boxstyle='round,pad=0.3', facecolor='white', alpha=0.7))
+
+    ax_loss = plt.subplot(1, 3, 3)
+    if all_train_losses and all_val_losses:
+        for i in range(len(all_train_losses)):
+            plt.plot(all_train_losses[i], label=f"Train Fold {i+1}", linestyle='-', linewidth=2)
+            plt.plot(all_val_losses[i], label=f"Val Fold {i+1}", linestyle='--', linewidth=2)
+        plt.xlabel("Epoch", fontsize=fontsize)
+        plt.ylabel("MSE Loss", fontsize=fontsize)
+        plt.title("Training vs Validation Loss", fontsize=fontsize)
+        plt.xticks(fontsize=fontsize_ticks)
+        plt.yticks(fontsize=fontsize_ticks)
+        plt.grid(True)
+        plt.legend(fontsize=fontsize)
+    else:
+        ax_loss.set_visible(False)
+    plt.tight_layout()
+    plt.show()
+
+    bins = np.linspace(0, 0.1, 21)
+    plt.figure(figsize=(12, 10))
+
+    plt.subplot(2, 2, 1)
+    plt.hist(relative_error(y_true_train, y_pred_train), bins=bins, color='#7a0b01', alpha=0.7, edgecolor='black')
+    plt.xticks(fontsize=fontsize_ticks)
+    plt.yticks(fontsize=fontsize_ticks)
+    plt.xlim([0, 0.1])
+    plt.xlabel('Train, Relative Error [-]', fontsize=fontsize)
+    plt.ylabel('Frequency [-]', fontsize=fontsize)
+
+    plt.subplot(2, 2, 3)
+    plt.hist(relative_error(y_true_test, y_pred_test), bins=bins, color='#7a0b01', alpha=0.7, edgecolor='black')
+    plt.xticks(fontsize=fontsize_ticks)
+    plt.yticks(fontsize=fontsize_ticks)
+    plt.xlabel('Test, Relative Error [-]', fontsize=fontsize)
+    plt.ylabel('Frequency [-]', fontsize=fontsize)
+    plt.xlim([0, 0.1])
+
+    plt.subplot(2, 2, 2)
+    plt.scatter(y_true_train, y_pred_train, c='grey', alpha=0.4, edgecolor='k', s=60)
+    lims = [min(y_true_test.min(), y_pred_test.min()), max(y_true_test.max(), y_pred_test.max())]
+    plt.plot(lims, lims, 'r--', lw=2)
+    plt.xlabel('Simulation RF [-]', fontsize=fontsize)
+    plt.ylabel('ANN RF [-]', fontsize=fontsize)
+    plt.xticks(fontsize=fontsize_ticks)
+    plt.yticks(fontsize=fontsize_ticks)
+    plt.xlim(lims)
+    plt.ylim(lims)
+    plt.text(0.05, 0.95, f'$R^2$ = {r2_train:.4f}\nMSE = {mse_train:.4f}',
+             transform=plt.gca().transAxes, fontsize=fontsize,
+             verticalalignment='top')
+
+    plt.subplot(2, 2, 4)
+    plt.scatter(y_true_test, y_pred_test, c='grey', alpha=0.4, edgecolor='k', s=60)
+    lims = [min(y_true_test.min(), y_pred_test.min()), max(y_true_test.max(), y_pred_test.max())]
+    plt.plot(lims, lims, 'r--', lw=2)
+    plt.xlabel('Simulation RF [-]', fontsize=fontsize)
+    plt.ylabel('ANN RF [-]', fontsize=fontsize)
+    plt.xticks(fontsize=fontsize_ticks)
+    plt.yticks(fontsize=fontsize_ticks)
+    plt.xlim(lims)
+    plt.ylim(lims)
+    plt.text(0.05, 0.95, f'$R^2$ = {r2_test:.4f}\nMSE = {mse_test:.4f}',
+             transform=plt.gca().transAxes, fontsize=fontsize,
+             verticalalignment='top')
+
+    plt.tight_layout()
+    plt.show()
+
+    plot_relative_error_vs_parameters(
+        X_test_raw,
+        y_true_test,
+        y_pred_test,
+        feature_names,
+        fontsize=fontsize,
+        fontsize_ticks=fontsize_ticks,
+        output_dir=output_dir,
+    )
+
+
+def plot_relative_error_vs_parameters(
+    X_raw,
+    y_true,
+    y_pred,
+    feature_names,
+    fontsize=20,
+    fontsize_ticks=20,
+    output_dir=None,
+):
+    fontsize = min(fontsize, 16)
+    fontsize_ticks = min(fontsize_ticks, 14)
+    rel_errors = relative_error(y_true, y_pred)
+    x_raw = np.asarray(X_raw, dtype=float)
+    feature_lookup = {name: idx for idx, name in enumerate(feature_names)}
+
+    panels = [
+        {
+            "feature": "porosity",
+            "xlabel": "Porosity [-]",
+            "thresholds": [0.10, 0.20],
+            "category_labels": ["Low\n<0.10", "Medium\n0.10-0.20", "High\n>0.20"],
+            "scatter_scale": 1.0,
+            "scatter_xlabel": "Porosity [-]",
+        },
+        {
+            "feature": "Permeability",
+            "xlabel": "Permeability [mD]",
+            "thresholds": [10.0, 100.0],
+            "category_labels": ["Low\n<10", "Medium\n10-100", "High\n>100"],
+            "scatter_scale": 1.0,
+            "scatter_xlabel": "Permeability [mD]",
+        },
+        {
+            "feature": "Pressure",
+            "xlabel": "Pressure [bar]",
+            "thresholds": [150.0, 300.0],
+            "category_labels": ["Low\n<150", "Medium\n150-300", "High\n>300"],
+            "scatter_scale": 1.0,
+            "scatter_xlabel": "Pressure [bar]",
+        },
+        {
+            "feature": "FlowRate",
+            "xlabel": "Flow rate [$10^6$ sm$^3$/d]",
+            "thresholds": [5e5, 1e6],
+            "category_labels": ["Low\n<0.5", "Medium\n0.5-1.0", "High\n>1.0"],
+            "scatter_scale": 1e6,
+            "scatter_xlabel": "Flow rate [$10^6$ sm$^3$/d]",
+        },
+    ]
+
+    box_color = "#7a0b01"
+    scatter_color = "grey"
+
+    fig_box, axes_box = plt.subplots(2, 2, figsize=(12, 9.5), constrained_layout=True)
+    axes_box = axes_box.ravel()
+    for idx, (ax, panel) in enumerate(zip(axes_box, panels)):
+        ax.set_box_aspect(0.85)
+        feature = panel["feature"]
+        if feature not in feature_lookup:
+            ax.set_visible(False)
+            continue
+
+        values = x_raw[:, feature_lookup[feature]]
+        mask = np.isfinite(values) & np.isfinite(rel_errors)
+        x_vals = values[mask]
+        y_vals = rel_errors[mask]
+        thresholds = panel["thresholds"]
+
+        category_masks = [
+            x_vals < thresholds[0],
+            (x_vals >= thresholds[0]) & (x_vals <= thresholds[1]),
+            x_vals > thresholds[1],
+        ]
+        grouped_errors = [y_vals[category_mask] for category_mask in category_masks]
+        non_empty_positions = [
+            idx + 1 for idx, group in enumerate(grouped_errors) if len(group) > 0
+        ]
+        non_empty_groups = [group for group in grouped_errors if len(group) > 0]
+
+        if non_empty_groups:
+            box = ax.boxplot(
+                non_empty_groups,
+                positions=non_empty_positions,
+                widths=0.55,
+                patch_artist=True,
+                showmeans=True,
+                meanline=True,
+                showfliers=False,
+            )
+            for body in box["boxes"]:
+                body.set(facecolor=box_color, alpha=0.70, edgecolor="black", linewidth=1.6)
+            for key in ["whiskers", "caps", "medians"]:
+                for artist in box[key]:
+                    artist.set(color="black", linewidth=1.4)
+            for artist in box["means"]:
+                artist.set(color="black", linewidth=2.0)
+        else:
+            ax.text(
+                0.5,
+                0.5,
+                "No data",
+                transform=ax.transAxes,
+                ha="center",
+                va="center",
+                fontsize=fontsize,
+            )
+
+        ax.set_xlim(0.4, 3.6)
+        ax.set_xticks([1, 2, 3])
+        ax.set_xticklabels(panel["category_labels"], fontsize=fontsize_ticks)
+        ax.set_xlabel(panel["xlabel"], fontsize=fontsize)
+        if idx % 2 == 0:
+            ax.set_ylabel("Relative Error [-]", fontsize=fontsize)
+        else:
+            ax.set_ylabel("")
+        ax.tick_params(axis="y", labelsize=fontsize_ticks)
+        ax.grid(axis="y", alpha=0.25)
+
+    if output_dir is not None:
+        os.makedirs(output_dir, exist_ok=True)
+        boxplot_path = os.path.join(output_dir, "ann_relative_error_parameter_boxplots.png")
+        fig_box.savefig(boxplot_path, dpi=500, bbox_inches="tight")
+        print(f"Saved parameter boxplot figure: {boxplot_path}")
+    plt.show()
+
+    fig_scatter, axes_scatter = plt.subplots(2, 2, figsize=(12, 9.5), constrained_layout=True)
+    axes_scatter = axes_scatter.ravel()
+    for idx, (ax, panel) in enumerate(zip(axes_scatter, panels)):
+        ax.set_box_aspect(0.85)
+        feature = panel["feature"]
+        if feature not in feature_lookup:
+            ax.set_visible(False)
+            continue
+
+        values = x_raw[:, feature_lookup[feature]] / panel["scatter_scale"]
+        mask = np.isfinite(values) & np.isfinite(rel_errors)
+
+        ax.scatter(values[mask], rel_errors[mask], c=scatter_color, alpha=0.45, edgecolor='k', s=60)
+        ax.set_xlabel(panel["scatter_xlabel"], fontsize=fontsize)
+        if idx % 2 == 0:
+            ax.set_ylabel("Relative Error [-]", fontsize=fontsize)
+        else:
+            ax.set_ylabel("")
+        ax.tick_params(axis="both", labelsize=fontsize_ticks)
+        ax.grid(True, alpha=0.25)
+
+    if output_dir is not None:
+        os.makedirs(output_dir, exist_ok=True)
+        scatter_path = os.path.join(output_dir, "ann_relative_error_parameter_scatter.png")
+        fig_scatter.savefig(scatter_path, dpi=500, bbox_inches="tight")
+        print(f"Saved parameter scatter figure: {scatter_path}")
+    plt.show()
+
+
+def train_and_evaluate_model_kfold(X, Y, trial=None, feature_names=None, plot_cache_path=None):
     # === Optuna hyperparameters ===
     if trial:
         X_split, X_test, Y_split, y_test = train_test_split(X, Y, test_size=0.2, random_state=42)
@@ -95,6 +477,20 @@ def train_and_evaluate_model_kfold(X, Y, trial=None):
     else:
         # === Standard training mode ===
         X_split, X_test, Y_split, y_test = train_test_split(X, Y, test_size=0.2, shuffle=True, random_state=42)
+        if feature_names is None:
+            feature_names = [
+                "FlowRate",
+                "CycleLength",
+                "Permeability",
+                "Pressure",
+                "delta_rho",
+                "porosity",
+                "Temperature",
+                "CG Ratio",
+                "Cycle_No",
+            ]
+        X_train_raw = X_split.copy()
+        X_test_raw = X_test.copy()
         scaler = StandardScaler()
         y_scaler = MinMaxScaler()
         X_train = scaler.fit_transform(X_split)
@@ -202,12 +598,15 @@ def train_and_evaluate_model_kfold(X, Y, trial=None):
         model.eval()
         # 2. Gather predictions and truths
         with torch.no_grad():
+            X_train_plot_t = torch.tensor(scaler.transform(X_train_raw), dtype=torch.float32)
+            X_test_plot_t = torch.tensor(scaler.transform(X_test_raw), dtype=torch.float32)
+
             # Test set
-            y_pred_test  = model(X_test_t).cpu().numpy().flatten()
-            y_true_test  =   y_test_t.cpu().numpy().flatten()
+            y_pred_test  = model(X_test_plot_t).cpu().numpy().flatten()
+            y_true_test  = y_test.flatten()
             # Train set
-            y_pred_train = model(X_train_t).cpu().numpy().flatten()
-            y_true_train =   y_train_t.cpu().numpy().flatten()
+            y_pred_train = model(X_train_plot_t).cpu().numpy().flatten()
+            y_true_train = Y_split.flatten()
 
             # y_pred_train = y_scaler.inverse_transform(y_pred_train.reshape(-1, 1)).ravel()
             # y_true_train = y_scaler.inverse_transform(y_true_train.reshape(-1, 1)).ravel()
@@ -218,6 +617,31 @@ def train_and_evaluate_model_kfold(X, Y, trial=None):
             r2_test = r2_score(y_true_test, y_pred_test)
             mse_train = mean_squared_error(y_true_train, y_pred_train)
             mse_test = mean_squared_error(y_true_test, y_pred_test)
+
+            if plot_cache_path:
+                cache_output_dir = parameter_plot_output_dir(plot_cache_path)
+                write_plot_cache(
+                    plot_cache_path,
+                    feature_names,
+                    len(Y),
+                    X_train_raw,
+                    X_test_raw,
+                    y_true_train,
+                    y_pred_train,
+                    y_true_test,
+                    y_pred_test,
+                    all_train_losses,
+                    all_val_losses,
+                    output_dir=cache_output_dir,
+                )
+
+            plot_test_porosity_vs_permeability(
+                X_test_raw,
+                feature_names,
+                fontsize=20,
+                fontsize_ticks=20,
+            )
+            parameter_plot_dir = parameter_plot_output_dir(plot_cache_path)
         
             # Plotting
             plt.figure(figsize=(18, 6))
@@ -404,6 +828,16 @@ def train_and_evaluate_model_kfold(X, Y, trial=None):
 
             plt.tight_layout()
             plt.show()
+
+            plot_relative_error_vs_parameters(
+                X_test_raw,
+                y_true_test,
+                y_pred_test,
+                feature_names,
+                fontsize=fontsize,
+                fontsize_ticks=fontsize_ticks,
+                output_dir=parameter_plot_dir,
+            )
         return model, scaler
 def constraints(trial):
     """Return positive if violating constraint."""
@@ -458,7 +892,10 @@ def optimize_hyperparameters(X, Y, n_trials=30):
     return study.best_trial.params
 
 # === Run script ===
-def NN_Model(X, Y, use_optimization=False):
+def NN_Model(X, Y, feature_names=None, use_optimization=False, plot_cache_path=None):
+    if feature_names is None:
+        feature_names = [f"feature_{i}" for i in range(X.shape[1])]
+
     if use_optimization:
         storage = optuna.storages.RDBStorage(
         url="sqlite:///optuna_optimization_history.db",
@@ -468,8 +905,28 @@ def NN_Model(X, Y, use_optimization=False):
         print("✅ Re-training model with best parameters...")
         train_and_evaluate_model_kfold(X, Y, trial=optuna.trial.FixedTrial(best_params))
     else:
+        force_training = os.environ.get("ANN_FORCE_TRAINING", "0") == "1"
+        plot_only = os.environ.get("ANN_PLOT_ONLY", "0") == "1"
+        if plot_cache_path and not force_training:
+            cache = load_plot_cache(plot_cache_path, feature_names, len(Y))
+            if cache is not None:
+                print(f"Loaded ANN plotting cache: {plot_cache_path}")
+                plot_cached_training_diagnostics(cache)
+                return None, None
+            if plot_only:
+                raise FileNotFoundError(
+                    f"ANN plotting cache was not found or is not compatible: {plot_cache_path}. "
+                    "Run once with ANN_FORCE_TRAINING=1 to train the ANN and create the cache."
+                )
+            print(f"No compatible ANN plotting cache found. Training once and saving: {plot_cache_path}")
+
         # model, scaler = train_and_evaluate_model(X, Y)
-        model, scaler = train_and_evaluate_model_kfold(X, Y)
+        model, scaler = train_and_evaluate_model_kfold(
+            X,
+            Y,
+            feature_names=feature_names,
+            plot_cache_path=plot_cache_path,
+        )
         return model, scaler
 
 
@@ -523,13 +980,19 @@ def main(input_directory):
     ])
     df = df.dropna()  # Drop rows with NaN values
     # print(df.head())    # verify ordering and contents
-    X = df[["FlowRate", "CycleLength", "Permeability", "Pressure", "delta_rho", 'porosity', 'Temperature','CG Ratio', 'Cycle_No']].values
+    input_labels = ["FlowRate", "CycleLength", "Permeability", "Pressure", "delta_rho", 'porosity', 'Temperature','CG Ratio', 'Cycle_No']
+    X = df[input_labels].values
     Y = df["rf"].values
+    plot_cache_path = os.environ.get(
+        "ANN_PLOT_CACHE",
+        os.path.join(input_directory, DEFAULT_PLOT_CACHE_FILE),
+    )
     # NN_Model(X, Y, use_optimization=True) 
-    NN_Model(X, Y)  
+    NN_Model(X, Y, feature_names=input_labels, plot_cache_path=plot_cache_path)  
     
-os.chdir("Y:\\Mixing Results\\July")  # Change to the directory containing your simulation files
-# os.chdir("Y:\\Mixing Results\\May\\NewCH4")  # Change to the directory containing your simulation files
-# os.chdir("Z:\\Mixing Results\\Feb\\Results\\30 Meter Height Reservoir")  # Change to the directory containing your simulation files
-input_directory = os.getcwd()
-main(input_directory)    
+if __name__ == "__main__":
+    os.chdir("Y:\\Mixing Results\\July")  # Change to the directory containing your simulation files
+    # os.chdir("Y:\\Mixing Results\\May\\NewCH4")  # Change to the directory containing your simulation files
+    # os.chdir("Z:\\Mixing Results\\Feb\\Results\\30 Meter Height Reservoir")  # Change to the directory containing your simulation files
+    input_directory = os.getcwd()
+    main(input_directory)

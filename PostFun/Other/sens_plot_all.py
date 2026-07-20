@@ -1,6 +1,8 @@
 import os, re, glob
 import numpy as np
 import pandas as pd
+import matplotlib
+matplotlib.use("Agg")
 import matplotlib.pyplot as plt
 from matplotlib.patches import Patch
 import seaborn as sns
@@ -21,10 +23,20 @@ def parse_TWh(fname):
     m = re.search(r"TWh(\d+)", fname)
     return int(m.group(1)) if m else None
 
-INPUT_DIR    = r"Y:\Mixing Results\July\Two Term Equation"
+RESULTS_DIR = r"Y:\Mixing Results\July"
+INPUT_ROOT = os.path.join(RESULTS_DIR, "Two Term Equation")
+INPUT_DIR = INPUT_ROOT
 FILES = []               # not used now
 GLOB_PATTERN = "optimal_plan_CL*_TWh*.xlsx"
-MASTER_CSV  = os.path.join(INPUT_DIR, "consolidated_output - Final.csv")
+MASTER_CSV = os.path.join(RESULTS_DIR, "consolidated_output - Final.csv")
+if not os.path.exists(MASTER_CSV):
+    MASTER_CSV = os.path.join(INPUT_ROOT, "consolidated_output - Final.csv")
+PLOT_OUTPUT_DIR = os.path.join(INPUT_ROOT, "_discount_rate_ecdf")
+DISCOUNT_RATE_FOLDERS = [
+    (0.04, "4%", "DR_04"),
+    (0.07, "7%", "DR_07"),
+    (0.10, "10%", "DR_10"),
+]
 YEAR_MARKS = np.array([30], dtype=int)
 
 SCEN_COL_LABEL = "Scenario"
@@ -126,7 +138,9 @@ def snap_cycle_to_year(cycle: int, cl_days: int, year_marks: np.ndarray) -> int:
 
 def collect_long_dataframe(input_dir: str,
                            files: list,
-                           glob_pat: str | None) -> pd.DataFrame:
+                           glob_pat: str | None,
+                           discount_rate: float | None = None,
+                           discount_label: str | None = None) -> pd.DataFrame:
     # build file list
     if glob_pat:
         file_list = sorted(glob.glob(os.path.join(input_dir, glob_pat)))
@@ -160,6 +174,8 @@ def collect_long_dataframe(input_dir: str,
             year_raw = cyc * (cl / 360.0)  # keep if you need it later
 
             rec = {
+                "Discount_Rate": discount_rate,
+                "Discount_Rate_Label": discount_label,
                 "Target_TWh": twh,
                 "CL_days": cl,
                 "cycle": cyc,
@@ -257,7 +273,7 @@ def ecdf_with_depth(real_values, df_long, value_col, xlabel, outfile=None):
     if outfile:
         fig.savefig(outfile, dpi=500, bbox_inches="tight")
 
-    plt.show()
+    plt.close()
 
 
 # def ridge_facetplot(real_values, df_long, value_col, xlabel, outfile=None):
@@ -369,15 +385,14 @@ def ecdf_comparison(real_values, df_long, value_col, xlabel, outfile=None):
     plt.xlabel(xlabel, fontsize=18)
     plt.ylabel("Cumulative Probability [-]", fontsize=18)
     # plt.grid(True, linestyle=":", alpha=0.4)
-    plt.legend(frameon=False, fontsize=12)
+    # plt.legend(frameon=False, fontsize=12)
     # plt.ylim([-0.01 , 1.01])
     plt.tight_layout()
     if outfile:
         plt.savefig(outfile, dpi=500, bbox_inches="tight")
-    plt.show()
+    plt.close()
 
 
-dfL = collect_long_dataframe(INPUT_DIR, FILES, GLOB_PATTERN)
 def box_by_twh(df, value_col, title, xlabel, outfile=None):
     # order TWh groups numerically
     order = sorted(df["Target_TWh"].unique())
@@ -404,7 +419,7 @@ def box_by_twh(df, value_col, title, xlabel, outfile=None):
     fig.tight_layout()
     if outfile:
         fig.savefig(outfile, dpi=500, bbox_inches="tight")
-    plt.show()
+    plt.close()
     
 def plot_ecdf_legend_only(real_values, df_long, value_col, xlabel, outfile=None):
     """
@@ -454,36 +469,80 @@ def plot_ecdf_legend_only(real_values, df_long, value_col, xlabel, outfile=None)
     if outfile:
         fig.savefig(outfile, dpi=400, bbox_inches="tight")
 
-    plt.show()
-plot_ecdf_legend_only(
-    real_values=dfm[COL_Perm], 
-    df_long=dfL,
-    value_col="Permeability [mD]", 
-    xlabel="Permeability [mD]",
-    outfile="legend_only.png"
-)
-    
-ecdf_comparison(
-    real_values=dfm[COL_Perm],
-    df_long=dfL,
-    value_col=Perm_LABEL,
-    xlabel="Permeability [mD]",
-    outfile="ecdf_perm_double.png"
-)
-ecdf_comparison(
-    real_values=dfm[COL_PORO],
-    df_long=dfL,
-    value_col=PORO_LABEL,       # or your renamed label
-    xlabel="Porosity [-]",
-    outfile="box_poro_double.png"
-)
-ecdf_with_depth(
-    real_values=dfm[COL_Press],
-    df_long=dfL,
-    value_col = PR_LABEL,
-    xlabel=PR_LABEL,
-    outfile="box_pressure_by_TWh.png",
-)
+    plt.close()
+
+
+def run_discount_rate_ecdfs():
+    """
+    Option B: one set of cumulative-probability plots per discount rate.
+    Inside each discount-rate folder, curves compare the TWh target scenarios.
+    """
+    os.makedirs(PLOT_OUTPUT_DIR, exist_ok=True)
+    all_frames = []
+
+    for discount_rate, discount_label, folder in DISCOUNT_RATE_FOLDERS:
+        dr_dir = os.path.join(INPUT_ROOT, folder)
+        if not os.path.isdir(dr_dir):
+            print(f"[skip] Discount-rate folder not found: {dr_dir}")
+            continue
+
+        try:
+            df_long = collect_long_dataframe(
+                dr_dir,
+                FILES,
+                GLOB_PATTERN,
+                discount_rate=discount_rate,
+                discount_label=discount_label,
+            )
+        except RuntimeError as exc:
+            print(f"[skip] {folder}: {exc}")
+            continue
+
+        all_frames.append(df_long)
+        prefix = os.path.join(PLOT_OUTPUT_DIR, folder)
+
+        plot_ecdf_legend_only(
+            real_values=dfm[COL_Perm],
+            df_long=df_long,
+            value_col=Perm_LABEL,
+            xlabel="Permeability [mD]",
+            outfile=f"{prefix}_legend_only.png",
+        )
+
+        ecdf_comparison(
+            real_values=dfm[COL_Perm],
+            df_long=df_long,
+            value_col=Perm_LABEL,
+            xlabel="Permeability [mD]",
+            outfile=f"{prefix}_ecdf_perm_by_TWh.png",
+        )
+
+        ecdf_comparison(
+            real_values=dfm[COL_PORO],
+            df_long=df_long,
+            value_col=PORO_LABEL,
+            xlabel="Porosity [-]",
+            outfile=f"{prefix}_ecdf_poro_by_TWh.png",
+        )
+
+        ecdf_with_depth(
+            real_values=dfm[COL_Press],
+            df_long=df_long,
+            value_col=PR_LABEL,
+            xlabel=PR_LABEL,
+            outfile=f"{prefix}_ecdf_pressure_depth_by_TWh.png",
+        )
+
+    if all_frames:
+        combined = pd.concat(all_frames, ignore_index=True)
+        combined.to_csv(os.path.join(PLOT_OUTPUT_DIR, "discount_rate_ecdf_long.csv"), index=False)
+        print(f"Saved combined ECDF input table: {os.path.join(PLOT_OUTPUT_DIR, 'discount_rate_ecdf_long.csv')}")
+    else:
+        raise RuntimeError("No discount-rate ECDF inputs were loaded.")
+
+
+if __name__ == "__main__":
+    run_discount_rate_ecdfs()
 
 
 

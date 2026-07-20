@@ -4,7 +4,9 @@ import pandas as pd
 import matplotlib.pyplot as plt
 
 # ---------------- user settings ----------------
-INPUT_DIR    = r"Y:\Mixing Results\July\Two Term Equation"
+INPUT_DIR    = r"Y:\Mixing Results\July\Two Term Equation\DR_07"
+OUTPUT_DIR   = INPUT_DIR
+FIG_DPI      = 600
 
 FILES = [
     "optimal_plan_CL14_TWh5_Low_H24.0.xlsx",
@@ -21,7 +23,7 @@ GLOB_PATTERN = None
 YEAR_MARKS = np.array([30], dtype=int)
 
 SCEN_COL_LABEL = "Scenario"
-LOSS_LABEL = r"PV-Loss Cost [$\times 10^9$ \$]"
+LOSS_LABEL = r"PV total cost [$\times 10^9$ \$]"
 LCOS_LABEL     = "LCOS ($\$$/MWh)"
 Perm_LABEL     = "Permeability [mD]"
 FR_LABEL     = "Flow Rate [sm3/d]"
@@ -40,6 +42,43 @@ COL_FR = "Flow Rate [sm3/d]"
 COL_CG     = "CG Ratio"
 COL_Press = "Reservoir Pressure[bar]"
 LOSS_CANDIDATES = ["Loss Cost [M$]", "Loss Cost [$]", "Loss Cost [£]", "Loss Cost [M£]"]
+
+plt.rcParams.update({
+    "figure.dpi": 160,
+    "savefig.dpi": FIG_DPI,
+    "savefig.bbox": "tight",
+    "savefig.facecolor": "white",
+    "font.size": 20,
+    "axes.labelsize": 20,
+    "axes.titlesize": 20,
+    "legend.fontsize": 18,
+    "xtick.labelsize": 18,
+    "ytick.labelsize": 18,
+    "lines.linewidth": 2.5,
+    "lines.markersize": 6,
+    "pdf.fonttype": 42,
+    "ps.fonttype": 42,
+})
+
+def save_figure(fig: plt.Figure, filename: str) -> None:
+    """Save publication-quality PNG and editable PDF copies into OUTPUT_DIR."""
+    os.makedirs(OUTPUT_DIR, exist_ok=True)
+    stem, ext = os.path.splitext(filename)
+    if ext:
+        filename = stem
+
+    png_path = os.path.join(OUTPUT_DIR, f"{filename}.png")
+    pdf_path = os.path.join(OUTPUT_DIR, f"{filename}.pdf")
+    fig.savefig(png_path, dpi=FIG_DPI, bbox_inches="tight", facecolor="white")
+    fig.savefig(pdf_path, bbox_inches="tight", facecolor="white")
+    print(f"Saved: {png_path}")
+    print(f"Saved: {pdf_path}")
+
+def show_or_close(fig: plt.Figure) -> None:
+    if plt.get_backend().lower() == "agg":
+        plt.close(fig)
+    else:
+        plt.show()
 
 def parse_CL(fname):
     m = re.search(r"CL(\d+)", fname)
@@ -205,8 +244,8 @@ ax.set_ylabel(LCOS_LABEL)
 ax.grid(True, linestyle=":", alpha=0.5)
 ax.legend(title=SCEN_COL_LABEL, frameon=False, bbox_to_anchor=(1.02, 1), loc="upper left")
 fig.tight_layout()
-fig.savefig("scatter_loss_vs_lcos_all_years.png", dpi=500, bbox_inches="tight")
-plt.show()
+save_figure(fig, "scatter_loss_vs_lcos_all_years")
+show_or_close(fig)
 
 # ----------- plotting style -----------
 plt.rcParams.update({
@@ -231,7 +270,7 @@ def horizontal_boxplot(df, value_col, group_col, title, xlabel, outfile=None):
 
     fig, ax = plt.subplots(figsize=(8, 6))
     ax.boxplot(
-        data, vert=False, labels=order, patch_artist=True,showfliers=False,
+        data, vert=False, tick_labels=order, patch_artist=True,showfliers=False,
         medianprops={"color":"black", "linewidth":2},
         boxprops={"facecolor":"#7a0b01", "alpha":0.7, "edgecolor":"black", "linewidth":2},
         whiskerprops={"color":"black", "linewidth":1.2},
@@ -245,33 +284,33 @@ def horizontal_boxplot(df, value_col, group_col, title, xlabel, outfile=None):
     ax.grid(True, axis="x", linestyle=":", alpha=0.5)
     # fig.tight_layout()
     if outfile:
-        fig.savefig(outfile, dpi=500, bbox_inches="tight")
-    plt.show()
+        save_figure(fig, outfile)
+    show_or_close(fig)
 
 horizontal_boxplot(
     dfL, LOSS_LABEL, SCEN_COL_LABEL,
     title="",
     xlabel=f"{LOSS_LABEL}",
-    outfile="box_total_loss_by_scenario.png"
+    outfile="box_total_loss_by_scenario"
 )
 
 horizontal_boxplot(
     dfL, Perm_LABEL, SCEN_COL_LABEL,
     title="",
     xlabel=f"{Perm_LABEL}",
-    outfile="box_total_loss_by_scenario.png"
+    outfile="box_permeability_by_scenario"
 )
 horizontal_boxplot(
     dfL,PR_LABEL, SCEN_COL_LABEL,
     title="",
     xlabel=f"{PR_LABEL}",
-    outfile="box_total_loss_by_scenario.png"
+    outfile="box_reservoir_pressure_by_scenario"
 )
 horizontal_boxplot(
     dfL, FR_LABEL, SCEN_COL_LABEL,
     title="",
     xlabel=f"{FR_LABEL}",
-    outfile="box_total_loss_by_scenario.png"
+    outfile="box_flow_rate_by_scenario"
 )
 
 # ----------- 2) BOX: LCOS by Scenario -----------
@@ -279,7 +318,7 @@ horizontal_boxplot(
     dfL, LCOS_LABEL, SCEN_COL_LABEL,
     title="",
     xlabel=f"{LCOS_LABEL}",
-    outfile="box_lcos_by_scenario.png"
+    outfile="box_lcos_by_scenario"
 )
 
 # ----------- 3) SCATTER: Total Loss vs LCOS (coloured by Scenario) -----------
@@ -295,5 +334,5 @@ ax.set_ylabel(f"{LCOS_LABEL} ($/MWh)")
 ax.grid(True, linestyle=":", alpha=0.5)
 ax.legend(title=SCEN_COL_LABEL, frameon=False, bbox_to_anchor=(1.02, 1), loc="upper left")
 fig.tight_layout()
-fig.savefig("scatter_loss_vs_lcos_by_scenario.png", dpi=500, bbox_inches="tight")
-plt.show()
+save_figure(fig, "scatter_loss_vs_lcos_by_scenario")
+show_or_close(fig)

@@ -681,17 +681,11 @@ public:
             return H2O::liquidViscosity(temperature, pressure);
         else {
             /* Wilke method. See:
-             *
-             * S.O.Ochs: "Development of a multiphase multicomponent
-             * model for PEMFC - Technical report: IRTG-NUPUS",
-             * University of Stuttgart, 2008
-             *
-             * and:
-             *
              * See: R. Reid, et al.: The Properties of Gases and Liquids, 4th
              * edition, McGraw-Hill, 1987, 407-410
              */
             // Wilke method (Reid et al.):
+            // TODO: Remove the manual assignment of the viscosities and replace it by a loop.
             Scalar muResult = 0;
             const Scalar mu[numComponents] = {
                 h2oGasViscosityInMixture(temperature, pressure),
@@ -700,13 +694,6 @@ public:
                 CO2::gasViscosityHighP(temperature, pressure),
                 N2::gasViscosityHighP(temperature, pressure)
             };
-            // const Scalar mu_lp[numComponents] = {
-            //     h2oGasViscosityInMixture(temperature, pressure),
-            //     CO2::gasViscosity(temperature, pressure),
-            //     H2::gasViscosity(temperature, pressure),
-            //     CH4::gasViscosity(temperature, pressure),
-            //     N2::gasViscosity(temperature, pressure)
-            // };
 
             Scalar sumx = 0.0;
             using std::max;
@@ -909,11 +896,12 @@ public:
 
                 case CH4Idx:
                     switch (compJIdx) {
-                        case CO2Idx:    return BinaryCoeff::CH4_CO2::HighPgasDiffCoeff(temperature, pressure, mole_frac_CH4, mole_frac_CO2, Policy::useIdealGasDensity());
-                        // case CO2Idx:    return BinaryCoeff::CH4_CO2::gasDiffCoeff(temperature, pressure);
-                        case H2Idx:    return BinaryCoeff::H2_CH4::HighPgasDiffCoeff(temperature, pressure, mole_frac_H2, mole_frac_CH4, Policy::useIdealGasDensity());
-                        // case H2Idx:    return BinaryCoeff::H2_CH4::gasDiffCoeff(temperature, pressure);
-                        case N2Idx:     return BinaryCoeff::CH4_N2::HighPgasDiffCoeff(temperature, pressure, mole_frac_CH4, mole_frac_N2, Policy::useIdealGasDensity());
+                        // case CO2Idx:    return BinaryCoeff::CH4_CO2::HighPgasDiffCoeff(temperature, pressure, mole_frac_CH4, mole_frac_CO2, Policy::useIdealGasDensity());
+                        case CO2Idx:    return BinaryCoeff::CH4_CO2::gasDiffCoeff(temperature, pressure);
+                        // case H2Idx:    return BinaryCoeff::H2_CH4::HighPgasDiffCoeff(temperature, pressure, mole_frac_H2, mole_frac_CH4, Policy::useIdealGasDensity());
+                        case H2Idx:    return BinaryCoeff::H2_CH4::gasDiffCoeff(temperature, pressure);
+                        // case N2Idx:     return BinaryCoeff::CH4_N2::HighPgasDiffCoeff(temperature, pressure, mole_frac_CH4, mole_frac_N2, Policy::useIdealGasDensity());
+                        case N2Idx:    return BinaryCoeff::CH4_N2::gasDiffCoeff(temperature, pressure);
                     }
 
                 case H2Idx:

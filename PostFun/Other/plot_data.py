@@ -5,7 +5,7 @@ import pandas as pd
 # ==========================
 # USER SETTINGS
 # ==========================
-INPUT_DIR   = r"Y:\Mixing Results\July\Two Term Equation"
+INPUT_DIR   = r"Y:\Mixing Results\July\Two Term Equation\DR_07"
 GLOB_PATTERN = "optimal_plan_CL*_TWh*.xlsx"
 
 YEAR_PICK = 30  # pick the sheet closest to this project horizon (years)

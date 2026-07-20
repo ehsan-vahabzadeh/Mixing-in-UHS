@@ -13,7 +13,10 @@ from joblib import load
 # ----------------------------
 # Constants
 # ----------------------------
-H2_COST = 3.0
+H2_COST = 4.0
+H2_COSTS = [3.0, 4.0, 5.0]
+CYCLE_LENGTH_DAYS = [14, 60, 180, 360]
+CG_TYPES = ["H2"]
 T_STD = 293.15
 P_STD_BAR = 1.01325  # bar
 
@@ -76,6 +79,7 @@ def optim_data(
     clf,
     cg_type: str,
     input_directory: str,
+    h2_cost: float = H2_COST,
 ) -> None:
     """
     Generates optimisation dataset CSVs: one file per cycle under optim_dataset_{CL}_{CG_type}_{H2_COST}.
@@ -172,7 +176,8 @@ def optim_data(
                 wg_cum_inj_h2 = (cycle_length_days / 2) * flow_rate * number_of_wells
                 cg_cum_inj_h2 = cg_ratio * (cycle_length_days / 2) * flow_rate * number_of_wells
 
-                gas_cost = (wg_cum_inj_h2 + cg_cum_inj_h2) * rho_h2_std * H2_COST
+                wg_gas_cost = wg_cum_inj_h2 * rho_h2_std * h2_cost
+                cg_inventory_cost = cg_cum_inj_h2 * rho_h2_std * h2_cost
 
                 if cg_cum_inj_h2 + wg_cum_inj_h2 > h2_capacity:
                     continue
@@ -190,7 +195,10 @@ def optim_data(
                     compressor_power * cost_of_electricity + cooling_cost * water_requirment + (0.05 + 0.0045)
                 )
 
-                total_capital_cost = compressor_capital_cost + well_capital_cost + gas_cost + cg_om_cost
+                # Keep the original total capital definition: the upfront CG handling
+                # cost was included with capital, so fold it into the CG cost bucket.
+                cg_cost = cg_inventory_cost + cg_om_cost
+                total_capital_cost = compressor_capital_cost + well_capital_cost + wg_gas_cost + cg_cost
                 CRF = 0.1 * (1 + 0.1) ** 40 / ((1 + 0.1) ** 40 - 1)
                 levelised_capital_cost = total_capital_cost * CRF / 0.8
 
@@ -225,8 +233,16 @@ def optim_data(
                         "Number of Wells": number_of_wells,
                         "RGIIP [1e6 scm]": rgiip,
                         "CG injected [m3]": cg_cum_inj_h2,
+                        "Cum H2 Injected [m3]": (cl_i + 1) * wg_cum_inj_h2,
+                        "Cum H2 Produced [m3]": wg_cum_prod_h2,
                         "Net H2 Stored [m3]": (cl_i + 1) * wg_cum_inj_h2 - wg_cum_prod_h2,
+                        "Compressor Capital Cost [$]": compressor_capital_cost,
+                        "Well Capital Cost [$]": well_capital_cost,
+                        "Working Gas Cost [$]": wg_gas_cost,
+                        "Cushion Gas Cost [$]": cg_cost,
+                        "Base Capital Cost [$]": total_capital_cost,
                         "Capital Cost [$]": total_capital_cost,
+                        "H2 Cost [$/kg]": h2_cost,
                         "WG O&M Cost [$]": wg_om_cost,
                         "LCOS": lcos,
                         "Cum CG Injected [Twh]": cg_twh,
@@ -235,7 +251,7 @@ def optim_data(
                     }
                 )
 
-    folder = os.path.join(input_directory, f"optim_dataset_{cycle_length_days}_{cg_type}_{H2_COST}")
+    folder = os.path.join(input_directory, f"optim_dataset_{cycle_length_days}_{cg_type}_{h2_cost:.1f}")
     os.makedirs(folder, exist_ok=True)
 
     data = pd.DataFrame(data)
@@ -291,10 +307,23 @@ def main(input_directory: str) -> None:
 
     scalers = joblib.load("scalers_withoutCG_AC.pkl")
 
-    # Run
-    cg_type = "H2"
-    cycle_length_days = 14
-    optim_data(df_clean, cycle_length_days, scalers, model, clf, cg_type, input_directory)
+    # Run all optimisation-candidate datasets used by optimise_uk_portfolio.py.
+    for cg_type in CG_TYPES:
+        for cycle_length_days in CYCLE_LENGTH_DAYS:
+            for h2_cost in H2_COSTS:
+                if h2_cost == 3 and cycle_length_days == 14:
+                    continue
+                print(f"Generating optim_dataset_{cycle_length_days}_{cg_type}_{h2_cost:.1f}")
+                optim_data(
+                    df_clean,
+                    cycle_length_days,
+                    scalers,
+                    model,
+                    clf,
+                    cg_type,
+                    input_directory,
+                    h2_cost=h2_cost,
+                )
 
 
 if __name__ == "__main__":

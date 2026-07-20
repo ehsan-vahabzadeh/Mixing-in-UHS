@@ -10,7 +10,7 @@ from matplotlib.colors import LinearSegmentedColormap, ListedColormap, BoundaryN
 # =======================
 # SETTINGS
 # =======================
-INPUT_DIR = r"Y:\Mixing Results\July\Two Term Equation\_map_inputs"
+INPUT_DIR = r"Y:\Mixing Results\July\Two Term Equation\DR_07\_map_inputs"
 SUMMARY_CSV = os.path.join(INPUT_DIR, "per_target_reservoir_summary.csv")
 
 # Master list containing *all* reservoirs (selected + not selected)
@@ -27,8 +27,9 @@ TARGET_BASE_COLORS = {
 
 MAX_SELECT_PER_TARGET = 6  # adjust if your true max differs
 
-FRAC_BINS = np.array([0.00, 0.01, 0.03, 0.06, 0.10, np.inf])
-SIZE_VALUES = np.array([100, 250, 500, 800, 1200])
+FRAC_BINS = np.array([0.00, 0.01, 0.03, 0.16, 0.30, np.inf])
+SIZE_VALUES = np.array([350, 700, 1200, 2000, 3200])
+SHARE_VALUES_ARE_PERCENT = True  # True: 8 means 8%; False: 0.08 means 8%
 
 ALPHA_SEL = 0.85
 ALPHA_ALL = 0.35
@@ -65,6 +66,12 @@ def frac_to_size(frac):
     idx = int(np.clip(idx, 0, len(SIZE_VALUES)-1))
     return float(SIZE_VALUES[idx])
 
+def share_to_fraction(values):
+    values = pd.to_numeric(values, errors="coerce")
+    if SHARE_VALUES_ARE_PERCENT:
+        return values / 100.0
+    return values
+
 def add_basemap(ax):
     ax.add_feature(cfeature.LAND, facecolor="#f3f3f3", zorder=0)
     ax.add_feature(cfeature.OCEAN, facecolor="#dbe9ff", zorder=0)
@@ -73,6 +80,12 @@ def add_basemap(ax):
     ax.set_extent(EXTENT, crs=ccrs.PlateCarree())
     ax.gridlines(draw_labels=False, linewidth=0.3, color="gray", alpha=0.35, linestyle="--")
     return ax
+
+def show_or_close(fig):
+    if plt.get_backend().lower() == "agg":
+        plt.close(fig)
+    else:
+        plt.show()
 
 # =======================
 # LOAD DATA
@@ -90,8 +103,12 @@ for c in df_sum.columns:
         rename_map[c] = "target_twh"
     if cn in ["count", "n_selected", "times_selected", "n_cases_selected"]:
         rename_map[c] = "count"
-    if cn in ["produced_twh_mean"]:
-        rename_map[c] = "frac_median"
+    if cn in ["share_to_target_median", "target_share_median", "frac_median", "fraction_median"]:
+        rename_map[c] = "target_share_raw"
+    if cn in ["produced_twh_median", "median_produced_twh"]:
+        rename_map[c] = "produced_twh_median"
+    if cn in ["produced_twh_mean", "mean_produced_twh"]:
+        rename_map[c] = "produced_twh_mean"
     if cn == "latitude":
         rename_map[c] = "Latitude"
     if cn == "longitude":
@@ -124,7 +141,21 @@ df_sum["target_twh"] = pd.to_numeric(df_sum["target_twh"], errors="coerce")
 df_sum["count"] = pd.to_numeric(df_sum["count"], errors="coerce")
 df_sum["Latitude"] = pd.to_numeric(df_sum.get("Latitude"), errors="coerce")
 df_sum["Longitude"] = pd.to_numeric(df_sum.get("Longitude"), errors="coerce")
-df_sum["frac_median"] = pd.to_numeric(df_sum.get("frac_median"), errors="coerce")
+
+if "target_share_raw" not in df_sum.columns:
+    if "produced_twh_median" in df_sum.columns:
+        df_sum["target_share_raw"] = pd.to_numeric(df_sum["produced_twh_median"], errors="coerce") / df_sum["target_twh"]
+    elif "produced_twh_mean" in df_sum.columns:
+        df_sum["target_share_raw"] = pd.to_numeric(df_sum["produced_twh_mean"], errors="coerce") / df_sum["target_twh"]
+    else:
+        raise KeyError("No target-share or produced-H2 column was found for marker sizing.")
+
+df_sum["target_share_raw"] = pd.to_numeric(df_sum["target_share_raw"], errors="coerce")
+df_sum["frac_median"] = share_to_fraction(df_sum["target_share_raw"])
+if "produced_twh_median" in df_sum.columns:
+    df_sum["produced_twh_median"] = pd.to_numeric(df_sum["produced_twh_median"], errors="coerce")
+else:
+    df_sum["produced_twh_median"] = df_sum["frac_median"] * df_sum["target_twh"]
 
 # If summary doesn't have coords, merge from df_all
 df_sum["reservoir_norm"] = df_sum["reservoir"].apply(norm_name)
@@ -145,6 +176,7 @@ df_sum = df_sum.drop(columns=[c for c in df_sum.columns if c.endswith("_all")])
 df_sum = df_sum.dropna(subset=["target_twh", "count", "Latitude", "Longitude"])
 
 targets = sorted(df_sum["target_twh"].dropna().unique())
+ranked_outputs = []
 
 # =======================
 # PLOT PER TARGET
@@ -165,12 +197,14 @@ for t in targets:
     # Create a per-target dataframe that includes ALL reservoirs:
     all_t = df_all.copy()
     all_t = all_t.merge(
-        sel[["reservoir_norm", "count", "frac_median"]],
+        sel[["reservoir_norm", "count", "produced_twh_median", "target_share_raw", "frac_median"]],
         on="reservoir_norm",
         how="left"
     )
     all_t["count"] = all_t["count"].fillna(0)
     all_t["frac_median"] = all_t["frac_median"].fillna(0.0)
+    all_t["target_share_raw"] = all_t["target_share_raw"].fillna(0.0)
+    all_t["produced_twh_median"] = all_t["produced_twh_median"].fillna(0.0)
 
     # Separate selected vs not selected
     not_sel = all_t[all_t["count"] <= 0].copy()
@@ -178,7 +212,8 @@ for t in targets:
 
     # Map colour level and marker size for selected
     dft["level"] = dft["count"].apply(lambda c: count_to_level(c, max_count=MAX_SELECT_PER_TARGET, nlevels=9))
-    dft["frac_median"] = (dft["frac_median"] / t) 
+    dft["median_target_twh"] = dft["produced_twh_median"]
+    dft["target_share_percent"] = dft["frac_median"] * 100.0
     dft["msize"] = dft["frac_median"].apply(frac_to_size)
     dft = dft.dropna(subset=["level", "msize"])
     
@@ -192,7 +227,58 @@ for t in targets:
       .str.replace(r"\s+", " ", regex=True)
       .str.strip(" ,-_")
 )
-    top5 = dft.sort_values("score", ascending=False).head(5)
+    ranked = dft.sort_values(["score", "count", "frac_median"], ascending=False).copy()
+    ranked["rank"] = np.arange(1, len(ranked) + 1)
+    ranked["target_twh"] = t_int
+    ranked_outputs.append(
+        ranked[
+            [
+                "target_twh",
+                "rank",
+                "reservoir_plot",
+                "count",
+                "median_target_twh",
+                "target_share_raw",
+                "target_share_percent",
+                "frac_median",
+                "score",
+                "msize",
+            ]
+        ].copy()
+    )
+
+    print(f"\nSelected reservoirs ranked for {t_int} TWh target")
+    print(
+        ranked[
+            [
+                "rank",
+                "reservoir_plot",
+                "count",
+                "median_target_twh",
+                "target_share_raw",
+                "target_share_percent",
+                "frac_median",
+                "score",
+                "msize",
+            ]
+        ]
+        .rename(
+            columns={
+                "rank": "Rank",
+                "reservoir_plot": "Reservoir",
+                "count": "Selected count",
+                "median_target_twh": "Median contribution [TWh]",
+                "target_share_raw": "Raw share input",
+                "target_share_percent": "Target share [%]",
+                "frac_median": "Target share [-]",
+                "score": "Rank score",
+                "msize": "Circle size",
+            }
+        )
+        .to_string(index=False, float_format=lambda x: f"{x:.4g}")
+    )
+
+    top5 = ranked.head(5)
 
     fig = plt.figure(figsize=(20, 5))
     ax = plt.axes(projection=ccrs.Mercator())
@@ -235,16 +321,16 @@ for t in targets:
     transform=ccrs.PlateCarree(),
     zorder=4
     )
-    # 3) Annotate top 5
-    # Small offsets so text doesn't sit on the marker
-    for _, r in top5.iterrows():
-        ax.text(
-        r["Longitude"] + 0.11, r["Latitude"] + 0.07,  # small offset
-        str(r["reservoir_plot"]),
-        transform=ccrs.PlateCarree(),
-        fontsize=16,
-        zorder=5
-    )
+    # # 3) Annotate top 5
+    # # Small offsets so text doesn't sit on the marker
+    # for _, r in top5.iterrows():
+    #     ax.text(
+    #     r["Longitude"] + 0.11, r["Latitude"] + 0.07,  # small offset
+    #     str(r["reservoir_plot"]),
+    #     transform=ccrs.PlateCarree(),
+    #     fontsize=16,
+    #     zorder=5
+    # )
 
     # Discrete colourbar
     cbar = plt.colorbar(sc, ax=ax, orientation="horizontal", pad=0.025,
@@ -258,5 +344,11 @@ for t in targets:
 
     out = os.path.join(INPUT_DIR, f"uk_map_target_{t_int}TWh_with_all_and_top5.png")
     plt.savefig(out, dpi=300, bbox_inches="tight")
-    plt.show()
+    show_or_close(fig)
     print(f"Saved: {out}")
+
+if ranked_outputs:
+    ranked_all = pd.concat(ranked_outputs, ignore_index=True)
+    ranked_out = os.path.join(INPUT_DIR, "ranked_selected_reservoirs_by_target.csv")
+    ranked_all.to_csv(ranked_out, index=False)
+    print(f"\nSaved ranked selected reservoirs: {ranked_out}")

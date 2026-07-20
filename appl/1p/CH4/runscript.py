@@ -1,446 +1,199 @@
-
-import subprocess
 import argparse
-import matplotlib as mpl
-import matplotlib.pyplot as plt
-import numpy as np
-import vtk
+import json
 import os
-# Compile the code first
-subprocess.call(['make', 'appl_1pnc_box_CH4'])
+import subprocess
+import sys
+from pathlib import Path
 
-# Define the find command as a string
-command = 'find . -type f \\( -name "*.vtu" -o -name "*.pvtu" -o -name "*.pvd" -o -name "*.json" \\) -delete'
 
-# Execute the command in the shell
-subprocess.run(command, shell=True, check=True)
+APP_TARGET = "appl_1pnc_box_CH4"
+DEFAULT_CASES_FILE = "optimised_validation_cases_ch4.json"
+DEFAULT_NUM_CORES = os.environ.get("SLURM_NTASKS", "2")
+DEFAULT_OPERATIONAL_CYCLES = float(os.environ.get("NUM_OPERATIONAL_CYCLES", "10"))
 
-print("Deleted all .vtu, .pvtu, .pvd, and .json files.")
 
-# Define the test cases and their parameters
-test_cases = [
-      {
-        "name": "H2-124416-118-32-239-347-19-4.59",
-        "MaxTimeStepSize": "46341.818181818184",
-        "InjectionRateDev": "-4.698266809827484",
-        "InjectionRateOp": "-4.698266809827484",
-        "ProductionRate": "4.698266809827484",
-        "Well_Height": "10",
-        "ReferencePorosity": "0.192019",
-        "ReferencePermeability": "3.158977e-14",
-        "Pressure_TOP": "23908391.9",
-        "InitialTemperature": "347.6266652858448",
-        "TEnd": "1450.81",
-        "InjectionDurationDev": "270.81",
-        "InjectionDurationOp": "59.0",
-        "ExtractionDurationOp": "59.0"
-    },
-    {
-        "name": "H2-1146138-73-103-307-361-7-3.92",
-        "MaxTimeStepSize": "28669.090909090908",
-        "InjectionRateDev": "-43.28101094035218",
-        "InjectionRateOp": "-43.28101094035218",
-        "ProductionRate": "43.28101094035218",
-        "Well_Height": "10",
-        "ReferencePorosity": "0.079831",
-        "ReferencePermeability": "1.023373e-13",
-        "Pressure_TOP": "30713989.1",
-        "InitialTemperature": "361.8736374244137",
-        "TEnd": "873.0799999999999",
-        "InjectionDurationDev": "143.07999999999998",
-        "InjectionDurationOp": "36.5",
-        "ExtractionDurationOp": "36.5"
-    },
-    {
-        "name": "H2-495964-20-54-158-319-15-2.38",
-        "MaxTimeStepSize": "7854.545454545455",
-        "InjectionRateDev": "-18.728854640772447",
-        "InjectionRateOp": "-18.728854640772447",
-        "ProductionRate": "18.728854640772447",
-        "Well_Height": "10",
-        "ReferencePorosity": "0.158118",
-        "ReferencePermeability": "5.383120e-14",
-        "Pressure_TOP": "15809869.0",
-        "InitialTemperature": "319.1348038431318",
-        "TEnd": "223.8",
-        "InjectionDurationDev": "23.799999999999997",
-        "InjectionDurationOp": "10.0",
-        "ExtractionDurationOp": "10.0"
-    },
-    {
-        "name": "H2-1083044-133-90-129-323-20-1.54",
-        "MaxTimeStepSize": "52232.72727272727",
-        "InjectionRateDev": "-40.89841373327968",
-        "InjectionRateOp": "-40.89841373327968",
-        "ProductionRate": "40.89841373327968",
-        "Well_Height": "10",
-        "ReferencePorosity": "0.206862",
-        "ReferencePermeability": "8.907359e-14",
-        "Pressure_TOP": "12992617.9",
-        "InitialTemperature": "323.5730523463204",
-        "TEnd": "1432.41",
-        "InjectionDurationDev": "102.41",
-        "InjectionDurationOp": "66.5",
-        "ExtractionDurationOp": "66.5"
-    },
-    {
-        "name": "H2-290403-108-115-247-360-20-3.04",
-        "MaxTimeStepSize": "42414.545454545456",
-        "InjectionRateDev": "-10.96636211108181",
-        "InjectionRateOp": "-10.96636211108181",
-        "ProductionRate": "10.96636211108181",
-        "Well_Height": "10",
-        "ReferencePorosity": "0.202557",
-        "ReferencePermeability": "1.144456e-13",
-        "Pressure_TOP": "24758141.9",
-        "InitialTemperature": "360.6193644996065",
-        "TEnd": "1244.16",
-        "InjectionDurationDev": "164.16",
-        "InjectionDurationOp": "54.0",
-        "ExtractionDurationOp": "54.0"
-    },
-    {
-        "name": "H2-1252803-55-130-380-378-19-4.09",
-        "MaxTimeStepSize": "21600.0",
-        "InjectionRateDev": "-47.30892765697062",
-        "InjectionRateOp": "-47.30892765697062",
-        "ProductionRate": "47.30892765697062",
-        "Well_Height": "10",
-        "ReferencePorosity": "0.193589",
-        "ReferencePermeability": "1.284991e-13",
-        "Pressure_TOP": "38015048.7",
-        "InitialTemperature": "378.1445593255852",
-        "TEnd": "662.475",
-        "InjectionDurationDev": "112.475",
-        "InjectionDurationOp": "27.5",
-        "ExtractionDurationOp": "27.5"
-    },
-    {
-        "name": "H2-652315-161-108-115-319-7-2.46",
-        "MaxTimeStepSize": "63229.09090909091",
-        "InjectionRateDev": "-24.633041034390843",
-        "InjectionRateOp": "-24.633041034390843",
-        "ProductionRate": "24.633041034390843",
-        "Well_Height": "10",
-        "ReferencePorosity": "0.071782",
-        "ReferencePermeability": "1.067564e-13",
-        "Pressure_TOP": "11595717.8",
-        "InitialTemperature": "319.0138164440277",
-        "TEnd": "1808.03",
-        "InjectionDurationDev": "198.03",
-        "InjectionDurationOp": "80.5",
-        "ExtractionDurationOp": "80.5"
-    },
-    {
-        "name": "H2-1131214-175-61-131-317-16-1.76",
-        "MaxTimeStepSize": "68727.27272727272",
-        "InjectionRateDev": "-42.71744640829956",
-        "InjectionRateOp": "-42.71744640829956",
-        "ProductionRate": "42.71744640829956",
-        "Well_Height": "10",
-        "ReferencePorosity": "0.167804",
-        "ReferencePermeability": "6.105722e-14",
-        "Pressure_TOP": "13180992.7",
-        "InitialTemperature": "317.91486907719417",
-        "TEnd": "1904.0",
-        "InjectionDurationDev": "154.0",
-        "InjectionDurationOp": "87.5",
-        "ExtractionDurationOp": "87.5"
-    },
-    {
-        "name": "H2-438755-17-75-442-402-13-3.44",
-        "MaxTimeStepSize": "6676.363636363636",
-        "InjectionRateDev": "-16.568497613388843",
-        "InjectionRateOp": "-16.568497613388843",
-        "ProductionRate": "16.568497613388843",
-        "Well_Height": "10",
-        "ReferencePorosity": "0.136717",
-        "ReferencePermeability": "7.481799e-14",
-        "Pressure_TOP": "44213851.9",
-        "InitialTemperature": "402.2001230889593",
-        "TEnd": "199.24",
-        "InjectionDurationDev": "29.24",
-        "InjectionDurationOp": "8.5",
-        "ExtractionDurationOp": "8.5"
-    },
-    {
-        "name": "H2-256112-42-111-232-352-6-3.12",
-        "MaxTimeStepSize": "16494.545454545456",
-        "InjectionRateDev": "-9.671427454571873",
-        "InjectionRateOp": "-9.671427454571873",
-        "ProductionRate": "9.671427454571873",
-        "Well_Height": "10",
-        "ReferencePorosity": "0.063257",
-        "ReferencePermeability": "1.098458e-13",
-        "Pressure_TOP": "23247689.0",
-        "InitialTemperature": "352.80680190251184",
-        "TEnd": "485.52",
-        "InjectionDurationDev": "65.52",
-        "InjectionDurationOp": "21.0",
-        "ExtractionDurationOp": "21.0"
-    },
-    {
-        "name": "H2-371506-150-96-315-351-14-1.87",
-        "MaxTimeStepSize": "58909.09090909091",
-        "InjectionRateDev": "-14.028994261022223",
-        "InjectionRateOp": "-14.028994261022223",
-        "ProductionRate": "14.028994261022223",
-        "Well_Height": "10",
-        "ReferencePorosity": "0.142760",
-        "ReferencePermeability": "9.518647e-14",
-        "Pressure_TOP": "31571372.6",
-        "InitialTemperature": "351.1591668793948",
-        "TEnd": "1640.25",
-        "InjectionDurationDev": "140.25",
-        "InjectionDurationOp": "75.0",
-        "ExtractionDurationOp": "75.0"
-    },
-    {
-        "name": "H2-986096-113-87-333-365-8-1.66",
-        "MaxTimeStepSize": "44378.181818181816",
-        "InjectionRateDev": "-37.237434276733936",
-        "InjectionRateOp": "-37.237434276733936",
-        "ProductionRate": "37.237434276733936",
-        "Well_Height": "10",
-        "ReferencePorosity": "0.089307",
-        "ReferencePermeability": "8.640902e-14",
-        "Pressure_TOP": "33308345.3",
-        "InitialTemperature": "365.68836428840484",
-        "TEnd": "1223.79",
-        "InjectionDurationDev": "93.78999999999999",
-        "InjectionDurationOp": "56.5",
-        "ExtractionDurationOp": "56.5"
-    },
-    {
-        "name": "H2-1312475-105-100-223-343-14-4.72",
-        "MaxTimeStepSize": "41236.36363636364",
-        "InjectionRateDev": "-49.56231566736498",
-        "InjectionRateOp": "-49.56231566736498",
-        "ProductionRate": "49.56231566736498",
-        "Well_Height": "10",
-        "ReferencePorosity": "0.145776",
-        "ReferencePermeability": "9.886620e-14",
-        "Pressure_TOP": "22399175.1",
-        "InitialTemperature": "343.6842891234443",
-        "TEnd": "1297.8",
-        "InjectionDurationDev": "247.79999999999998",
-        "InjectionDurationOp": "52.5",
-        "ExtractionDurationOp": "52.5"
-    },
-    {
-        "name": "H2-1113981-157-38-261-361-11-2.21",
-        "MaxTimeStepSize": "61658.181818181816",
-        "InjectionRateDev": "-42.066692961164996",
-        "InjectionRateOp": "-42.066692961164996",
-        "ProductionRate": "42.066692961164996",
-        "Well_Height": "10",
-        "ReferencePorosity": "0.114329",
-        "ReferencePermeability": "3.818715e-14",
-        "Pressure_TOP": "26169172.8",
-        "InitialTemperature": "361.663063398894",
-        "TEnd": "1743.485",
-        "InjectionDurationDev": "173.48499999999999",
-        "InjectionDurationOp": "78.5",
-        "ExtractionDurationOp": "78.5"
-    },
-    {
-        "name": "H2-894487-24-51-290-362-10-4.36",
-        "MaxTimeStepSize": "9425.454545454546",
-        "InjectionRateDev": "-33.778046946135156",
-        "InjectionRateOp": "-33.778046946135156",
-        "ProductionRate": "33.778046946135156",
-        "Well_Height": "10",
-        "ReferencePorosity": "0.109902",
-        "ReferencePermeability": "5.053351e-14",
-        "Pressure_TOP": "29070060.5",
-        "InitialTemperature": "362.6281337167246",
-        "TEnd": "292.32",
-        "InjectionDurationDev": "52.32000000000001",
-        "InjectionDurationOp": "12.0",
-        "ExtractionDurationOp": "12.0"
-    },
-    {
-        "name": "H2-193124-137-76-398-385-15-2.15",
-        "MaxTimeStepSize": "53803.63636363636",
-        "InjectionRateDev": "-7.292840158841661",
-        "InjectionRateOp": "-7.292840158841661",
-        "ProductionRate": "7.292840158841661",
-        "Well_Height": "10",
-        "ReferencePorosity": "0.158738",
-        "ReferencePermeability": "7.521841e-14",
-        "Pressure_TOP": "39876946.8",
-        "InitialTemperature": "385.172833093698",
-        "TEnd": "1517.275",
-        "InjectionDurationDev": "147.275",
-        "InjectionDurationOp": "68.5",
-        "ExtractionDurationOp": "68.5"
-    },
-    {
-        "name": "H2-466596-95-66-243-345-14-4.65",
-        "MaxTimeStepSize": "37309.09090909091",
-        "InjectionRateDev": "-17.61983754884696",
-        "InjectionRateOp": "-17.61983754884696",
-        "ProductionRate": "17.61983754884696",
-        "Well_Height": "10",
-        "ReferencePorosity": "0.143158",
-        "ReferencePermeability": "6.564033e-14",
-        "Pressure_TOP": "24346062.7",
-        "InitialTemperature": "345.6461122888893",
-        "TEnd": "1170.875",
-        "InjectionDurationDev": "220.87500000000003",
-        "InjectionDurationOp": "47.5",
-        "ExtractionDurationOp": "47.5"
-    },
-    {
-        "name": "H2-1046274-88-68-410-397-14-1.51",
-        "MaxTimeStepSize": "34560.0",
-        "InjectionRateDev": "-39.50991216753057",
-        "InjectionRateOp": "-39.50991216753057",
-        "ProductionRate": "39.50991216753057",
-        "Well_Height": "10",
-        "ReferencePorosity": "0.147360",
-        "ReferencePermeability": "6.784173e-14",
-        "Pressure_TOP": "41085957.4",
-        "InitialTemperature": "397.92791137561966",
-        "TEnd": "946.44",
-        "InjectionDurationDev": "66.44",
-        "InjectionDurationOp": "44.0",
-        "ExtractionDurationOp": "44.0"
-    },
-    {
-        "name": "H2-756226-44-25-329-365-16-2.92",
-        "MaxTimeStepSize": "17280.0",
-        "InjectionRateDev": "-28.556976735515757",
-        "InjectionRateOp": "-28.556976735515757",
-        "ProductionRate": "28.556976735515757",
-        "Well_Height": "10",
-        "ReferencePorosity": "0.165622",
-        "ReferencePermeability": "2.514102e-14",
-        "Pressure_TOP": "32918029.7",
-        "InitialTemperature": "365.05251867134956",
-        "TEnd": "504.24",
-        "InjectionDurationDev": "64.24",
-        "InjectionDurationOp": "22.0",
-        "ExtractionDurationOp": "22.0"
-    },
-    {
-        "name": "H2-120785-76-80-297-352-12-1.3",
-        "MaxTimeStepSize": "29847.272727272728",
-        "InjectionRateDev": "-4.561143595622979",
-        "InjectionRateOp": "-4.561143595622979",
-        "ProductionRate": "4.561143595622979",
-        "Well_Height": "10",
-        "ReferencePorosity": "0.125567",
-        "ReferencePermeability": "7.921701e-14",
-        "Pressure_TOP": "29715722.1",
-        "InitialTemperature": "352.3403713207425",
-        "TEnd": "809.4",
-        "InjectionDurationDev": "49.4",
-        "InjectionDurationOp": "38.0",
-        "ExtractionDurationOp": "38.0"
-    },
-    {
-        "name": "H2-889272-37-169-139-329-7-3.79",
-        "MaxTimeStepSize": "14530.90909090909",
-        "InjectionRateDev": "-33.5811013973824",
-        "InjectionRateOp": "-33.5811013973824",
-        "ProductionRate": "33.5811013973824",
-        "Well_Height": "10",
-        "ReferencePorosity": "0.075974",
-        "ReferencePermeability": "1.677387e-13",
-        "Pressure_TOP": "13946448.3",
-        "InitialTemperature": "329.15505182717476",
-        "TEnd": "440.115",
-        "InjectionDurationDev": "70.115",
-        "InjectionDurationOp": "18.5",
-        "ExtractionDurationOp": "18.5"
-    },
-    {
-        "name": "H2-962680-30-58-114-314-9-3.18",
-        "MaxTimeStepSize": "11781.818181818182",
-        "InjectionRateDev": "-36.35318545698906",
-        "InjectionRateOp": "-36.35318545698906",
-        "ProductionRate": "36.35318545698906",
-        "Well_Height": "10",
-        "ReferencePorosity": "0.095263",
-        "ReferencePermeability": "5.759096e-14",
-        "Pressure_TOP": "11435434.0",
-        "InitialTemperature": "314.73654397744036",
-        "TEnd": "347.7",
-        "InjectionDurationDev": "47.7",
-        "InjectionDurationOp": "15.0",
-        "ExtractionDurationOp": "15.0"
-    },
-    {
-        "name": "H2-850184-80-12-435-399-16-2.0",
-        "MaxTimeStepSize": "31418.18181818182",
-        "InjectionRateDev": "-32.105074535876746",
-        "InjectionRateOp": "-32.105074535876746",
-        "ProductionRate": "32.105074535876746",
-        "Well_Height": "10",
-        "ReferencePorosity": "0.169958",
-        "ReferencePermeability": "1.270171e-14",
-        "Pressure_TOP": "43506346.4",
-        "InitialTemperature": "399.43918653544347",
-        "TEnd": "880.0",
-        "InjectionDurationDev": "80.0",
-        "InjectionDurationOp": "40.0",
-        "ExtractionDurationOp": "40.0"
-    },
-    {
-        "name": "H2-1390119-122-159-293-358-17-4.44",
-        "MaxTimeStepSize": "47912.72727272727",
-        "InjectionRateDev": "-52.494329440621854",
-        "InjectionRateOp": "-52.494329440621854",
-        "ProductionRate": "52.494329440621854",
-        "Well_Height": "10",
-        "ReferencePorosity": "0.173045",
-        "ReferencePermeability": "1.573430e-13",
-        "Pressure_TOP": "29320692.3",
-        "InitialTemperature": "358.10156655554806",
-        "TEnd": "1490.8400000000001",
-        "InjectionDurationDev": "270.84000000000003",
-        "InjectionDurationOp": "61.0",
-        "ExtractionDurationOp": "61.0"
-    },
-    {
-        "name": "H2-1434264-168-122-283-341-8-4.2",
-        "MaxTimeStepSize": "65978.18181818182",
-        "InjectionRateDev": "-54.16134962451876",
-        "InjectionRateOp": "-54.16134962451876",
-        "ProductionRate": "54.16134962451876",
-        "Well_Height": "10",
-        "ReferencePorosity": "0.082797",
-        "ReferencePermeability": "1.210054e-13",
-        "Pressure_TOP": "28357481.6",
-        "InitialTemperature": "341.98040020900163",
-        "TEnd": "2032.8",
-        "InjectionDurationDev": "352.8",
-        "InjectionDurationOp": "84.0",
-        "ExtractionDurationOp": "84.0"
-    }]
-num_cores = os.environ.get('SLURM_NTASKS', '2')  # defaults to 1 if not set
+def parse_args() -> argparse.Namespace:
+    parser = argparse.ArgumentParser(
+        description="Run real CH4-cushion simulations for sampled optimised validation cases."
+    )
+    parser.add_argument(
+        "--cases",
+        default=os.environ.get("CH4_VALIDATION_CASES", DEFAULT_CASES_FILE),
+        help="JSON file produced by PostFun/std_plot_optimisation.py.",
+    )
+    parser.add_argument(
+        "--limit",
+        type=int,
+        default=None,
+        help="Run only the first N cases from the JSON file.",
+    )
+    parser.add_argument(
+        "--start-at",
+        type=int,
+        default=0,
+        help="Zero-based case index to start from.",
+    )
+    parser.add_argument(
+        "--num-cores",
+        default=DEFAULT_NUM_CORES,
+        help="MPI process count. Defaults to SLURM_NTASKS or 2.",
+    )
+    parser.add_argument(
+        "--skip-build",
+        action="store_true",
+        help="Skip the make step.",
+    )
+    parser.add_argument(
+        "--dry-run",
+        action="store_true",
+        help="Print commands without running simulations.",
+    )
+    return parser.parse_args()
 
-# Loop over each test case and run the simulations
-for test_case in test_cases:
-    params = 'params.input'
-    subprocess.call([
-        'mpirun', '-np', num_cores, 'appl_1pnc_box_CH4', params,
-        '-Problem.InitialTemperature', test_case["InitialTemperature"],
-	'-Problem.Name', test_case["name"],
-	'-TimeLoop.MaxTimeStepSize', test_case["MaxTimeStepSize"],
-        '-BoundaryConditions.InjectionRateDev', test_case["InjectionRateDev"],
-        '-BoundaryConditions.InjectionRateOp', test_case["InjectionRateOp"],
-        '-BoundaryConditions.ProductionRate', test_case["ProductionRate"],
-        '-BoundaryConditions.Well_Height', test_case["Well_Height"],
-	'-BoundaryConditions.Pressure_TOP', test_case["Pressure_TOP"],
-        '-SpatialParams.ReferencePermeability', test_case["ReferencePermeability"],
-	'-SpatialParams.ReferencePorosity', test_case["ReferencePorosity"],
-        '-TimeLoop.TEnd', test_case["TEnd"],
-        '-BoundaryConditions.InjectionDurationDev', test_case["InjectionDurationDev"],
-        '-BoundaryConditions.InjectionDurationOp', test_case["InjectionDurationOp"],
-        '-BoundaryConditions.ExtractionDurationOp', test_case["ExtractionDurationOp"]
-    ])
-    subprocess.call('python3 vtk-merge-multi.py', shell=True)
-    command = 'find . -maxdepth 1 -type f \\( -name "*.vtu" -o -name "*.pvtu" \\) -delete'
-    subprocess.run(command, shell=True, check=True)
+
+def resolve_case_file(cases_arg: str) -> Path:
+    candidate = Path(cases_arg)
+    if candidate.exists():
+        return candidate.resolve()
+
+    script_dir = Path(__file__).resolve().parent
+    candidate = script_dir / cases_arg
+    if candidate.exists():
+        return candidate.resolve()
+
+    candidate = Path.cwd() / cases_arg
+    if candidate.exists():
+        return candidate.resolve()
+
+    raise FileNotFoundError(
+        f"Could not find validation case file '{cases_arg}'. "
+        "Run PostFun/std_plot_optimisation.py first to create "
+        f"{DEFAULT_CASES_FILE}, or pass --cases /path/to/cases.json."
+    )
+
+
+def load_cases(path: Path) -> list[dict[str, object]]:
+    with path.open("r", encoding="utf-8") as f:
+        cases = json.load(f)
+
+    if not isinstance(cases, list) or not cases:
+        raise ValueError(f"{path} does not contain a non-empty list of cases.")
+
+    return cases
+
+
+def case_value(test_case: dict[str, object], key: str) -> str:
+    if key not in test_case or test_case[key] is None:
+        raise KeyError(f"Case {test_case.get('name', '<unnamed>')} is missing '{key}'")
+    return str(test_case[key])
+
+
+def calculate_t_end(test_case: dict[str, object]) -> str:
+    cycle_duration = (
+        float(case_value(test_case, "InjectionDurationOp"))
+        + float(case_value(test_case, "ExtractionDurationOp"))
+    )
+    operational_cycles = float(test_case.get("OperationalCycles", DEFAULT_OPERATIONAL_CYCLES))
+    t_end = (
+        float(case_value(test_case, "InjectionDurationDev"))
+        + operational_cycles * cycle_duration
+    )
+    return format(t_end, ".15g")
+
+
+def cleanup_outputs(include_json: bool, protected_paths: set[Path] | None = None) -> None:
+    protected_paths = protected_paths or set()
+    patterns = ["*.vtu", "*.pvtu", "*.pvd"]
+    if include_json:
+        patterns.append("*.json")
+
+    for pattern in patterns:
+        for path in Path.cwd().glob(pattern):
+            resolved = path.resolve()
+            if resolved in protected_paths:
+                continue
+            path.unlink(missing_ok=True)
+
+
+def build_command(test_case: dict[str, object], num_cores: str) -> list[str]:
+    params = "params.input"
+    return [
+        "mpirun",
+        "-np",
+        str(num_cores),
+        APP_TARGET,
+        params,
+        "-Problem.InitialTemperature",
+        case_value(test_case, "InitialTemperature"),
+        "-Problem.Name",
+        case_value(test_case, "name"),
+        "-TimeLoop.MaxTimeStepSize",
+        case_value(test_case, "MaxTimeStepSize"),
+        "-BoundaryConditions.CushionGasType",
+        str(test_case.get("CushionGasType", "CH4")),
+        "-BoundaryConditions.InjectionRateDev",
+        case_value(test_case, "InjectionRateDev"),
+        "-BoundaryConditions.InjectionRateOp",
+        case_value(test_case, "InjectionRateOp"),
+        "-BoundaryConditions.ProductionRate",
+        case_value(test_case, "ProductionRate"),
+        "-BoundaryConditions.Well_Height",
+        case_value(test_case, "Well_Height"),
+        "-BoundaryConditions.Pressure_TOP",
+        case_value(test_case, "Pressure_TOP"),
+        "-SpatialParams.ReferencePermeability",
+        case_value(test_case, "ReferencePermeability"),
+        "-SpatialParams.ReferencePorosity",
+        case_value(test_case, "ReferencePorosity"),
+        "-TimeLoop.TEnd",
+        calculate_t_end(test_case),
+        "-BoundaryConditions.InjectionDurationDev",
+        case_value(test_case, "InjectionDurationDev"),
+        "-BoundaryConditions.InjectionDurationOp",
+        case_value(test_case, "InjectionDurationOp"),
+        "-BoundaryConditions.ExtractionDurationOp",
+        case_value(test_case, "ExtractionDurationOp"),
+    ]
+
+
+def main() -> None:
+    args = parse_args()
+    case_file = resolve_case_file(args.cases)
+    cases = load_cases(case_file)
+
+    selected_cases = cases[args.start_at :]
+    if args.limit is not None:
+        selected_cases = selected_cases[: args.limit]
+
+    if not selected_cases:
+        raise ValueError("No validation cases selected.")
+
+    # if not args.skip_build:
+    #     build_cmd = ["make", APP_TARGET]
+    #     print(" ".join(build_cmd))
+    #     if not args.dry_run:
+    #         subprocess.run(build_cmd, check=True)
+
+    if args.dry_run:
+        print("Dry run: not deleting old output files.")
+    else:
+        cleanup_outputs(include_json=True, protected_paths={case_file})
+        print("Deleted old .vtu, .pvtu, .pvd, and simulation .json files.")
+
+    for idx, test_case in enumerate(selected_cases, start=args.start_at):
+        print(f"\n[{idx + 1}/{len(cases)}] Running {case_value(test_case, 'name')}")
+        command = build_command(test_case, args.num_cores)
+        print(" ".join(command))
+        if not args.dry_run:
+            subprocess.run(command, check=True)
+
+            merge_script = Path("vtk-merge-multi.py")
+            if merge_script.exists():
+                subprocess.run([sys.executable, str(merge_script)], check=True)
+
+        if not args.dry_run:
+            cleanup_outputs(include_json=False)
+
+
+if __name__ == "__main__":
+    main()

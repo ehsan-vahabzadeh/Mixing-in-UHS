@@ -18,7 +18,7 @@ x_line = np.linspace(0, 1.0, 400)
 y_line = PSA_cap_model(x_line)
 
 # 50× and 100× versions
-y_line_50 = 50 * y_line
+y_line_50 = 10 * y_line
 y_line_100 = 100 * y_line
 
 # ------------------------
