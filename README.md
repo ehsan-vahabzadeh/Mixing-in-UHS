@@ -1,187 +1,278 @@
-# Mixing-in-UHS: Techno-Economic Optimisation of Underground Hydrogen Storage
+# Mixing-in-UHS
 
-## Summary
+## Techno-Economic Optimisation of Hydrogen Geological Storage in UK Depleted Gas Reservoirs
 
-This repository contains the simulation code, post-processing tools, surrogate modelling, and optimisation framework for the following paper:
+Research code, processed data, trained surrogate models, and optimisation outputs accompanying the paper:
 
-> Vahabzadeh E., Nazari F., Pourakaberian A., Niasar V.
-> **Techno-Economic Optimisation of Underground Hydrogen Storage in UK Depleted Gas Reservoirs** (Under Review)
+> Ehsan Vahabzadeh, Farzaneh Nazari, Gabriel D. Patrón, Arash Pourakaberian, Calvin Tsay, and Vahid Niasar.
+>
+> **Techno-Economic Optimisation of Hydrogen Geological Storage in UK Depleted Gas Reservoirs.**
+>
+> *Energy Conversion and Management* — **accepted for publication**.
 
-The workflow consists of three main stages:
+Publication identifiers and a link to the final article will be added when they become available.
 
-1. **Reservoir-Scale Simulation** — Single-phase, multi-component (1PNC) flow simulations of hydrogen injection/extraction cycles in porous media using DuMuX, with different cushion gases (CH₄, CO₂, N₂, H₂).
-2. **Surrogate Modelling** — An artificial neural network (ANN) trained on reservoir rock properties and operational parameters to rapidly predict hydrogen recovery factor.
-3. **Techno-Economic Optimisation** — A mixed-integer linear programme (MILP) solved with Gurobi to select cost-optimal storage portfolios across UK depleted gas reservoirs subject to national energy delivery targets.
+## Overview
 
-## Repository Structure
+This repository links reservoir-scale hydrogen mixing to national-scale storage planning. It combines compositional DuMuX simulations, physical transport metrics, a PyTorch surrogate model, and mixed-integer optimisation to identify cost-effective underground hydrogen storage (UHS) portfolios across UK depleted gas reservoirs.
 
+The study addresses three connected questions:
+
+1. How do reservoir properties, operating conditions, and cushion-gas choice affect hydrogen mixing and recovery?
+2. Can a surrogate model reproduce the recovery factors predicted by full-physics simulations?
+3. Which reservoir and operating portfolios meet annual hydrogen-delivery targets at minimum cost?
+
+```mermaid
+flowchart LR
+    A[UK reservoir data<br/>and LHS samples] --> B[DuMuX compositional<br/>simulations]
+    B --> C[Recovery factor<br/>Pe and Ng]
+    C --> D[PyTorch ANN<br/>surrogate]
+    D --> E[Screened reservoir-operation<br/>scenario library]
+    E --> F[Gurobi MILP<br/>portfolio optimisation]
+    F --> G[Reservoir selection<br/>LCOS and purity strategy]
 ```
+
+## Main findings reported in the paper
+
+- Permeability, porosity, reservoir pressure, and the density contrast between H₂ and the cushion gas are the dominant controls on recovery within the sampled design space.
+- The ANN achieved a holdout-test \(R^2\) of 0.9980 and an MSE of \(10^{-5}\). Re-simulation of 15 optimisation-selected cases gave an RF RMSE of 0.017.
+- For annual delivery targets of 5–200 TWh, long-term optimised levelised costs of storage (LCOS) were approximately 30–60 USD MWh⁻¹.
+- Frequently selected reservoirs occupy a relatively narrow property window: permeability of 10–30 mD, porosity of 0.10–0.15, and pressure of 250–300 bar.
+- H₂ cushion gas is most attractive at lower delivery targets or when purification approaches the cost of hydrogen production. At larger targets, purification is generally preferred to retaining a large H₂ cushion inventory.
+
+These values are results of the assumptions and screening framework used in the paper; they are not site-specific performance guarantees.
+
+## Model scope
+
+The primary paper simulations use a modified DuMuX single-phase, multicomponent (`1pnc`) model with:
+
+- fully compressible H₂/CH₄, H₂/CO₂, H₂/N₂, and H₂-cushion-gas systems;
+- 2D radial geometry and fully implicit flow-transport coupling;
+- molecular diffusion and hydrodynamic dispersion;
+- buoyancy driven by composition-dependent gas density; and
+- configurable injection, withdrawal, idle, and cushion-gas-development periods.
+
+The study is a reservoir-screening assessment. The models are homogeneous, isothermal, and gas dominated, and do not resolve site-specific heterogeneity, detailed wellbore hydraulics, geomechanics, mobile water, microbial reactions, or geochemical reactions. Portfolio results also exclude hydrogen-network routing and hourly energy-system dispatch.
+
+### Sampled parameter space
+
+| Parameter | Range |
+| --- | ---: |
+| Porosity | 0.05–0.30 |
+| Permeability | 1–1500 mD |
+| Reservoir temperature | 293–393 K |
+| Reservoir pressure | 50–450 bar |
+| Injection/withdrawal rate | 100,000–1,500,000 sm³ d⁻¹ |
+| Cycle length | 14–360 days |
+| H₂ cushion-gas ratio | 0–5 |
+
+The numerical mixing study treats CH₄, N₂, CO₂, and H₂ as controlled end-member cushion-gas cases. In the optimisation dataset, the H₂ cushion-gas ratio is the retained H₂ cushion volume divided by the working-gas volume.
+
+## Repository layout
+
+```text
 Mixing-in-UHS/
-├── appl/                        # DuMuX simulation applications
-│   ├── CH4/                     # H₂ + CH₄ cushion gas scenario
-│   ├── CO2/                     # H₂ + CO₂ cushion gas scenario
-│   ├── H2/                      # H₂ without cushion gas
-│   ├── N2/                      # H₂ + N₂ cushion gas scenario
-│   ├── 1p/                      # Single-phase reference cases
-│   ├── Cartesian/               # Cartesian grid variants
-│   ├── Test1/, Test2/           # Verification test cases
-│   └── CMakeLists.txt
-├── dumux/                       # Custom DuMuX extensions
-│   ├── flux/                    # Modified Fick's law and Maxwell-Stefan law
-│   ├── material/
-│   │   ├── binarycoefficients/  # Binary diffusion coefficients (H₂–CH₄, H₂–CO₂, etc.)
-│   │   ├── components/          # Component property models (H₂, CH₄, CO₂, N₂, H₂O)
-│   │   └── fluidmatrixinteractions/
-│   └── porousmediumflow/        # Compositional model extensions
-├── PostFun/                     # Post-processing and optimisation scripts
-│   ├── compute_dimensionless_numbers.py
-│   ├── average_velocity.py
-│   ├── plot_pe_ng_rf.py
-│   ├── correlation_feature.py
-│   ├── ANN_Training.py
-│   ├── NN_optmisation_for_gurobi.py
-│   ├── generate_optimisation_scenarios.py
-│   ├── optimise_uk_portfolio.py
-│   ├── Cost_optimisation_gurobi_pool.py
-│   ├── std_plot_optimisation.py
-│   ├── mix_and_match.py
-│   ├── ann_model_withoutCG_AC.pt     # Pre-trained ANN weights
-│   └── scalers_withoutCG_AC.pkl      # Fitted feature scalers
-├── Plots/                       # Output plots and consolidated data
-├── install_vahabzadeh2026a.py   # Automated installation script
-├── CMakeLists.txt               # Top-level build configuration
-└── dune.module                  # DUNE module metadata
+├── appl/
+│   ├── 1p/                       # Primary 1pnc paper simulations
+│   │   ├── H2/                  # H₂ cushion-gas cases
+│   │   ├── CH4/                 # H₂–CH₄ cases
+│   │   ├── CO2/                 # H₂–CO₂ cases
+│   │   └── N2/                  # H₂–N₂ cases
+│   ├── Cartesian/                # Cartesian-grid variants
+│   ├── H2/, CH4/, CO2/, N2/      # Additional two-phase variants
+│   └── Test*/                    # Verification/development cases
+├── dumux/                         # Project-specific DuMuX extensions
+│   ├── flux/                      # Diffusive/dispersive flux laws
+│   ├── material/                  # Components and binary coefficients
+│   └── porousmediumflow/          # Compositional-flow extensions
+├── PostFun/                       # Analysis, ANN, and optimisation scripts
+│   └── Other/                     # Exploratory and legacy analyses
+├── Plots/                         # Processed data and generated figures
+├── install_vahabzadeh2026a.py     # Reproducible DUNE/DuMuX installer
+├── CMakeLists.txt
+└── dune.module
 ```
 
 ## Installation
 
 ### Prerequisites
 
-- C++ compiler with C++17 support
-- CMake ≥ 3.13
-- Python 3.8+
+- Linux or another environment supported by DUNE/DuMuX
+- a C++17 compiler
+- CMake 3.13 or newer
 - Git
+- Python 3.8 or newer for post-processing
+- standard [DUNE](https://www.dune-project.org/) build dependencies
 
-### Building the DuMuX Module
+### Recommended installation
 
-The installation script automatically clones all required DUNE modules (dune-common, dune-grid, dune-istl, dune-geometry, dune-localfunctions, dune-uggrid, dune-subgrid) and DuMuX, then configures the build:
+The installer downloads the exact DUNE 2.9 and DuMuX 3.8 revisions listed in the [version table](#pinned-dunedumux-revisions), clones this repository, and configures all modules.
 
 ```bash
-mkdir your_target_folder
-cd your_target_folder
-wget https://git.iws.uni-stuttgart.de/dumux-pub/vahabzadeh2026a/-/raw/main/install_vahabzadeh2026a.py
+mkdir uhs-reproduction
+cd uhs-reproduction
+curl -O https://raw.githubusercontent.com/ehsan-vahabzadeh/Mixing-in-UHS/main/install_vahabzadeh2026a.py
 python3 install_vahabzadeh2026a.py
 ```
 
-### Python Dependencies (Post-Processing)
+The resulting source and build directories are:
 
-```bash
-pip install numpy pandas matplotlib scipy scikit-learn torch optuna joblib CoolProp pyvista seaborn pysr gurobipy
+```text
+DUMUX/Mixing-in-UHS/
+DUMUX/Mixing-in-UHS/build-cmake/
 ```
 
-> **Note:** The Gurobi optimiser requires a valid [Gurobi licence](https://www.gurobi.com/academia/academic-program-and-licenses/).
-
-## Simulation
-
-Each subdirectory under `appl/` contains a self-contained DuMuX application for a specific cushion gas type. The simulations model:
-
-- **Physics:** Single-phase (gas), multi-component (H₂, CH₄, CO₂, N₂) flow with compositional dispersion (Scheidegger or full-tensor), molecular diffusion (Fick's law with Millington-Quirk effective diffusivity).
-- **Geometry:** 2D axisymmetric (radial) domain with rotational extrusion, discretised with box (vertex-centred) finite volumes on a structured YaspGrid.
-- **Operations:** Configurable multi-cycle injection–extraction schedules with development (cushion gas) and operational periods, well flow rates, and cycle durations.
-
-### Running a Simulation
+To rebuild an existing installation from the `DUMUX` directory:
 
 ```bash
-cd DUMUX/Mixing-in-UHS/build-cmake/appl/CH4/
-make appl_1pnc_box_CH4
-./appl_1pnc_box_CH4
+./dune-common/bin/dunecontrol --opts=dumux/cmake.opts all
 ```
 
-Inspect results with ParaView:
+### Python environment
+
+The repository does not yet provide a locked Python environment. A minimal environment for the main analysis workflow can be created with:
 
 ```bash
-paraview appl_1pnc_box_CH4.pvd
+python3 -m venv .venv
+source .venv/bin/activate
+python -m pip install --upgrade pip
+python -m pip install numpy pandas scipy matplotlib seaborn scikit-learn \
+  torch optuna joblib CoolProp pyvista openpyxl gurobipy
 ```
 
-Key simulation parameters are configured in `params.input` within each application directory (grid dimensions, permeability, porosity, pressure, temperature, cycle lengths, flow rates, etc.).
+Some exploratory scripts in `PostFun/Other/` additionally use packages such as SALib, PySR, Cartopy, pyDOE2, pymoo, pyswarm, and pyDGSA.
 
-## Post-Processing Pipeline
+Gurobi requires a valid licence. Academic users can obtain one through the [Gurobi Academic Program](https://www.gurobi.com/academia/academic-program-and-licenses/).
 
-### 1. Velocity and Plume Metrics Extraction
+## Running a reservoir simulation
 
-**`average_velocity.py`** — Reads VTU simulation outputs, extracts hydrogen plume geometry (spatial moments, tip velocity, plume length/height) at the end of each injection half-cycle, and exports metrics to JSON.
+The `appl/1p/` directory contains the single-phase compositional cases used by the paper. For example, build and run the box-discretised H₂–CH₄ case as follows:
 
-### 2. Dimensionless Number Computation
+```bash
+cd DUMUX/Mixing-in-UHS
+cmake --build build-cmake --target appl_1pnc_box_CH4 -j 4
+cd build-cmake/appl/1p/CH4
+./appl_1pnc_box_CH4 params.input
+```
 
-**`compute_dimensionless_numbers.py`** — Parses simulation JSON outputs together with velocity metrics to compute:
-- **Péclet number (Pe):** Ratio of advective to dispersive transport
-- **Gravity number (Ng):** Ratio of gravitational to viscous forces
-- **Recovery factor (RF):** Fraction of injected hydrogen recovered per cycle
+Equivalent box targets are available for `H2`, `CO2`, and `N2`:
 
-Uses CoolProp for thermophysical property evaluation (density, viscosity, compressibility) at reservoir conditions. Exports consolidated Excel/CSV tables.
+```text
+appl_1pnc_box_H2
+appl_1pnc_box_CO2
+appl_1pnc_box_N2
+```
 
-### 3. Correlation and Visualisation
+Each case is configured through its own `params.input`. Important sections include:
 
-**`plot_pe_ng_rf.py`** — Generates Pe–Ng–RF contour surfaces and scatter plots with fitted analytical correlations (Hill-type for Pe, logarithmic for Ng).
+| Section | Controls |
+| --- | --- |
+| `[TimeLoop]` | end time and time-step limits |
+| `[Grid]` | radial-domain dimensions and resolution |
+| `[Problem]` | output name, gravity, temperature, and dispersion mode |
+| `[BoundaryConditions]` | cycle schedule, well rates, cushion gas, and completion height |
+| `[SpatialParams]` | porosity and permeability |
+| `[Newton]` | nonlinear-solver tolerances |
 
-**`correlation_feature.py`** — Computes Pearson/Spearman correlation heatmaps and pairwise scatter matrices of input features versus recovery factor. Optionally uses PySR for symbolic regression to discover closed-form RF expressions.
+Simulation output includes `.vtu` snapshots, a `.pvd` time-series index, and a JSON material-balance/recovery record. Open the `.pvd` file in [ParaView](https://www.paraview.org/) to inspect the concentration and pressure fields.
 
-### 4. ANN Surrogate Model Training
+## Analysis and optimisation workflow
 
-**`ANN_Training.py`** — Trains a PyTorch neural network to predict cycle-wise recovery factor from input features (flow rate, cycle length, permeability, pressure, density difference, porosity, temperature, CG ratio, cycle number).
-- Architecture optimised with Optuna (BO-based hyperparameter search with DOF constraints)
-- 5-fold cross-validation with early stopping
-- Best model: 3 hidden layers (36-tanh, 92-ReLU, 108-sigmoid) with sigmoid output
+The main scripts are intended to be run in the following order:
 
-**`NN_optmisation_for_gurobi.py`** — Variant ANN training for the Gurobi-compatible surrogate with scaled outputs (MinMaxScaler).
+| Stage | Script | Purpose |
+| --- | --- | --- |
+| 1 | `PostFun/average_velocity.py` | Extract plume geometry and velocity at injection endpoints from VTU/PVD output |
+| 2 | `PostFun/compute_dimensionless_numbers.py` | Calculate Péclet number, gravity number, and cycle-wise recovery factor |
+| 3 | `PostFun/plot_pe_ng_rf.py` and `PostFun/correlation_feature.py` | Analyse transport regimes, correlations, and feature sensitivity |
+| 4 | `PostFun/ANN_Training.py` | Train and validate the nine-input PyTorch recovery-factor surrogate |
+| 5 | `PostFun/generate_optimisation_scenarios.py` | Sample feasible reservoir-operation scenarios and predict recovery |
+| 6 | `PostFun/optimise_uk_portfolio.py` | Select a minimum-cost portfolio for a specified delivery target |
+| 7 | `PostFun/Cost_optimisation_gurobi_pool.py` | Generate multiple near-optimal portfolio alternatives |
+| 8 | `PostFun/std_plot_optimisation.py` | Compare selected and full-inventory reservoir-property distributions |
 
-### 5. Scenario Generation
+The ANN inputs are flow rate, cycle length, permeability, pressure, H₂/cushion-gas density difference, porosity, temperature, H₂ cushion-gas ratio, and cycle number. Its sigmoid output keeps predicted recovery factors between zero and one.
 
-**`generate_optimisation_scenarios.py`** — Uses the trained ANN surrogate to evaluate a large design space of candidate storage scenarios:
-- Latin Hypercube Sampling over flow rates, cushion gas ratios, and well counts
-- Evaluates RF for each candidate across 10 operational cycles
-- Computes LCOS (Levelised Cost of Storage), CAPEX, OPEX, and energy metrics
+### Configuration required before running Python scripts
 
-### 6. Portfolio Optimisation
+Several scripts preserve absolute Windows paths from the original analysis. Before running them on another machine:
 
-**`optimise_uk_portfolio.py`** — Solves the national-scale MILP:
-- **Objective:** Minimise total present-value cost across all selected reservoirs
-- **Constraints:** Meet annual energy delivery target (TWh), at most one operating scenario per reservoir, optional well budget
-- Evaluates multiple project horizons (1–30 years) with discounted cash flow analysis
+1. Replace `INPUT_DIR`, `base_input_dir`, or `csv_path` with local paths.
+2. Run model-dependent scripts from `PostFun/`, or update model and scaler paths explicitly.
+3. Set the delivery target, cycle length, H₂ price, purification-cost multiplier, and optional well budget in each script's `USER SETTINGS` block.
+4. Point the scenario generator to the desired validity classifier. The checked-in classifier is `rf_validity_plot.joblib`, while one legacy code path refers to `rf_validity.joblib`.
 
-**`Cost_optimisation_gurobi_pool.py`** — Extended version with Gurobi solution pool to generate multiple near-optimal portfolio alternatives.
+Simulation JSON files consumed by `compute_dimensionless_numbers.py` follow this naming convention:
 
-### 7. Results Analysis
+```text
+<Gas>-<FlowRate>-<CycleLength>-<Permeability>-<Pressure>-<Temperature>-<PorosityPercent>-<CGRatio>.json
+```
 
-**`std_plot_optimisation.py`** — Compares property distributions (permeability, porosity, pressure, depth) of selected reservoirs against the full UK dataset using overlaid boxplots.
+Example:
 
-**`mix_and_match.py`** — Utility to merge geographic coordinates (latitude/longitude) from master reservoir data into optimised results for mapping.
+```text
+CH4-500000-180-25-250-333-12-0.json
+```
 
-## Data Files
+## Data and trained artefacts
 
-| File | Description |
-|------|-------------|
-| `Plots/consolidated_output - Final.csv` | UK depleted gas reservoir property database |
-| `PostFun/ann_model_withoutCG_AC.pt` | Pre-trained ANN weights (without CG in RF, all cycles) |
-| `PostFun/scalers_withoutCG_AC.pkl` | Fitted StandardScaler for ANN input features |
-| `compiled_optimal_data.csv` | Compiled optimisation results |
-| `all_points_lcos_vs_loss.csv` | Full scenario LCOS vs. loss data |
-| `rf_validity_plot.joblib` | Random forest classifier for validity screening |
-| `toy_relu_mlp.pt` | Auxiliary MLP model weights |
+| Path | Description |
+| --- | --- |
+| `Plots/consolidated_output - Final.csv` | Source UK depleted-gas-reservoir property inventory; the manuscript retains 96 eligible reservoirs after filtering |
+| `PostFun/ann_model_withoutCG_AC.pt` | Trained PyTorch ANN weights |
+| `PostFun/scalers_withoutCG_AC.pkl` | Fitted feature/output scalers used with the ANN |
+| `rf_validity_plot.joblib` | Random-forest validity classifier used by scenario-screening analyses |
+| `compiled_optimal_data.csv` | Consolidated optimal-scenario results |
+| `all_points_lcos_vs_loss.csv` | LCOS and total-loss-cost points across scenarios |
+| `Plots/` | Processed figures and optimisation summaries |
 
-## Versions
+The source reservoir CSV includes literature/database references where available. Users are responsible for observing the terms of the underlying data providers.
 
-| Module | Branch | Commit SHA | Commit Date |
-|--------|--------|------------|-------------|
-| dune-subgrid | origin/releases/2.9 | 41ab447c | 2023-12-16 |
-| dune-localfunctions | origin/releases/2.9 | f2c7cfb9 | 2023-12-16 |
-| dune-geometry | origin/releases/2.9 | 7d5b1d81 | 2023-12-16 |
-| dune-common | origin/releases/2.9 | ad69f2ab | 2023-12-26 |
-| dumux | origin/releases/3.8 | c8f61c1f | 2023-12-01 |
-| dune-uggrid | origin/releases/2.9 | e26f81ff | 2023-12-16 |
-| dune-grid | origin/releases/2.9 | 75b66b0e | 2023-12-16 |
-| dune-istl | origin/releases/2.9 | 1582b9e2 | 2023-10-19 |
+## Pinned DUNE/DuMuX revisions
 
-## License
+| Module | Branch | Commit | Date |
+| --- | --- | --- | --- |
+| dune-common | `releases/2.9` | `ad69f2ab` | 2023-12-26 |
+| dune-geometry | `releases/2.9` | `7d5b1d81` | 2023-12-16 |
+| dune-grid | `releases/2.9` | `75b66b0e` | 2023-12-16 |
+| dune-istl | `releases/2.9` | `1582b9e2` | 2023-10-19 |
+| dune-localfunctions | `releases/2.9` | `f2c7cfb9` | 2023-12-16 |
+| dune-subgrid | `releases/2.9` | `41ab447c` | 2023-12-16 |
+| dune-uggrid | `releases/2.9` | `e26f81ff` | 2023-12-16 |
+| dumux | `releases/3.8` | `c8f61c1f` | 2023-12-01 |
 
-This project is licensed under the terms and conditions of the GNU General Public License (GPL) version 3 or — at your option — any later version. See [GPL-3.0-or-later.txt](LICENSES/GPL-3.0-or-later.txt).
+Full commit hashes are recorded in `install_vahabzadeh2026a.py`.
+
+## Citation
+
+Until the final volume, page/article number, and DOI are available, please cite the accepted manuscript as:
+
+> Vahabzadeh, E., Nazari, F., Patrón, G. D., Pourakaberian, A., Tsay, C., and Niasar, V. (2026). Techno-Economic Optimisation of Hydrogen Geological Storage in UK Depleted Gas Reservoirs. *Energy Conversion and Management*. Accepted for publication.
+
+```bibtex
+@article{vahabzadeh2026hydrogen,
+  author  = {Vahabzadeh, Ehsan and Nazari, Farzaneh and Patrón, Gabriel D. and
+             Pourakaberian, Arash and Tsay, Calvin and Niasar, Vahid},
+  title   = {Techno-Economic Optimisation of Hydrogen Geological Storage in
+             {UK} Depleted Gas Reservoirs},
+  journal = {Energy Conversion and Management},
+  year    = {2026},
+  note    = {Accepted for publication}
+}
+```
+
+## Acknowledgements
+
+This work was supported by bp through the bp International Centre for Advanced Materials (bp-ICAM), reference EP/X524839/1-2857249. Farzaneh Nazari also acknowledges a President's Doctoral Scholarship from The University of Manchester.
+
+## Contact
+
+For questions about the paper or repository, contact the corresponding author:
+
+**Vahid Niasar**<br>
+Department of Chemical Engineering, The University of Manchester<br>
+[vahid.niasar@manchester.ac.uk](mailto:vahid.niasar@manchester.ac.uk)
+
+## Licence
+
+The DuMuX-derived source files carry `SPDX-License-Identifier: GPL-3.0-or-later` headers. A standalone repository-level licence file is not currently included; consult the headers of individual files when reusing code.
