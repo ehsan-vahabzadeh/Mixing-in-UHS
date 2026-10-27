@@ -1,0 +1,17 @@
+{
+  "files": [
+    {"path":"PostFun/Other/sample_field_data_lhs.py","bookmarks":[{"line":42,"column":0,"label":"01 DATA | Read reservoir inventory"},{"line":50,"column":0,"label":"02 DESIGN | Cluster reservoir properties"},{"line":81,"column":0,"label":"03 DESIGN | Latin hypercube sampling"}]},
+    {"path":"PostFun/Other/input_generator.py","bookmarks":[{"line":39,"column":0,"label":"04 INPUT | Generate DuMuX case parameters"}]},
+    {"path":"appl/1p/CH4/runscript.py","bookmarks":[{"line":421,"column":0,"label":"05 HPC | MPI runs with SLURM task count"}]},
+    {"path":"appl/1p/CH4/properties.hh","bookmarks":[{"line":41,"column":0,"label":"06 MODEL | Single-phase DuMuX setup"}]},
+    {"path":"appl/1p/CH4/params.input","bookmarks":[{"line":0,"column":0,"label":"07 CONFIG | Grid, schedule and solver values"}]},
+    {"path":"appl/1p/CH4/spatialparams.hh","bookmarks":[{"line":46,"column":0,"label":"08 ROCK | Porosity and permeability"}]},
+    {"path":"appl/1p/CH4/main.cc","bookmarks":[{"line":62,"column":0,"label":"09 MAIN | Read inputs and build grid"},{"line":103,"column":0,"label":"12 MAIN | Set time horizon and steps"},{"line":139,"column":0,"label":"13 SOLVER | Assemble residual and Jacobian"},{"line":150,"column":0,"label":"14 SOLVER | Newton solve and advance"}]},
+    {"path":"appl/1p/CH4/problem.hh","bookmarks":[{"line":702,"column":0,"label":"10 INITIAL | Reservoir starting state"},{"line":299,"column":0,"label":"11 WELL | Injection and extraction boundary"},{"line":410,"column":0,"label":"19 OUTPUT | Post-step inventory and flow totals"},{"line":565,"column":0,"label":"20 CHECK | H2 balance tolerance and JSON"}]},
+    {"path":"dumux/porousmediumflow/compositional/localresidual.hh","bookmarks":[{"line":91,"column":0,"label":"15 BALANCE | Component storage term"},{"line":178,"column":0,"label":"16 BALANCE | Advective and diffusive flux"},{"line":227,"column":0,"label":"17 EXTENSION | Add dispersion to balance"}]},
+    {"path":"dumux/flux/box/dispersionflux.hh","bookmarks":[{"line":164,"column":0,"label":"18 EXTENSION | Compute dispersive face flux"}]},
+    {"path":"PostFun/ANN_Training.py","bookmarks":[{"line":26,"column":0,"label":"21 ANN | Holdout and five-fold CV"},{"line":216,"column":0,"label":"22 ANN | Test prediction metrics"},{"line":525,"column":0,"label":"23 ANN | Nine surrogate inputs"}]},
+    {"path":"PostFun/generate_optimisation_scenarios.py","bookmarks":[{"line":148,"column":0,"label":"24 SCREEN | Predict candidate recovery"}]},
+    {"path":"PostFun/optimise_uk_portfolio.py","bookmarks":[{"line":147,"column":0,"label":"25 MILP | Minimum-cost portfolio"},{"line":165,"column":0,"label":"26 MILP | Energy and reservoir limits"}]}
+  ]
+}

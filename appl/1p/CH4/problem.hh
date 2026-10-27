@@ -42,7 +42,8 @@ namespace Dumux {
  *
  * The model domain is specified in the input file and
  * we use homogeneous soil properties.
- * Initially, the domain is filled with pure water.
+ * Initially, the gas phase is methane-rich; reservoir pressure is
+ * initialised from the prescribed top pressure and gravity setting.
  *
  * This problem uses the \ref OnePNCModel model.
  */
